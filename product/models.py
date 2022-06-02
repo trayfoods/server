@@ -1,3 +1,4 @@
+import os
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_delete
@@ -8,9 +9,25 @@ from trayapp.utils import file_cleanup
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
 
+def item_directory_path(instance, filename):
+    """
+    Create a directory path to upload the Product's Image.
+    :param object instance:
+        The instance where the current file is being attached.
+    :param str filename:
+        The filename that was originally given to the file.
+        This may not be taken into account when determining
+        the final destination path.
+    :result str: Directory path.file_extension.
+    """
+    item_name = slugify(instance.product.product_name)
+    _, extension = os.path.splitext(filename)
+    return f"images/items/{item_name}{extension}"
+
+
 class ItemImage(models.Model):
     product = models.ForeignKey("Item", on_delete=models.CASCADE)
-    item_image = models.ImageField(upload_to="images/items/")
+    item_image = models.ImageField(upload_to=item_directory_path)
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -62,6 +79,6 @@ class ItemAttribute(models.Model):
     #     return reverse("article_detail", kwargs={"slug": self.slug})
 
 
-post_delete.connect(
-    file_cleanup, sender=ItemImage, dispatch_uid="ItemImage.item_image.file_cleanup"
-)
+# post_delete.connect(
+#     file_cleanup, sender=ItemImage, dispatch_uid="ItemImage.item_image.file_cleanup"
+# )

@@ -69,7 +69,7 @@ GRAPHENE = {
 }
 
 AUTHENTICATION_BACKENDS = [
-    "graphql_auth.backends.GraphQLAuthBackend",
+    "graphql_jwt.backends.JSONWebTokenBackend",
     'django.contrib.auth.backends.ModelBackend',
 ]
 
@@ -87,8 +87,7 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.ObtainJSONWebToken",
         "graphql_auth.mutations.VerifyToken",
         "graphql_auth.mutations.RefreshToken",
-        "graphql_auth.mutations.RevokeToken",
-        "graphql_auth.mutations.VerifySecondaryEmail",
+        "graphql_auth.mutations.RevokeToken"
     ],
 }
 

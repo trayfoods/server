@@ -6,8 +6,8 @@ from product.models import Item, ItemAttribute
 
 
 class Query(graphene.ObjectType):
-    all_items = graphene.List(ItemType)
-    items = graphene.List(ItemType, count=graphene.Int())
+    hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
+    items = graphene.List(ItemType, count=graphene.Int(required=False))
     item = graphene.Field(ItemType, item_id=graphene.Int())
 
     all_item_attributes = graphene.List(ItemAttributeType)
@@ -18,17 +18,29 @@ class Query(graphene.ObjectType):
     def resolve_all_items(self, info, **kwargs):
         return Item.objects.all()
 
-    def resolve_items(self, info, count):
-        count = count + 1
+    def resolve_hero_data(self, info, count=None):
+        items = Item.objects.filter(product_type__urlParamName="a-dish").order_by(
+            "-product_clicks", "-product_views")
+        if count:
+            count = count + 1
+            if items.count() >= count:
+                items = items[:count]
+        return items
+
+    def resolve_items(self, info, count=None):
         items = Item.objects.all()
-        if items.count() >= count:
-            items = items[:count]
+        if count:
+            count = count + 1
+            if items.count() >= count:
+                items = items[:count]
         return items
 
     def resolve_item(self, info, item_id):
         item = Item.objects.filter(pk=item_id).first()
         if item is None:
             raise GraphQLError("404: Item Not Found")
+        item.product_views = item.product_views + 1
+        item.save()
         return item
 
     def resolve_all_item_attributes(self, info, **kwargs):
