@@ -24,7 +24,7 @@ SECRET_KEY = 'django-insecure-7t8&f#h#9i_6ap&zc0j5jq2t0%f7jc18$d_v^f7ksoyz4v1c$4
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+FRONTEND_URL = "localhost:3000"
 ALLOWED_HOSTS = []
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -90,7 +90,13 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.RevokeToken"
     ],
 }
-
+GRAPHQL_AUTH = {
+    "EMAIL_TEMPLATE_VARIABLES": {
+        "frontend_domain": FRONTEND_URL
+    },
+    "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
+    "SEND_ACTIVATION_EMAIL": False
+}
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
