@@ -23,9 +23,12 @@ class ProfileType(DjangoObjectType):
     class Meta:
         model = Profile
         fields = '__all__'
-    
+
     def resolve_image(self, info, *args, **kwargs):
-        image = info.context.build_absolute_uri(self.image.url)
+        if self.image:
+            image = info.context.build_absolute_uri(self.image.url)
+        else:
+            image = None
         return image
 
 
@@ -34,7 +37,7 @@ class VendorType(DjangoObjectType):
 
     class Meta:
         model = Vendor
-        fields = ['id','profile', 'store']
+        fields = ['id', 'profile', 'store']
 
     def resolve_profile(self, info):
         request = info.context

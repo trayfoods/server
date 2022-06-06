@@ -42,7 +42,7 @@ class Item(models.Model):
     product_type = models.ForeignKey(
         "ItemAttribute", related_name="product_type", on_delete=models.SET_NULL, null=True)
     product_images = models.ManyToManyField(
-        "ItemImage", related_name="product_image", blank=True)
+        "ItemImage", related_name="product_image")
     product_avaliable_in = models.ManyToManyField(
         "users.Store", related_name="avaliable_in_store", blank=True)
     product_creator = models.ForeignKey(
@@ -79,6 +79,6 @@ class ItemAttribute(models.Model):
     #     return reverse("article_detail", kwargs={"slug": self.slug})
 
 
-# post_delete.connect(
-#     file_cleanup, sender=ItemImage, dispatch_uid="ItemImage.item_image.file_cleanup"
-# )
+post_delete.connect(
+    file_cleanup, sender=ItemImage, dispatch_uid="ItemImage.item_image.file_cleanup"
+)

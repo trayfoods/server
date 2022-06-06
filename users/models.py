@@ -27,7 +27,7 @@ class Store(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="images/profile-images/")
+    image = models.ImageField(upload_to="images/profile-images/", null=True)
     phone_number = models.CharField(max_length=16)
     gender = models.CharField(max_length=10, choices=GENDER_LISTS)
     is_student = models.BooleanField(default=False)
