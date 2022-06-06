@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_delete
 # from django.urls import reverse
@@ -32,6 +33,7 @@ class ItemImage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
         if self.item_image:
             image_resize(self.item_image, 500, 500)
 
@@ -83,6 +85,6 @@ class ItemAttribute(models.Model):
     #     return reverse("article_detail", kwargs={"slug": self.slug})
 
 
-post_delete.connect(
-    file_cleanup, sender=ItemImage, dispatch_uid="ItemImage.item_image.file_cleanup"
-)
+@receiver(post_delete, sender=ItemImage)
+def post_delete_user(sender, instance, *args, **kwargs):
+    instance.item_image.delete(save=False)

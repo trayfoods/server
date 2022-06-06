@@ -27,43 +27,45 @@ class AddProductMutation(graphene.Mutation):
     def mutate(self, info, product_name, product_price, product_category, product_type, product_image, product_slug, product_desc=None, product_calories=None):
         success = False
         product = None
+        print(product_image)
         if info.context.user.is_authenticated:
             store = Vendor.objects.filter(
                 user=info.context.user.profile).first().store
             product = Item.objects.filter(
                 product_name=product_name.strip()).first()
-            qsr = Vendor.objects.filter(user=info.context.user.profile).first()
-            if qsr is None:
+            vendor = Vendor.objects.filter(
+                user=info.context.user.profile).first()
+            if vendor is None:
                 success = False
                 raise GraphQLError(
                     "You Need To Become A Vendor To Add New Item")
-            if product and product.product_creator == qsr:
+            if product and product.product_creator == vendor:
                 success = False
-                raise GraphQLError("Item Already In Your Store", product)
+                raise GraphQLError("Item Already In Your Store")
             else:
                 product_category = ItemAttribute.objects.filter(
                     urlParamName=product_category).first()
                 product_type = ItemAttribute.objects.filter(
                     urlParamName=product_type).first()
-                if product is None and not qsr is None and not product_category is None and not product_type is None:
-                    print(product_image)
+                if product is None and not vendor is None and not product_category is None and not product_type is None:
                     if not Item.objects.filter(product_slug=product_slug).first() is None:
                         product = Item.objects.create(product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
-                                                      product_desc=product_desc, product_calories=product_calories, product_creator=qsr)
+                                                      product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
                     else:
                         product = Item.objects.create(product_slug=product_slug, product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
-                                                      product_desc=product_desc, product_calories=product_calories, product_creator=qsr)
+                                                      product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
                     product.save()
                     product = Item.objects.filter(
                         product_name=product_name.strip()).first()
                     qs = ItemImage.objects.filter(product=product).first()
                     is_primary = True
-                    if qs:
+                    if not qs is None:
                         is_primary = False
                     productImage = ItemImage.objects.create(
                         product=product, item_image=product_image, is_primary=is_primary)
                     productImage.save()
-                    product.product_avaliable_in.add(qsr.store)
+                    print(productImage)
+                    product.product_avaliable_in.add(vendor.store)
                     product.product_images.add(productImage)
                     product.save()
             store.store_products.add(product)
@@ -92,10 +94,10 @@ class EditAvaliableProductsMutation(graphene.Mutation):
                 product = Item.objects.filter(
                     product_name=item.strip()).first()
                 product_list.append(product)
-                qsr = Vendor.objects.filter(
+                vendor = Vendor.objects.filter(
                     user=info.context.user.profile).first()
-                if not product is None and not qsr is None:
-                    product.product_avaliable_in.add(qsr.store)
+                if not product is None and not vendor is None:
+                    product.product_avaliable_in.add(vendor.store)
                     product.save()
                     success = True
         else:
