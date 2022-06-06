@@ -4,7 +4,7 @@ from django.template.defaultfilters import slugify
 from django.db.models.signals import post_delete
 # from django.urls import reverse
 
-from trayapp.utils import file_cleanup
+from trayapp.utils import file_cleanup, image_resize
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
@@ -31,6 +31,10 @@ class ItemImage(models.Model):
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if self.item_image:
+            image_resize(self.item_image, 500, 500)
+
 
 class Item(models.Model):
     product_name = models.CharField(max_length=200)
@@ -42,7 +46,7 @@ class Item(models.Model):
     product_type = models.ForeignKey(
         "ItemAttribute", related_name="product_type", on_delete=models.SET_NULL, null=True)
     product_images = models.ManyToManyField(
-        "ItemImage", related_name="product_image")
+        "ItemImage", related_name="product_image", blank=True)
     product_avaliable_in = models.ManyToManyField(
         "users.Store", related_name="avaliable_in_store", blank=True)
     product_creator = models.ForeignKey(
