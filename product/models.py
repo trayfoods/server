@@ -1,11 +1,8 @@
 import os
 from django.db import models
-from django.dispatch import receiver
 from django.template.defaultfilters import slugify
-from django.db.models.signals import post_delete
-# from django.urls import reverse
 
-from trayapp.utils import file_cleanup, image_resize
+from trayapp.utils import image_resize
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
@@ -34,8 +31,10 @@ class ItemImage(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.item_image:
+        if self.id is None and self.item_image:
             image_resize(self.item_image, 500, 500)
+            super().save(force_update=True, update_fields=[
+                'item_image'], *args, **kwargs)
 
 
 class Item(models.Model):
@@ -80,11 +79,3 @@ class ItemAttribute(models.Model):
         if not self.urlParamName:
             self.urlParamName = slugify(self.urlParamName)
         return super().save(*args, **kwargs)
-
-    # def get_absolute_url(self):
-    #     return reverse("article_detail", kwargs={"slug": self.slug})
-
-
-@receiver(post_delete, sender=ItemImage)
-def post_delete_user(sender, instance, *args, **kwargs):
-    instance.item_image.delete(save=False)

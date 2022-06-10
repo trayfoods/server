@@ -27,7 +27,6 @@ class AddProductMutation(graphene.Mutation):
     def mutate(self, info, product_name, product_price, product_category, product_type, product_image, product_slug, product_desc=None, product_calories=None):
         success = False
         product = None
-        print(product_image)
         if info.context.user.is_authenticated:
             store = Vendor.objects.filter(
                 user=info.context.user.profile).first().store
@@ -55,8 +54,8 @@ class AddProductMutation(graphene.Mutation):
                         product = Item.objects.create(product_slug=product_slug, product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
                                                       product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
                     product.save()
-                    product = Item.objects.filter(
-                        product_name=product_name.strip()).first()
+                    # product = Item.objects.filter(
+                    #     product_name=product_name.strip()).first()
                     qs = ItemImage.objects.filter(product=product).first()
                     is_primary = True
                     if not qs is None:

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-7t8&f#h#9i_6ap&zc0j5jq2t0%f7jc18$d_v^f7ksoyz4v1c$4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 FRONTEND_URL = "localhost:3000"
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["192.168.137.1", "localhost"]
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'graphene_django',
     "graphql_auth",
     'django_filters',
+    'django_cleanup.apps.CleanupConfig',
     # refresh tokens are optional
     'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 
@@ -188,7 +189,8 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# CORS_ORIGIN_ALLOW_ALL = True
+if DEBUG:
+    CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',

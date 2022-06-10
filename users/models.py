@@ -3,8 +3,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.dispatch import receiver
 
-from django.db.models.signals import post_save, post_delete
-from trayapp.utils import file_cleanup
+from django.db.models.signals import post_save
 
 HOSTEL_LISTS = (("ABOVE_ONLY", "ABOVE_ONLY"),
                 ("BALM_OF_GELLIED", "BALM_OF_GELLIED"),
@@ -56,7 +55,3 @@ def update_profile_signal(sender, instance, created, **kwargs):
         Profile.objects.create(user=instance)
     instance.profile.save()
 
-
-post_delete.connect(
-    file_cleanup, sender=Profile, dispatch_uid="profile.image.file_cleanup"
-)
