@@ -75,16 +75,18 @@ class AddProductMutation(graphene.Mutation):
         return AddProductMutation(product=product, success=success)
 
 
+# Allowing Vendors to Select Avaliable Products
 class EditAvaliableProductsMutation(graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         products = graphene.String(required=True)
+        action = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
     product = graphene.List(ItemType)
     success = graphene.Boolean()
 
-    def mutate(self, info, products):
+    def mutate(self, info, products, action):
         success = False
         product_list = None
         if info.context.user.is_authenticated:
@@ -96,10 +98,35 @@ class EditAvaliableProductsMutation(graphene.Mutation):
                 vendor = Vendor.objects.filter(
                     user=info.context.user.profile).first()
                 if not product is None and not vendor is None:
-                    product.product_avaliable_in.add(vendor.store)
+                    if action == "add":
+                        product.product_avaliable_in.add(vendor.store)
+                    elif action == "remove":
+                        product.product_avaliable_in.remove(vendor.store)
+                    else:
+                        raise GraphQLError(
+                            "Enter either `add/remove` for actions.")
                     product.save()
                     success = True
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
         return EditAvaliableProductsMutation(product=product_list, success=success)
+
+
+class AddProductClickMutation(graphene.Mutation):
+    class Arguments:
+        slug = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    item = graphene.List(ItemType)
+
+    def mutate(self, info, slug):
+        success = False
+        item = Item.objects.filter(product_slug=slug).first()
+        if not item is None:
+            item.product_clicks = int(item.product_clicks) + 1
+            success = True
+        else:
+            raise GraphQLError("Item Not Found")
+
+        return AddProductClickMutation(item=item, success=success)

@@ -27,7 +27,7 @@ class ItemType(DjangoObjectType):
 
     class Meta:
         model = Item
-        fields = ['product_name', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
+        fields = ['product_name', 'id', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
                   'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on']
 
     def resolve_product_images(self, info, count=None):

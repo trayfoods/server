@@ -2,6 +2,8 @@ import graphene
 from graphql import GraphQLError
 from .types import VendorType
 from .models import Vendor, Store
+from django.contrib.auth.models import User
+from graphql_auth.schema import UserNode
 
 
 class CreateVendorMutation(graphene.Mutation):
@@ -14,6 +16,7 @@ class CreateVendorMutation(graphene.Mutation):
 
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
+    user = graphene.Field(UserNode)
     success = graphene.Boolean()
 
     @staticmethod
@@ -41,7 +44,7 @@ class CreateVendorMutation(graphene.Mutation):
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return CreateVendorMutation(vendor=vendor, success=success)
+        return CreateVendorMutation(user=info.context.user, vendor=vendor, success=success)
 
 
 class EditVendorMutation(graphene.Mutation):
