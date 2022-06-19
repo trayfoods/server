@@ -58,6 +58,9 @@ class Item(models.Model):
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
 
+    class Meta:
+        ordering = ['-product_clicks']
+
     def __str__(self):
         return self.product_name
 

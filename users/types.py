@@ -40,14 +40,18 @@ class VendorType(DjangoObjectType):
         fields = ['id', 'profile', 'store']
 
     def resolve_profile(self, info):
-        request = info.context
-        user = Profile.objects.filter(user=request.user).first()
+        user = Profile.objects.filter(user=self.user.user).first()
         print(user)
         return user
 
 
 class StoreType(DjangoObjectType):
+    vendor = graphene.Field(VendorType)
     class Meta:
         model = Store
-        fields = ['store_name', 'store_category',
+        fields = ['store_name', 'store_category','vendor',
                   'store_abbv', 'store_nickname', 'store_products']
+    
+    def resolve_vendor(self, info):
+        vendor = Vendor.objects.filter(store=self).first()
+        return vendor

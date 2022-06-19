@@ -125,8 +125,7 @@ class AddProductClickMutation(graphene.Mutation):
         item = Item.objects.filter(product_slug=slug).first()
         if not item is None:
             item.product_clicks = int(item.product_clicks) + 1
+            item.save()
             success = True
-        else:
-            raise GraphQLError("Item Not Found")
 
         return AddProductClickMutation(item=item, success=success)

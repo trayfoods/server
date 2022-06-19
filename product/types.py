@@ -24,11 +24,12 @@ class ItemAttributeType(DjangoObjectType):
 class ItemType(DjangoObjectType):
     product_images = graphene.List(
         ItemImageType, count=graphene.Int(required=False))
+    is_avaliable = graphene.Boolean()
 
     class Meta:
         model = Item
-        fields = ['product_name', 'id', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
-                  'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on']
+        fields = ['product_name', 'id', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
+                  'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
 
     def resolve_product_images(self, info, count=None):
         images = ItemImage.objects.filter(product=self)
@@ -45,3 +46,10 @@ class ItemType(DjangoObjectType):
                     images = self.product_images.all()
 
         return images
+
+    def resolve_is_avaliable(self, info):
+        if len(self.product_avaliable_in.all()) > 0:
+            is_avaliable = True
+        else:
+            is_avaliable = False
+        return is_avaliable

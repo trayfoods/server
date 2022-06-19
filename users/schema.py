@@ -5,8 +5,8 @@ from graphql_auth import mutations
 
 from users.mutations import CreateVendorMutation, EditVendorMutation
 
-from .models import Client, Vendor
-from .types import ClientType, VendorType
+from .models import Client, Vendor, Store
+from .types import ClientType, VendorType, StoreType
 
 
 class Query(UserQuery, MeQuery, graphene.ObjectType):
@@ -16,6 +16,7 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
+    get_store = graphene.Field(StoreType, store_nickname=graphene.String())
     
     def resolve_vendors(self, info, **kwargs):
         # print(info.context.user)
@@ -33,6 +34,10 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
 
     def resolve_client(self, info, client_id):
         return Client.objects.get(pk=client_id)
+
+    def resolve_get_store(self, info, store_nickname):
+        store = Store.objects.filter(store_nickname=store_nickname).first()
+        return store
 
 
 class AuthMutation(graphene.ObjectType):
