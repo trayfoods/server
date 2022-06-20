@@ -52,7 +52,7 @@ class Item(models.Model):
     product_avaliable_in = models.ManyToManyField(
         "users.Store", related_name="avaliable_in_store", blank=True)
     product_creator = models.ForeignKey(
-        "users.Vendor", null=True, on_delete=models.SET_NULL)
+        "users.Vendor", null=True, on_delete=models.SET_NULL, blank=True)
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
     product_views = models.IntegerField(default=0)
