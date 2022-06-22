@@ -41,7 +41,6 @@ class VendorType(DjangoObjectType):
 
     def resolve_profile(self, info):
         user = Profile.objects.filter(user=self.user.user).first()
-        print(user)
         return user
 
 
