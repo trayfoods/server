@@ -93,7 +93,7 @@ class EditAvaliableProductsMutation(graphene.Mutation):
             products = products.split(',')
             for item in products:
                 product = Item.objects.filter(
-                    product_name=item.strip()).first()
+                    product_slug=item.strip()).first()
                 product_list.append(product)
                 vendor = Vendor.objects.filter(
                     user=info.context.user.profile).first()

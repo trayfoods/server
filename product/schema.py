@@ -5,6 +5,9 @@ from product.mutations import (
     EditAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
 from product.models import Item, ItemAttribute
 
+# basic searching
+from django.db.models import Q
+
 
 class Query(graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
@@ -15,6 +18,13 @@ class Query(graphene.ObjectType):
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(
         ItemAttributeType, urlParamName=graphene.String())
+
+    search_items = graphene.List(ItemType, query=graphene.String())
+
+    def resolve_search_items(self, info, query):
+        filtered_items = Item.objects.filter(
+            Q(product_name__icontains=query) | Q(product_desc__icontains=query) | Q(product_slug__iexact=query))[:5]
+        return filtered_items
 
     def resolve_all_items(self, info, **kwargs):
         return Item.objects.all()
