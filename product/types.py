@@ -1,6 +1,7 @@
 import graphene
 from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage
+from users.models import Vendor
 
 
 class ItemImageType(DjangoObjectType):
@@ -25,13 +26,29 @@ class ItemType(DjangoObjectType):
     product_images = graphene.List(
         ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
+    is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.String()
 
     class Meta:
         model = Item
-        fields = ['product_name', 'id', 'avaliable_store', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
+        fields = ['product_name', 'id', 'avaliable_store', 'is_avaliable_for_store', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
                   'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
 
+    def resolve_is_avaliable_for_store(self, info):
+        user = info.context.user
+        store_item = "not_login"
+        if user.is_authenticated:
+            store_item = "not_vendor"
+            vendor = Vendor.objects.filter(user=user.profile).first()
+            if not vendor is None:
+                is_product_in_store = vendor.store.store_products.filter(product_slug=self.product_slug).first()
+                if not is_product_in_store is None:
+                    store_item = "1"
+                else:
+                    store_item = "0"
+        return store_item
+
+        
     def resolve_product_images(self, info, count=None):
         images = ItemImage.objects.filter(product=self)
         if self.product_images.count() == images.count():
