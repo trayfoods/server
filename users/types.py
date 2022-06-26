@@ -49,7 +49,7 @@ class StoreType(DjangoObjectType):
     class Meta:
         model = Store
         fields = ['store_name', 'store_category','vendor',
-                  'store_abbv', 'store_nickname', 'store_products']
+                  'store_rank', 'store_nickname', 'store_products']
     
     def resolve_vendor(self, info):
         vendor = Vendor.objects.filter(store=self).first()

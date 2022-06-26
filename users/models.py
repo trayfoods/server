@@ -15,7 +15,7 @@ class Store(models.Model):
     store_name = models.CharField(max_length=20)
     store_nickname = models.CharField(max_length=20, null=True, blank=True)
     store_category = models.CharField(max_length=15)
-    store_abbv = models.CharField(max_length=5, null=True, blank=True)
+    store_rank = models.FloatField(default=0)
     store_products = models.ManyToManyField(
         "product.Item", related_name="store_items", blank=True)
     # store_location = models.PointField(null=True) # Spatial Field Types

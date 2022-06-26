@@ -41,14 +41,14 @@ class ItemType(DjangoObjectType):
             store_item = "not_vendor"
             vendor = Vendor.objects.filter(user=user.profile).first()
             if not vendor is None:
-                is_product_in_store = vendor.store.store_products.filter(product_slug=self.product_slug).first()
+                is_product_in_store = vendor.store.store_products.filter(
+                    product_slug=self.product_slug).first()
                 if not is_product_in_store is None:
                     store_item = "1"
                 else:
                     store_item = "0"
         return store_item
 
-        
     def resolve_product_images(self, info, count=None):
         images = ItemImage.objects.filter(product=self)
         if self.product_images.count() == images.count():
@@ -93,19 +93,22 @@ class ItemType(DjangoObjectType):
 #       : null;
 #   };
 
+
     def resolve_avaliable_store(self, info):
         store_nickname = None
+        is_avaliable = len(self.product_avaliable_in.all()) > 0
         if self.product_creator is None:
-            if len(self.product_avaliable_in.all()) > 0:
+            if is_avaliable:
                 store_nickname = self.product_avaliable_in.first().store_nickname
         else:
             isStore = False
-            for store in self.product_avaliable_in.all():
-                if store.store_nickname == self.product_creator.store.store_nickname:
-                    isStore = True
+            store = self.product_avaliable_in.filter(
+                store_nickname=self.product_creator.store.store_nickname).first()
+            if not store is None:
+                isStore = True
             if isStore == True:
                 store_nickname = self.product_creator.store.store_nickname
             else:
-                if len(self.product_avaliable_in.all()) > 0:
+                if is_avaliable:
                     store_nickname = self.product_avaliable_in.first().store_nickname
         return store_nickname

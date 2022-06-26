@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute
 from product.types import ItemType
-from users.models import Vendor
+from users.models import Vendor, Store
 
 from graphene_file_upload.scalars import Upload
 
@@ -75,8 +75,8 @@ class AddProductMutation(graphene.Mutation):
         return AddProductMutation(product=product, success=success)
 
 
-# Allowing Vendors to Select Avaliable Products
-class EditAvaliableProductsMutation(graphene.Mutation):
+# Allowing Vendors to Select Multiple Product As Avaliable Products
+class AddMultipleAvaliableProductsMutation(graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         products = graphene.String(required=True)
@@ -97,6 +97,14 @@ class EditAvaliableProductsMutation(graphene.Mutation):
                 product_list.append(product)
                 vendor = Vendor.objects.filter(
                     user=info.context.user.profile).first()
+                # Checking if the current user is equals to the store vendor
+                # Then add 0.5 to the store_rank
+                if product.product_creator and product.product_creator != vendor:
+                    store = Store.objects.filter(
+                        store_nickname=product.product_creator.store.store_nickname).first()
+                    if not store is None:
+                        store.store_rank += 0.5
+                        store.save()
                 if not product is None and not vendor is None:
                     if action == "add":
                         product.product_avaliable_in.add(vendor.store)
@@ -110,21 +118,71 @@ class EditAvaliableProductsMutation(graphene.Mutation):
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return EditAvaliableProductsMutation(product=product_list, success=success)
+        return AddMultipleAvaliableProductsMutation(product=product_list, success=success)
 
 
+# This Mutation Only Add One Product to the storeProducts as available
+class AddAvaliableProductMutation(graphene.Mutation):
+    class Arguments:
+        # The input arguments for this mutation
+        product_slug = graphene.String(required=True)
+        action = graphene.String(required=True)
+
+    # The class attributes define the response of the mutation
+    product = graphene.Field(ItemType)
+    success = graphene.Boolean()
+
+    def mutate(self, info, product_slug, action):
+        success = False
+        if info.context.user.is_authenticated:
+            product = Item.objects.filter(
+                product_slug=product_slug.strip()).first()
+            vendor = Vendor.objects.filter(
+                user=info.context.user.profile).first()
+            # Checking if the current user is equals to the store vendor
+            # Then add 0.5 to the store_rank
+            if product.product_creator and product.product_creator != vendor:
+                store = Store.objects.filter(
+                    store_nickname=product.product_creator.store.store_nickname).first()
+                if not store is None:
+                    store.store_rank += 0.5
+                    store.save()
+            if not product is None and not vendor is None:
+                if action == "add":
+                    product.product_avaliable_in.add(vendor.store)
+                elif action == "remove":
+                    product.product_avaliable_in.remove(vendor.store)
+                else:
+                    raise GraphQLError(
+                        "Enter either `add/remove` for actions.")
+                product.save()
+                success = True
+        else:
+            raise GraphQLError("Login required.")
+        # Notice we return an instance of this mutation
+        return AddAvaliableProductMutation(product=product, success=success)
+
+
+# This Mutation adds +1 to the product_clicks value,
+# Then also add rank to the store owner of the product
 class AddProductClickMutation(graphene.Mutation):
     class Arguments:
         slug = graphene.String(required=True)
 
     success = graphene.Boolean()
-    item = graphene.List(ItemType)
+    item = graphene.Field(ItemType)
 
     def mutate(self, info, slug):
         success = False
         item = Item.objects.filter(product_slug=slug).first()
         if not item is None:
-            item.product_clicks = int(item.product_clicks) + 1
+            if item.product_creator:
+                store = Store.objects.filter(
+                    store_nickname=item.product_creator.store.store_nickname).first()
+                if not store is None:
+                    store.store_rank += 0.5
+                    store.save()
+            item.product_clicks += 1
             item.save()
             success = True
 

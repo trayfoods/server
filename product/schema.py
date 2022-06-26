@@ -1,8 +1,8 @@
 import graphene
 from graphql import GraphQLError
 from product.types import ItemType, ItemAttributeType
-from product.mutations import (
-    EditAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
+from product.mutations import (AddAvaliableProductMutation,
+                               AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
 from product.models import Item, ItemAttribute
 
 # basic searching
@@ -77,7 +77,8 @@ class Query(graphene.ObjectType):
 class Mutation(graphene.ObjectType):
     add_product = AddProductMutation.Field()
     add_product_click = AddProductClickMutation.Field()
-    avaliable_products = EditAvaliableProductsMutation.Field()
+    add_avaliable_product = AddAvaliableProductMutation.Field()
+    add_avaliable_products = AddMultipleAvaliableProductsMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

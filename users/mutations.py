@@ -10,9 +10,8 @@ class CreateVendorMutation(graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
-        store_nickname = graphene.String()
+        store_nickname = graphene.String(required=True)
         store_category = graphene.String(required=True)
-        store_abbv = graphene.String()
 
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
@@ -20,7 +19,7 @@ class CreateVendorMutation(graphene.Mutation):
     success = graphene.Boolean()
 
     @staticmethod
-    def mutate(self, info, store_name, store_category, store_nickname=None, store_abbv=None):
+    def mutate(self, info, store_name, store_category, store_nickname):
         success = False
         if info.context.user.is_authenticated:
             vendor = Vendor.objects.filter(
@@ -29,8 +28,7 @@ class CreateVendorMutation(graphene.Mutation):
                 store = Store.objects.create(
                     store_name=store_name,
                     store_nickname=store_nickname,
-                    store_category=store_category,
-                    store_abbv=store_abbv
+                    store_category=store_category
                 )
                 store.save()
                 vendor = Vendor.objects.create(
@@ -60,6 +58,7 @@ class EditVendorMutation(graphene.Mutation):
     vendor = graphene.Field(VendorType)
     success = graphene.Boolean()
 
+    @staticmethod
     def mutate(self, info, id, full_name, gender, phone_number, email):
         success = False
         if info.context.user.is_authenticated:
