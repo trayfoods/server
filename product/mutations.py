@@ -108,8 +108,10 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                 if not product is None and not vendor is None:
                     if action == "add":
                         product.product_avaliable_in.add(vendor.store)
+                        vendor.store.store_products.add(product)
                     elif action == "remove":
                         product.product_avaliable_in.remove(vendor.store)
+                        vendor.store.store_products.remove(product)
                     else:
                         raise GraphQLError(
                             "Enter either `add/remove` for actions.")
@@ -149,8 +151,10 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     store.save()
             if not product is None and not vendor is None:
                 if action == "add":
+                    vendor.store.store_products.add(product)
                     product.product_avaliable_in.add(vendor.store)
                 elif action == "remove":
+                    vendor.store.store_products.remove(product)
                     product.product_avaliable_in.remove(vendor.store)
                 else:
                     raise GraphQLError(
