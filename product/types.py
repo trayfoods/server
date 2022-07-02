@@ -33,7 +33,14 @@ class ItemType(DjangoObjectType):
         model = Item
         fields = ['product_name', 'id', 'avaliable_store', 'is_avaliable_for_store', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
                   'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
-
+    
+    # This will add a unqiue id, if the store items are the same
+    def resolve_id(self, info):
+        item_id = self.id
+        storeName = self.product_avaliable_in.first()
+        if not storeName is None:
+            item_id = self.id + storeName.id
+        return item_id
     def resolve_is_avaliable_for_store(self, info):
         user = info.context.user
         store_item = "not_login"
@@ -71,28 +78,6 @@ class ItemType(DjangoObjectType):
         else:
             is_avaliable = False
         return is_avaliable
-
-
-#   const searchStoreNickName = (item) => {
-#     let store_Nickname = null;
-#     if (item?.productCreator === null) {
-#       store_Nickname = item?.productAvaliableIn[0].storeNickname;
-#     } else {
-#       let data = item?.productAvaliableIn.filter(
-#         (n) =>
-#           n.storeNickname ===
-#           item.productCreator.profile.vendor.store?.storeNickname
-#       );
-#       store_Nickname =
-#         data && data.length > 0
-#           ? data[0].storeNickname
-#           : item?.productAvaliableIn[0].storeNickname;
-#     }
-#     return item?.productAvaliableIn && item?.productAvaliableIn.length > 0
-#       ? store_Nickname
-#       : null;
-#   };
-
 
     def resolve_avaliable_store(self, info):
         store_nickname = None

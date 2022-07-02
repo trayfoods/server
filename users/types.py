@@ -54,3 +54,12 @@ class StoreType(DjangoObjectType):
     def resolve_vendor(self, info):
         vendor = Vendor.objects.filter(store=self).first()
         return vendor
+
+    def resolve_store_products(self, info):
+        qs = self.store_products.all()
+        storeProducts = []
+        for item in qs:
+            item.product_avaliable_in.set([self])
+            storeProducts.append(item)
+        return storeProducts
+        
