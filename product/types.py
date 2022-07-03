@@ -1,5 +1,6 @@
 import graphene
 from graphene_django.types import DjangoObjectType
+from pkg_resources import require
 from .models import Item, ItemAttribute, ItemImage
 from users.models import Vendor
 
@@ -23,6 +24,7 @@ class ItemAttributeType(DjangoObjectType):
 
 
 class ItemType(DjangoObjectType):
+    id = graphene.Int(flag=graphene.Boolean(required=False))
     product_images = graphene.List(
         ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
@@ -33,14 +35,16 @@ class ItemType(DjangoObjectType):
         model = Item
         fields = ['product_name', 'id', 'avaliable_store', 'is_avaliable_for_store', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
                   'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
-    
+
     # This will add a unqiue id, if the store items are the same
-    def resolve_id(self, info):
+    def resolve_id(self, info, flag):
         item_id = self.id
-        storeName = self.product_avaliable_in.first()
-        if not storeName is None:
-            item_id = self.id + storeName.id
+        if flag:
+            storeName = self.product_avaliable_in.first()
+            if not storeName is None:
+                item_id = self.id + storeName.id
         return item_id
+
     def resolve_is_avaliable_for_store(self, info):
         user = info.context.user
         store_item = "not_login"

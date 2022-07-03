@@ -37,6 +37,9 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
 
     def resolve_get_store(self, info, store_nickname):
         store = Store.objects.filter(store_nickname=store_nickname).first()
+        if not store is None:
+            store.store_rank += 0.5
+            store.save()
         return store
 
 

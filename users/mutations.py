@@ -25,17 +25,23 @@ class CreateVendorMutation(graphene.Mutation):
             vendor = Vendor.objects.filter(
                 user=info.context.user.profile).first()
             if vendor is None:
-                store = Store.objects.create(
-                    store_name=store_name,
-                    store_nickname=store_nickname,
-                    store_category=store_category
-                )
-                store.save()
-                vendor = Vendor.objects.create(
-                    user=info.context.user.profile,
-                    store=store)
-                vendor.save()
-                success = True
+                store_check = Store.objects.filter(
+                    store_nickname=store_nickname.strip()).first()
+                if store_check is None:
+                    store = Store.objects.create(
+                        store_name=store_name,
+                        store_nickname=store_nickname,
+                        store_category=store_category
+                    )
+                    store.save()
+                    vendor = Vendor.objects.create(
+                        user=info.context.user.profile,
+                        store=store)
+                    vendor.save()
+                    success = True
+                else:
+                    raise GraphQLError(
+                        "Store Nickname Already Exists, Please use a unique name")
             else:
                 success = False
                 raise GraphQLError('You Already A Vendor')

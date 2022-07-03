@@ -14,7 +14,6 @@ class Query(graphene.ObjectType):
     items = graphene.List(ItemType, count=graphene.Int(required=False))
     item = graphene.Field(ItemType, item_id=graphene.Int())
 
-    all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(
         ItemAttributeType, urlParamName=graphene.String())
@@ -26,9 +25,6 @@ class Query(graphene.ObjectType):
             Q(product_name__icontains=query) | Q(product_desc__icontains=query) | Q(product_slug__iexact=query))[:5]
         return filtered_items
 
-    def resolve_all_items(self, info, **kwargs):
-        return Item.objects.all()
-
     def resolve_hero_data(self, info, count=None):
         items = Item.objects.filter(product_type__urlParamName="a-dish").order_by(
             "-product_clicks", "-product_views")
@@ -39,7 +35,9 @@ class Query(graphene.ObjectType):
         return items
 
     def resolve_items(self, info, count=None):
-        items = Item.objects.all()
+        items = Item.objects.all().distinct()
+        for item in items:
+            print(item.id)
         if count:
             count = count + 1
             if items.count() >= count:
