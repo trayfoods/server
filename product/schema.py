@@ -36,8 +36,6 @@ class Query(graphene.ObjectType):
 
     def resolve_items(self, info, count=None):
         items = Item.objects.all().distinct()
-        for item in items:
-            print(item.id)
         if count:
             count = count + 1
             if items.count() >= count:

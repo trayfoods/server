@@ -63,7 +63,6 @@ class AddProductMutation(graphene.Mutation):
                     productImage = ItemImage.objects.create(
                         product=product, item_image=product_image, is_primary=is_primary)
                     productImage.save()
-                    print(productImage)
                     product.product_avaliable_in.add(vendor.store)
                     product.product_images.add(productImage)
                     product.save()

@@ -1,10 +1,8 @@
-# import graphene
-from dataclasses import fields
 from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
 from django.contrib.auth.models import User
-from .models import Client, Vendor, Store, Profile
+from .models import Client, Vendor, Store, Profile, Hostel
 
 
 class UserType(DjangoObjectType):
@@ -12,6 +10,11 @@ class UserType(DjangoObjectType):
         model = User
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
+
+class HostelType(DjangoObjectType):
+    class Meta:
+        model = Hostel
+        fields = '__all__'
 
 class ClientType(DjangoObjectType):
     class Meta:

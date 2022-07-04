@@ -5,22 +5,25 @@ from graphql_auth import mutations
 
 from users.mutations import CreateVendorMutation, EditVendorMutation
 
-from .models import Client, Vendor, Store
-from .types import ClientType, VendorType, StoreType
+from .models import Client, Vendor, Store, Hostel
+from .types import ClientType, VendorType, StoreType, HostelType
 
 
 class Query(UserQuery, MeQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
     vendors = graphene.List(VendorType)
     clients = graphene.List(ClientType)
+    hostels = graphene.List(HostelType)
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
     
     def resolve_vendors(self, info, **kwargs):
-        # print(info.context.user)
         return Vendor.objects.all().order_by('-id')
+
+    def resolve_hostels(self, info, **kwargs):
+        return Hostel.objects.all().order_by('-id')
 
     def resolve_vendor(self, info, vendor_id):
         return Vendor.objects.get(pk=vendor_id)

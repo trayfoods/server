@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 from .types import VendorType
 from .models import Vendor, Store
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
 from graphql_auth.schema import UserNode
 
 
