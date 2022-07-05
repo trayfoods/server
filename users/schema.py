@@ -23,7 +23,7 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
         return Vendor.objects.all().order_by('-id')
 
     def resolve_hostels(self, info, **kwargs):
-        return Hostel.objects.all().order_by('-id')
+        return Hostel.objects.all()
 
     def resolve_vendor(self, info, vendor_id):
         return Vendor.objects.get(pk=vendor_id)

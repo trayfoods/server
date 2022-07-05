@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 # HOSTEL_LISTS = (("ABOVE_ONLY", "ABOVE_ONLY"),
 #                 ("BALM_OF_GELLIED", "BALM_OF_GELLIED"),
 #                 ("GRACE", "GRACE"), ("CHAMPTIONS", "CHAMPTIONS"), ("SPLENDOR", "SPLENDOR"), ("HOPE", "HOPE"), ("LOVE", "LOVE"))
-GENDER_LISTS = (("Male", "Male"), ("Female", "Female"))
+GENDER_LISTS = (("Male", "Male"), ("Female", "Female"), ("Others", "Others"))
 
 
 class Store(models.Model):
@@ -45,7 +45,7 @@ class Vendor(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
 
     def __str__(self) -> str:
-        return self.user.username
+        return self.user.user.username
 
 
 class Hostel(models.Model):
