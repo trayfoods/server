@@ -1,7 +1,7 @@
 import graphene
 from graphql import GraphQLError
 from .types import VendorType
-from .models import Vendor, Store
+from .models import Vendor, Store, Client, Hostel, Gender, Profile
 # from django.contrib.auth.models import User
 from graphql_auth.schema import UserNode
 
@@ -79,3 +79,42 @@ class EditVendorMutation(graphene.Mutation):
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
         return EditVendorMutation(vendor=vendor, success=success)
+
+
+class CreateClientMutation(graphene.Mutation):
+    class Arguments:
+        hostel_shortname = graphene.String(required=False)
+        room = graphene.String(required=False)
+        gender = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    user = graphene.Field(UserNode)
+
+    def mutate(self, info, gender, hostel_shortname=None, room=None):
+        success = False
+        user = info.context.user
+        profile = info.context.user.profile
+        if user.is_authenticated:
+            vendor = Vendor.objects.filter(
+                user=profile).first()
+            if vendor is None:
+                client = Client.objects.filter(
+                    user=profile).first()
+                if client is None:
+                    hostel = Hostel.objects.filter(short_name=hostel_shortname).first()
+                    gender = gender.lower()
+                    gender = Gender.objects.filter(name=gender).first()
+                    if not gender is None:
+                        new_client = Client.objects.create(
+                            user=profile, hostel=hostel, room=room)
+                        new_client_profile = Profile.objects.filter(user=user).first()
+                        if not new_client_profile is None:
+                            new_client_profile.gender = gender
+                            new_client_profile.save()
+                        new_client.save()
+                        success = True
+                    else:
+                        raise GraphQLError("Gender do not exists")
+        else:
+            raise GraphQLError("Login Required.")
+        return CreateClientMutation(user=info.context.user, success=success)

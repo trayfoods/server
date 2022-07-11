@@ -38,7 +38,7 @@ class AddProductMutation(graphene.Mutation):
                 success = False
                 raise GraphQLError(
                     "You Need To Become A Vendor To Add New Item")
-            if product and product.product_creator == vendor:
+            if product and product.product_creator == vendor or not product.product_avaliable_in.filter(store_nickname=vendor.store.store_nickname).first() is None:
                 success = False
                 raise GraphQLError("Item Already In Your Store")
             else:

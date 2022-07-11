@@ -5,11 +5,9 @@ from django.dispatch import receiver
 
 from django.db.models.signals import post_save
 
-# HOSTEL_LISTS = (("ABOVE_ONLY", "ABOVE_ONLY"),
-#                 ("BALM_OF_GELLIED", "BALM_OF_GELLIED"),
-#                 ("GRACE", "GRACE"), ("CHAMPTIONS", "CHAMPTIONS"), ("SPLENDOR", "SPLENDOR"), ("HOPE", "HOPE"), ("LOVE", "LOVE"))
-GENDER_LISTS = (("Male", "Male"), ("Female", "Female"), ("Others", "Others"))
-
+class Gender(models.Model):
+    name = models.CharField(max_length=20)
+    rank = models.IntegerField(default=10)
 
 class Store(models.Model):
     store_name = models.CharField(max_length=20)
@@ -31,7 +29,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="images/profile-images/", null=True)
     phone_number = models.CharField(max_length=16)
-    gender = models.CharField(max_length=10, choices=GENDER_LISTS)
+    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_student = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     # location = models.PointField(null=True) # Spatial Field Types
@@ -51,8 +49,8 @@ class Vendor(models.Model):
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
-    gender = models.CharField(
-        max_length=10, choices=GENDER_LISTS, null=True, blank=True)
+    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
+
     is_floor = models.BooleanField(default=False)
     floor_count = models.IntegerField(default=0)
 
@@ -63,7 +61,8 @@ class Hostel(models.Model):
 class Client(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
-    room = models.CharField(max_length=20)
+    room = models.TextField(null=True, blank=True)
+
 
 
 class Deliverer(models.Model):

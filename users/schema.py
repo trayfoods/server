@@ -3,7 +3,7 @@ import graphene
 from graphql_auth.schema import UserQuery, MeQuery
 from graphql_auth import mutations
 
-from users.mutations import CreateVendorMutation, EditVendorMutation
+from users.mutations import CreateVendorMutation, EditVendorMutation, CreateClientMutation
 
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
@@ -62,6 +62,7 @@ class AuthMutation(graphene.ObjectType):
 
 class Mutation(AuthMutation, graphene.ObjectType):
     create_vendor = CreateVendorMutation.Field()
+    create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
 
 
