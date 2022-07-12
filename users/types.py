@@ -2,7 +2,7 @@ from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
 from django.contrib.auth.models import User
-from .models import Client, Vendor, Store, Profile, Hostel
+from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
 
 class UserType(DjangoObjectType):
@@ -11,10 +11,18 @@ class UserType(DjangoObjectType):
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
 
+class GenderType(DjangoObjectType):
+    class Meta:
+        model = Gender
+        fields = '__all__'
+
+
 class HostelType(DjangoObjectType):
+
     class Meta:
         model = Hostel
         fields = '__all__'
+
 
 class ClientType(DjangoObjectType):
     class Meta:
@@ -49,11 +57,12 @@ class VendorType(DjangoObjectType):
 
 class StoreType(DjangoObjectType):
     vendor = graphene.Field(VendorType)
+
     class Meta:
         model = Store
-        fields = ['store_name', 'store_category','vendor',
+        fields = ['store_name', 'store_category', 'vendor',
                   'store_rank', 'store_nickname', 'store_products']
-    
+
     def resolve_vendor(self, info):
         vendor = Vendor.objects.filter(store=self).first()
         return vendor
@@ -65,4 +74,3 @@ class StoreType(DjangoObjectType):
             item.product_avaliable_in.set([self])
             storeProducts.append(item)
         return storeProducts
-        

@@ -101,13 +101,17 @@ class CreateClientMutation(graphene.Mutation):
                 client = Client.objects.filter(
                     user=profile).first()
                 if client is None:
-                    hostel = Hostel.objects.filter(short_name=hostel_shortname).first()
-                    gender = gender.lower()
+                    hostel = Hostel.objects.filter(
+                        short_name=hostel_shortname).first()
+                    gender = gender.upper()
                     gender = Gender.objects.filter(name=gender).first()
                     if not gender is None:
+                        gender.rank += 0.1
+                        gender.save()
                         new_client = Client.objects.create(
                             user=profile, hostel=hostel, room=room)
-                        new_client_profile = Profile.objects.filter(user=user).first()
+                        new_client_profile = Profile.objects.filter(
+                            user=user).first()
                         if not new_client_profile is None:
                             new_client_profile.gender = gender
                             new_client_profile.save()

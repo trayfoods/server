@@ -38,9 +38,17 @@ class AddProductMutation(graphene.Mutation):
                 success = False
                 raise GraphQLError(
                     "You Need To Become A Vendor To Add New Item")
-            if product and product.product_creator == vendor or not product.product_avaliable_in.filter(store_nickname=vendor.store.store_nickname).first() is None:
+            if not product is None:
                 success = False
-                raise GraphQLError("Item Already In Your Store")
+                is_vendor_in_product_ava = product.product_avaliable_in.filter(store_nickname=vendor.store.store_nickname).first()
+                if not is_vendor_in_product_ava is None:
+                    raise GraphQLError("Item Already In Your Store")
+                elif product.product_creator == vendor and is_vendor_in_product_ava is None:
+                    store.store_products.add(product)
+                    success = True
+                elif product.product_creator == vendor and not is_vendor_in_product_ava is None:
+                    raise GraphQLError("Item Already In Your Store")
+
             else:
                 product_category = ItemAttribute.objects.filter(
                     urlParamName=product_category).first()
@@ -98,12 +106,16 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                     user=info.context.user.profile).first()
                 # Checking if the current user is equals to the store vendor
                 # Then add 0.5 to the store_rank
-                if product.product_creator and product.product_creator != vendor:
-                    store = Store.objects.filter(
-                        store_nickname=product.product_creator.store.store_nickname).first()
-                    if not store is None:
-                        store.store_rank += 0.5
-                        store.save()
+                try:
+                    if not product.product_creator is None: 
+                        if product.product_creator != vendor:
+                            store = Store.objects.filter(
+                                store_nickname=product.product_creator.store.store_nickname).first()
+                            if not store is None:
+                                store.store_rank += 0.5
+                                store.save()
+                except:
+                    pass
                 if not product is None and not vendor is None:
                     if action == "add":
                         product.product_avaliable_in.add(vendor.store)
@@ -142,12 +154,16 @@ class AddAvaliableProductMutation(graphene.Mutation):
                 user=info.context.user.profile).first()
             # Checking if the current user is equals to the store vendor
             # Then add 0.5 to the store_rank
-            if product.product_creator and product.product_creator != vendor:
-                store = Store.objects.filter(
-                    store_nickname=product.product_creator.store.store_nickname).first()
-                if not store is None:
-                    store.store_rank += 0.5
-                    store.save()
+            try:
+                if not product.product_creator is None:
+                    if product.product_creator != vendor:
+                        store = Store.objects.filter(
+                            store_nickname=product.product_creator.store.store_nickname).first()
+                        if not store is None:
+                            store.store_rank += 0.5
+                            store.save()
+            except:
+                pass
             if not product is None and not vendor is None:
                 if action == "add":
                     vendor.store.store_products.add(product)

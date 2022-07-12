@@ -5,9 +5,15 @@ from django.dispatch import receiver
 
 from django.db.models.signals import post_save
 
+
 class Gender(models.Model):
-    name = models.CharField(max_length=20)
-    rank = models.IntegerField(default=10)
+    name = models.CharField(
+        max_length=20, help_text="NAME SHOULD BE IN UPPERCASE!")
+    rank = models.FloatField(default=0)
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class Store(models.Model):
     store_name = models.CharField(max_length=20)
@@ -50,7 +56,6 @@ class Hostel(models.Model):
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-
     is_floor = models.BooleanField(default=False)
     floor_count = models.IntegerField(default=0)
 
@@ -62,7 +67,6 @@ class Client(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
     room = models.TextField(null=True, blank=True)
-
 
 
 class Deliverer(models.Model):
