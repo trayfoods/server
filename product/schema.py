@@ -12,7 +12,7 @@ from django.db.models import Q
 class Query(graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
     items = graphene.List(ItemType, count=graphene.Int(required=False))
-    item = graphene.Field(ItemType, item_id=graphene.Int())
+    item = graphene.Field(ItemType, item_slug=graphene.Int())
 
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(
@@ -26,8 +26,7 @@ class Query(graphene.ObjectType):
         return filtered_items
 
     def resolve_hero_data(self, info, count=None):
-        items = Item.objects.filter(product_type__urlParamName="a-dish").order_by(
-            "-product_clicks", "-product_views")
+        items = Item.objects.filter(product_type__urlParamName__icontains="dish").order_by("-product_views")
         if count:
             count = count + 1
             if items.count() >= count:
@@ -42,11 +41,11 @@ class Query(graphene.ObjectType):
                 items = items[:count]
         return items
 
-    def resolve_item(self, info, item_id):
-        item = Item.objects.filter(pk=item_id).first()
+    def resolve_item(self, info, item_slug):
+        item = Item.objects.filter(product_slug=item_slug).first()
         if item is None:
             raise GraphQLError("404: Item Not Found")
-        item.product_views = item.product_views + 1
+        item.product_views += 1
         item.save()
         return item
 

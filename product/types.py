@@ -37,7 +37,7 @@ class ItemType(DjangoObjectType):
                   'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
 
     # This will add a unqiue id, if the store items are the same
-    def resolve_id(self, info, flag):
+    def resolve_id(self, info, flag=None):
         item_id = self.id
         if flag:
             storeName = self.product_avaliable_in.first()
