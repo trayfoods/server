@@ -12,7 +12,7 @@ from django.db.models import Q
 class Query(graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
     items = graphene.List(ItemType, count=graphene.Int(required=False))
-    item = graphene.Field(ItemType, item_slug=graphene.Int())
+    item = graphene.Field(ItemType, item_slug=graphene.String())
 
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(
@@ -42,7 +42,7 @@ class Query(graphene.ObjectType):
         return items
 
     def resolve_item(self, info, item_slug):
-        item = Item.objects.filter(product_slug=item_slug).first()
+        item = Item.objects.filter(product_slug=item_slug.strip()).first()
         if item is None:
             raise GraphQLError("404: Item Not Found")
         item.product_views += 1
