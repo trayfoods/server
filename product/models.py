@@ -29,12 +29,13 @@ class ItemImage(models.Model):
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['-id']
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.id is None and self.item_image:
+        if self.item_image:
             image_resize(self.item_image, 500, 500)
-            super().save(force_update=True, update_fields=[
-                'item_image'], *args, **kwargs)
 
 
 class Item(models.Model):

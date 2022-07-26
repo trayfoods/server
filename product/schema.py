@@ -26,7 +26,8 @@ class Query(graphene.ObjectType):
         return filtered_items
 
     def resolve_hero_data(self, info, count=None):
-        items = Item.objects.filter(product_type__urlParamName__icontains="dish").order_by("-product_views")
+        items = Item.objects.filter(product_type__urlParamName__icontains="dish").exclude(
+            product_type__urlParamName__icontains="not").order_by("-product_views")
         if count:
             count = count + 1
             if items.count() >= count:

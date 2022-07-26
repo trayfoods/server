@@ -10,7 +10,7 @@ class ItemImageType(DjangoObjectType):
 
     class Meta:
         model = ItemImage
-        fields = ['product_image', 'is_primary']
+        fields = ['id','product_image', 'is_primary']
 
     def resolve_product_image(self, info, *args, **kwargs):
         product_image = info.context.build_absolute_uri(self.item_image.url)
