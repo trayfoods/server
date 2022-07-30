@@ -10,7 +10,7 @@ class ItemImageType(DjangoObjectType):
 
     class Meta:
         model = ItemImage
-        fields = ['id','product_image', 'is_primary']
+        fields = ['id', 'product_image', 'is_primary']
 
     def resolve_product_image(self, info, *args, **kwargs):
         product_image = info.context.build_absolute_uri(self.item_image.url)
@@ -28,13 +28,14 @@ class ItemType(DjangoObjectType):
     product_images = graphene.List(
         ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
+    has_qty = graphene.Boolean()
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.String()
 
     class Meta:
         model = Item
         fields = ['product_name', 'id', 'avaliable_store', 'is_avaliable_for_store', 'product_clicks', 'product_views', 'product_qty', 'product_slug', 'product_calories', 'product_type', 'product_category', 'product_images', 'product_desc',
-                  'product_price', 'product_avaliable_in', 'product_creator', 'product_created_on', 'is_avaliable']
+                  'product_price', 'product_avaliable_in', 'has_qty', 'product_creator', 'product_created_on', 'is_avaliable']
 
     # This will add a unqiue id, if the store items are the same
     def resolve_id(self, info, flag=None):
@@ -44,6 +45,18 @@ class ItemType(DjangoObjectType):
             if not storeName is None:
                 item_id = self.id + storeName.id
         return item_id
+
+    def resolve_product_qty(self, info):
+        product_qty = self.product_qty
+        if product_qty == 0:
+            product_qty = 1
+        return product_qty
+
+    def resolve_has_qty(self, info):
+        has_qty = False
+        if self.product_qty > 0:
+            has_qty = True
+        return has_qty
 
     def resolve_is_avaliable_for_store(self, info):
         user = info.context.user
