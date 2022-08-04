@@ -3,30 +3,6 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 from django.core.files import File
-from django.core.files.uploadedfile import InMemoryUploadedFile
-
-
-def _convert_to_webp(self, f_object: InMemoryUploadedFile):
-    suffix = Path(f_object._name).suffix
-    if suffix == ".webp":
-        return f_object._name, f_object
-    
-    new_file_name = str(Path(f_object._name).with_suffix('.webp'))
-    image = Image.open(f_object.file)
-    thumb_io = BytesIO()
-    image.save(thumb_io, 'webp', optimize=True, quality=95)
-
-    new_f_object = InMemoryUploadedFile(
-        thumb_io,
-        f_object.field_name,
-        new_file_name,
-        f_object.content_type,
-        f_object.size,
-        f_object.charset,
-        f_object.content_type_extra
-    )
-    
-    return new_file_name, new_f_object
 
 image_types = {
     "jpg": "JPEG",
@@ -42,8 +18,6 @@ def image_resize(image, width, height):
     # Open the image using Pillow
     img = Image.open(image)
     # check if either the width or height is greater than the max
-    buffer = BytesIO()
-    img.save(buffer, 'webp', optimize=True, quality=95)
     if img.width > width or img.height > height:
         output_size = (width, height)
         # Create a new resized “thumbnail” version of the image with Pillow
@@ -55,6 +29,7 @@ def image_resize(image, width, height):
         # Use the file extension to determine the file type from the image_types dictionary
         img_format = image_types[img_suffix]
         # Save the resized image into the buffer, noting the correct file type
+        buffer = BytesIO()
         img.save(buffer, format=img_format)
         # Wrap the buffer in File object
         file_object = File(buffer)
