@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',  # Required for GraphiQL
-
+    'django_distill',
     'users',
     'product',
 
@@ -195,6 +195,8 @@ if DEBUG:
 CORS_ORIGIN_WHITELIST = (
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://192.168.137.1:3000',
+    'https://client-react.pages.dev'
 )
 
 CORS_ALLOW_METHODS = (
