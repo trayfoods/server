@@ -33,10 +33,10 @@ class ItemImage(models.Model):
     class Meta:
         ordering = ['-id']
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.item_image:
+    def save(self, commit=True, *args, **kwargs):
+        if commit and self.item_image:
             image_resize(self.item_image, 500, 500)
+            super().save(*args, **kwargs)
 
 
 class Item(models.Model):

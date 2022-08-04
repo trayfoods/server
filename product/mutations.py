@@ -55,6 +55,7 @@ class AddProductMutation(graphene.Mutation):
                 product_type = ItemAttribute.objects.filter(
                     urlParamName=product_type).first()
                 if product is None and not vendor is None and not product_category is None and not product_type is None:
+                    # Checking if sulg already exists
                     if not Item.objects.filter(product_slug=product_slug).first() is None:
                         product = Item.objects.create(product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
                                                       product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
@@ -71,9 +72,11 @@ class AddProductMutation(graphene.Mutation):
                     productImage = ItemImage.objects.create(
                         product=product, item_image=product_image, is_primary=is_primary)
                     productImage.save()
-                    product.product_avaliable_in.add(vendor.store)
-                    product.product_images.add(productImage)
-                    product.save()
+                    product = Item.objects.filter(product_name=product_name.strip()).first()
+                    if not product is None:
+                        product.product_avaliable_in.add(vendor.store)
+                        product.product_images.add(productImage)
+                        product.save()
             store.store_products.add(product)
             success = True
         else:
