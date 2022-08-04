@@ -19,8 +19,9 @@ def item_directory_path(instance, filename):
     :result str: Directory path.file_extension.
     """
     item_name = slugify(instance.product.product_name)
+    item_slug = slugify(instance.product.product_slug)
     _, extension = os.path.splitext(filename)
-    return f"images/items/{item_name}{extension}"
+    return f"images/items/{item_slug}/{item_name}{extension}"
 
 
 class ItemImage(models.Model):
