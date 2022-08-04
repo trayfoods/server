@@ -1,4 +1,4 @@
-from decouple import config
+# from decouple import config
 import dj_database_url
 from pathlib import Path
 
@@ -10,11 +10,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY')
+SECRET_KEY = "django-insecure-7t8&f#h#9i_6ap&zc0j5jq2t0%f7jc18$d_v^f7ksoyz4v1c$4"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', cast=bool)
-USE_S3 = config('USE_S3', cast=bool)
+DEBUG = False
+USE_S3 = True
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
@@ -175,11 +175,11 @@ USE_TZ = True
 
 if USE_S3:
     # aws settings
-    AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-    AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-    AWS_DEFAULT_ACL = config('AWS_DEFAULT_ACL')
-    AWS_S3_CUSTOM_DOMAIN = f'.s3.eu-west-2.amazonaws.com'
+    AWS_ACCESS_KEY_ID = "AKIA2THBLZSKNVHSMKV5"
+    AWS_SECRET_ACCESS_KEY = "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"
+    AWS_STORAGE_BUCKET_NAME = "trayfoods-assets"
+    AWS_DEFAULT_ACL = None
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.eu-west-2.amazonaws.com'
     AWS_S3_OBJECT_PARAMETERS = {'CacheControl': 'max-age=86400'}
     AWS_S3_SECURE_URLS = True
 
