@@ -9,8 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django_distill import distill_path as path
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path("graphql/", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True))),
+    path('admin/', admin.site.urls, name="admin"),
+    path("graphql/", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)), name="api"),
 ]
 
 if settings.DEBUG:
