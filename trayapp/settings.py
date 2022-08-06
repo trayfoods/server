@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "graphql_auth",
     'django_filters',
     'django_cleanup.apps.CleanupConfig',
+    'django_unused_media',
     # refresh tokens are optional
     'graphql_jwt.refresh_token.apps.RefreshTokenConfig',
 
