@@ -1,5 +1,6 @@
 import os
 from django.db import models
+from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 
 from trayapp.utils import image_resize
@@ -85,3 +86,8 @@ class ItemAttribute(models.Model):
         if not self.urlParamName:
             self.urlParamName = slugify(self.urlParamName)
         return super().save(*args, **kwargs)
+
+# Signals
+@receiver(models.signals.post_delete, sender=ItemImage)
+def remove_file_from_s3(sender, instance, using, **kwargs):
+    instance.item_image.delete(save=False)
