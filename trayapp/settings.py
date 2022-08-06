@@ -10,8 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "bhv445@YG676788ue89bfuvsdyiv454567#^$#^%&&*@(!-7t8&f#h#9i_6ap&zc0j5jq2t0%f7jc18$d_v^f7ksoyz4v1c$4"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-USE_S3 = True
+DEBUG = True
+USE_S3 = False
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
@@ -19,12 +19,12 @@ else:
     FRONTEND_URL = "https://client-react.pages.dev"
 
 ALLOWED_HOSTS = ["192.168.137.1", "localhost", "trayfoods-api.herokuapp.com"]
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
-SECURE_SSL_REDIRECT = True
-SECURE_HSTS_SECONDS = 518400
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+# SECURE_SSL_REDIRECT = True
+# SECURE_HSTS_SECONDS = 518400
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 

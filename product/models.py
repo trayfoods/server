@@ -2,7 +2,7 @@ import os
 from django.db import models
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
-
+from django.utils.translation import gettext_lazy as _
 from trayapp.utils import image_resize
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
@@ -27,17 +27,24 @@ def item_directory_path(instance, filename):
 
 class ItemImage(models.Model):
     product = models.ForeignKey("Item", on_delete=models.CASCADE)
-    item_image = models.ImageField(upload_to=item_directory_path)
+    item_image = models.ImageField('Item Image', upload_to=item_directory_path,  # callback function
+                                   null=False, blank=False,
+                                   help_text=_('Upload Item Image.'))
+    item_image_webp = models.ImageField('Webp Item Image',
+                                        upload_to=item_directory_path,
+                                        null=True, blank=True,
+                                        help_text=_('Upload Item Image In Webp Format.'))
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-id']
 
-    def save(self, commit=True, *args, **kwargs):
-        if commit and self.item_image:
-            image_resize(self.item_image, 500, 500)
-            super().save(*args, **kwargs)
+    def __str__(self) -> str:
+        return self.product.product_slug
+
+    # def save(self, *args, **kwargs):
+    #     super(ItemImage, self).save(*args, **kwargs)
 
 
 class Item(models.Model):
@@ -88,6 +95,8 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 # Signals
+
+
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
     instance.item_image.delete(save=False)

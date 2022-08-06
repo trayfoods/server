@@ -3,7 +3,7 @@ from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute
 from product.types import ItemType
 from users.models import Vendor, Store
-
+from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
 
 
@@ -40,7 +40,8 @@ class AddProductMutation(graphene.Mutation):
                     "You Need To Become A Vendor To Add New Item")
             if not product is None:
                 success = False
-                is_vendor_in_product_ava = product.product_avaliable_in.filter(store_nickname=vendor.store.store_nickname).first()
+                is_vendor_in_product_ava = product.product_avaliable_in.filter(
+                    store_nickname=vendor.store.store_nickname).first()
                 if not is_vendor_in_product_ava is None:
                     raise GraphQLError("Item Already In Your Store")
                 elif product.product_creator == vendor and is_vendor_in_product_ava is None:
@@ -72,7 +73,8 @@ class AddProductMutation(graphene.Mutation):
                     productImage = ItemImage.objects.create(
                         product=product, item_image=product_image, is_primary=is_primary)
                     productImage.save()
-                    product = Item.objects.filter(product_name=product_name.strip()).first()
+                    product = Item.objects.filter(
+                        product_name=product_name.strip()).first()
                     if not product is None:
                         product.product_avaliable_in.add(vendor.store)
                         product.product_images.add(productImage)
@@ -110,7 +112,7 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                 # Checking if the current user is equals to the store vendor
                 # Then add 0.5 to the store_rank
                 try:
-                    if not product.product_creator is None: 
+                    if not product.product_creator is None:
                         if product.product_creator != vendor:
                             store = Store.objects.filter(
                                 store_nickname=product.product_creator.store.store_nickname).first()
@@ -168,12 +170,13 @@ class AddAvaliableProductMutation(graphene.Mutation):
             except:
                 pass
             if not product is None and not vendor is None:
+                store = get_object_or_404(Store, id=vendor.store.id)
                 if action == "add":
                     vendor.store.store_products.add(product)
-                    product.product_avaliable_in.add(vendor.store)
+                    product.product_avaliable_in.add(store)
                 elif action == "remove":
                     vendor.store.store_products.remove(product)
-                    product.product_avaliable_in.remove(vendor.store)
+                    product.product_avaliable_in.remove(store)
                 else:
                     raise GraphQLError(
                         "Enter either `add/remove` for actions.")
