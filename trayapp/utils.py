@@ -35,3 +35,9 @@ def image_resize(image, width, height):
         file_object = File(buffer)
         # Save the new resized file as usual, which will save to S3 using django-storages
         image.save(img_filename, file_object)
+
+def delete_dir(empty_dir):
+    """path could either be relative or absolute. """
+    # check if file or directory exists
+    path = Path(empty_dir)
+    path.rmdir()

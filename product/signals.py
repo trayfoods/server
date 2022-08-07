@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.images import ImageFile
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, pre_delete
-
+from trayapp.utils import delete_dir
 from .models import ItemImage
 
 
@@ -82,6 +82,7 @@ def save_image(sender, instance, **kwargs):
         if (old and not new) or (old and new and old.url != new.url):
             old.delete(save=False)
             Wold.delete(save=False)
+            delete_dir(old.url.replace(old.filename, "").replace(old.format, "").replace(".", ""))
             file, name, content_type, size = image_resized(
                 instance.item_image, 500, 500)
             new_item_image = InMemoryUploadedFile(
@@ -99,3 +100,4 @@ def delete_image(sender, instance, **kwargs):
     if (not s.item_image or s.item_image is not None) and (not s.item_image_webp or s.item_image_webp is not None):
         s.item_image.delete(False)
         s.item_image_webp.delete(False)
+        delete_dir(s.item_image.url.replace(s.item_image.filename, "").replace(s.item_image.format, "").replace(".", ""))
