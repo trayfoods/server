@@ -82,7 +82,7 @@ def save_image(sender, instance, **kwargs):
         if (old and not new) or (old and new and old.url != new.url):
             old.delete(save=False)
             Wold.delete(save=False)
-            delete_dir(old.url.replace(old.filename, "").replace(old.format, "").replace(".", ""))
+            delete_dir(old.url.replace(old.name, "").replace(old.format, "").replace(".", ""))
             file, name, content_type, size = image_resized(
                 instance.item_image, 500, 500)
             new_item_image = InMemoryUploadedFile(
@@ -93,12 +93,11 @@ def save_image(sender, instance, **kwargs):
             instance.item_image_webp = ImageFile(new_f_object, new_file_name)
 
 
-# @receiver(pre_delete, sender=ItemImage, dispatch_uid='ItemImage.delete_image')
-# def delete_image(sender, instance, **kwargs):
-#     s = sender.objects.get(pk=instance.pk)
+@receiver(pre_delete, sender=ItemImage, dispatch_uid='ItemImage.delete_image')
+def delete_image(sender, instance, **kwargs):
+    s = sender.objects.get(pk=instance.pk)
 
-#     if (not s.item_image or s.item_image is not None) and (not s.item_image_webp or s.item_image_webp is not None):
-#         if s.item_image:
-#             s.item_image.delete(False)
-#             s.item_image_webp.delete(False)
-#             delete_dir(s.item_image.url.replace(s.item_image.filename, "").replace(s.item_image.format, "").replace(".", ""))
+    if (not s.item_image or s.item_image is not None) and (not s.item_image_webp or s.item_image_webp is not None):
+        s.item_image.delete(False)
+        s.item_image_webp.delete(False)
+        delete_dir(s.item_image.url.replace(s.item_image.name, "").replace(s.item_image.format, "").replace(".", ""))

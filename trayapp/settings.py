@@ -5,20 +5,22 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+os.environ['SECRET_KEY'] = "not-secure"
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
-USE_S3 = os.getenv("USE_S3")
+DEBUG = 'True' in os.getenv("DEBUG")
+USE_S3 = 'True' in bool(os.getenv("USE_S3"))
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
 else:
-    FRONTEND_URL = "https://client-react.pages.dev"
+    FRONTEND_URL = "https://%s" % os.getenv("REACT_SITE")
 
-ALLOWED_HOSTS = ["192.168.137.1", "localhost", "trayfoods-api.herokuapp.com"]
+ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
+                 os.getenv("SITE_ORIGIN_URL")]
 if DEBUG == False:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
@@ -47,7 +49,6 @@ INSTALLED_APPS = [
     "django_filters",
     "django_cleanup.apps.CleanupConfig",
     "django_unused_media",
-    # refresh tokens are optional
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
 
     "corsheaders",
@@ -183,6 +184,8 @@ if USE_S3:
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
     AWS_DEFAULT_ACL = os.getenv("AWS_DEFAULT_ACL")
+    if AWS_DEFAULT_ACL == 'None':
+        AWS_DEFAULT_ACL = None
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.eu-west-2.amazonaws.com"
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
     AWS_S3_SECURE_URLS = True
@@ -226,16 +229,16 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://192.168.137.1:3000",
-    "https://client-react.pages.dev"
+    FRONTEND_URL
 )
 
 CORS_ALLOW_METHODS = (
     "GET",
     "POST",
-    # "PUT",
-    # "PATCH",
-    # "DELETE",
-    # "OPTIONS",
+    "PUT",
+    "PATCH",
+    "DELETE",
+    "OPTIONS",
 )
 
 CORS_ALLOW_HEADERS = (
