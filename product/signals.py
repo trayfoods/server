@@ -93,12 +93,12 @@ def save_image(sender, instance, **kwargs):
             instance.item_image_webp = ImageFile(new_f_object, new_file_name)
 
 
-@receiver(pre_delete, sender=ItemImage, dispatch_uid='ItemImage.delete_image')
-def delete_image(sender, instance, **kwargs):
-    s = sender.objects.get(pk=instance.pk)
+# @receiver(pre_delete, sender=ItemImage, dispatch_uid='ItemImage.delete_image')
+# def delete_image(sender, instance, **kwargs):
+#     s = sender.objects.get(pk=instance.pk)
 
-    if (not s.item_image or s.item_image is not None) and (not s.item_image_webp or s.item_image_webp is not None):
-        if item_image:
-            s.item_image.delete(False)
-            s.item_image_webp.delete(False)
-            delete_dir(s.item_image.url.replace(s.item_image.filename, "").replace(s.item_image.format, "").replace(".", ""))
+#     if (not s.item_image or s.item_image is not None) and (not s.item_image_webp or s.item_image_webp is not None):
+#         if s.item_image:
+#             s.item_image.delete(False)
+#             s.item_image_webp.delete(False)
+#             delete_dir(s.item_image.url.replace(s.item_image.filename, "").replace(s.item_image.format, "").replace(".", ""))
