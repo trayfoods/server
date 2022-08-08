@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'True' in os.getenv("DEBUG")
-USE_S3 = 'True' in bool(os.getenv("USE_S3"))
+USE_S3 = 'True' in os.getenv("USE_S3")
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
