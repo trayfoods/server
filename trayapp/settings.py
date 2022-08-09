@@ -5,8 +5,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-os.environ['SECRET_KEY'] = "not-secure"
-
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -224,13 +222,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 if DEBUG:
     CORS_ORIGIN_ALLOW_ALL = True
-
-CORS_ORIGIN_WHITELIST = (
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://192.168.137.1:3000",
-    FRONTEND_URL
-)
+else:
+    CORS_ORIGIN_WHITELIST = (
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://192.168.137.1:3000",
+        FRONTEND_URL
+    )
 
 CORS_ALLOW_METHODS = (
     "GET",
