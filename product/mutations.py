@@ -18,13 +18,13 @@ class AddProductMutation(graphene.Mutation):
         product_desc = graphene.String()
         product_calories = graphene.Int()
 
-        product_image = Upload(required=True)
+        product_images = Upload(required=True)
 
     # The class attributes define the response of the mutation
     product = graphene.Field(ItemType)
     success = graphene.Boolean()
 
-    def mutate(self, info, product_name, product_price, product_category, product_type, product_image, product_slug, product_desc=None, product_calories=None):
+    def mutate(self, info, product_name, product_price, product_category, product_type, product_images, product_slug, product_desc=None, product_calories=None):
         success = False
         product = None
         if info.context.user.is_authenticated:
@@ -66,19 +66,21 @@ class AddProductMutation(graphene.Mutation):
                     product.save()
                     # product = Item.objects.filter(
                     #     product_name=product_name.strip()).first()
-                    qs = ItemImage.objects.filter(product=product).first()
-                    is_primary = True
-                    if not qs is None:
-                        is_primary = False
-                    productImage = ItemImage.objects.create(
-                        product=product, item_image=product_image, is_primary=is_primary)
-                    productImage.save()
-                    product = Item.objects.filter(
-                        product_name=product_name.strip()).first()
-                    if not product is None:
-                        product.product_avaliable_in.add(vendor.store)
-                        product.product_images.add(productImage)
-                        product.save()
+                    print(product_images)
+                    for product_image in product_images:
+                        qs = ItemImage.objects.filter(product=product).first()
+                        is_primary = True
+                        if not qs is None:
+                            is_primary = False
+                        productImage = ItemImage.objects.create(
+                            product=product, item_image=product_image, is_primary=is_primary)
+                        productImage.save()
+                        product = Item.objects.filter(
+                            product_name=product_name.strip()).first()
+                        if not product is None:
+                            product.product_avaliable_in.add(vendor.store)
+                            product.product_images.add(productImage)
+                            product.save()
             store.store_products.add(product)
             success = True
         else:
