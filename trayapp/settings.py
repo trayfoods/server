@@ -56,7 +56,6 @@ INSTALLED_APPS = [
     "django_extensions",
 
 ]
-# GDAL_LIBRARY_PATH = {}
 GRAPH_MODELS = {
     "all_applications": True,
     "group_models": True,
