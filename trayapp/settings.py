@@ -220,10 +220,10 @@ if USE_S3:
 elif not USE_S3:
     STATIC_URL = "/assets/"
     MEDIA_URL = "/media/"
-    STATIC_ROOT = BASE_DIR / "static-root"
-    MEDIA_ROOT = BASE_DIR / "media-root"
+    STATIC_ROOT = BASE_DIR / "workspace/static-root"
+    MEDIA_ROOT = BASE_DIR / "workspace/media-root"
 
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
