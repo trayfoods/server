@@ -1,12 +1,10 @@
+from pathlib import Path
 import os
 from dotenv import load_dotenv
-project_folder = os.path.expanduser('~/server')  # adjust as appropriate
-load_dotenv(os.path.join(project_folder, '.env'))
-import dj_database_url
-from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -14,6 +12,7 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = 'True' in os.getenv("DEBUG")
 USE_S3 = 'True' in os.getenv("USE_S3")
+USE_DB = 'True' in os.getenv("USE_DB")
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
@@ -135,15 +134,24 @@ WSGI_APPLICATION = "trayapp.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
-
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if USE_DB == True:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv("PGDATABASE"),
+            'USER': os.getenv("PGUSER"),
+            'PASSWORD': os.getenv("PGPASSWORD"),
+            'HOST': os.getenv("PGHOST"),
+            'PORT': os.getenv("PGPORT"),
+        }
     }
-}
-db_from_env = dj_database_url.config(conn_max_age=600)
-DATABASES["default"].update(db_from_env)
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
