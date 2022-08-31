@@ -20,7 +20,6 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 if DEBUG == True:
@@ -101,6 +100,7 @@ GRAPHQL_JWT = {
     ],
 }
 GRAPHQL_AUTH = {
+    "EMAIL_FROM": EMAIL_HOST_USER,
     "EMAIL_TEMPLATE_VARIABLES": {
         "frontend_domain": FRONTEND_URL
     },
