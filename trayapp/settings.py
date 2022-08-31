@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,6 +13,15 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = 'True' in os.getenv("DEBUG")
 USE_S3 = 'True' in os.getenv("USE_S3")
 USE_DB = 'True' in os.getenv("USE_DB")
+
+# EMAIL_INFOS
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 if DEBUG == True:
     FRONTEND_URL = "localhost:3000"
@@ -29,7 +38,7 @@ if DEBUG == False:
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Application definition
 
@@ -75,7 +84,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    # "JWT_VERIFY_EXPIRATION": True,
+    "JWT_VERIFY_EXPIRATION": True,
 
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
@@ -96,7 +105,7 @@ GRAPHQL_AUTH = {
         "frontend_domain": FRONTEND_URL
     },
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
-    "SEND_ACTIVATION_EMAIL": False
+    "SEND_ACTIVATION_EMAIL": True
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
