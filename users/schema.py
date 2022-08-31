@@ -18,7 +18,7 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
-    
+
     def resolve_vendors(self, info, **kwargs):
         return Vendor.objects.all().order_by('-id')
 
@@ -27,7 +27,6 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
 
     def resolve_vendor(self, info, vendor_id):
         return Vendor.objects.get(pk=vendor_id)
-
 
     def resolve_clients(self, info, **kwargs):
         if not info.context.user.is_authenticated():
@@ -49,6 +48,7 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
 class AuthMutation(graphene.ObjectType):
     register = mutations.Register.Field()
     update_account = mutations.UpdateAccount.Field()
+    verify_account = mutations.VerifyAccount.Field()
     resend_activation_email = mutations.ResendActivationEmail.Field()
     send_password_reset_email = mutations.SendPasswordResetEmail.Field()
     password_reset = mutations.PasswordReset.Field()
@@ -59,6 +59,7 @@ class AuthMutation(graphene.ObjectType):
     verify_token = mutations.VerifyToken.Field()
     refresh_token = mutations.RefreshToken.Field()
     revoke_token = mutations.RevokeToken.Field()
+
 
 class Mutation(AuthMutation, graphene.ObjectType):
     create_vendor = CreateVendorMutation.Field()
