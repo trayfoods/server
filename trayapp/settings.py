@@ -29,11 +29,13 @@ else:
 
 ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
                  os.getenv("SITE_ORIGIN_URL")]
-if DEBUG == False:
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 518400
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+# if DEBUG == False:
+#     CSRF_COOKIE_SECURE = True
+#     SESSION_COOKIE_SECURE = True
+#     SECURE_SSL_REDIRECT = True
+#     SECURE_HSTS_SECONDS = 518400
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#     SECURE_HSTS_PRELOAD = True
 
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
