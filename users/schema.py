@@ -1,6 +1,6 @@
 import graphene
-
-from graphql_auth.schema import UserQuery, MeQuery
+from django.contrib.auth import get_user_model
+from graphql_auth.schema import UserNode, MeQuery
 from graphql_auth import mutations
 
 from users.mutations import CreateVendorMutation, EditVendorMutation, CreateClientMutation
@@ -8,9 +8,11 @@ from users.mutations import CreateVendorMutation, EditVendorMutation, CreateClie
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
 
+User = get_user_model()
 
-class Query(UserQuery, MeQuery, graphene.ObjectType):
+class Query(MeQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
+    get_user = graphene.Field(UserNode, username=graphene.String())
     vendors = graphene.List(VendorType)
     clients = graphene.List(ClientType)
     hostels = graphene.List(HostelType)
@@ -18,6 +20,9 @@ class Query(UserQuery, MeQuery, graphene.ObjectType):
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
+
+    def resolve_get_user(self, info, username):
+        return User.objects.get(username=username)
 
     def resolve_vendors(self, info, **kwargs):
         return Vendor.objects.all().order_by('-id')

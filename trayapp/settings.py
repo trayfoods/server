@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
-# load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -85,7 +85,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    "JWT_VERIFY_EXPIRATION": True,
+    # "JWT_VERIFY_EXPIRATION": True,
 
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
