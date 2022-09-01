@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
-# load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -19,6 +19,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
+DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
@@ -37,6 +38,8 @@ ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
 #     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 #     SECURE_HSTS_PRELOAD = True
 
+CONN_MAX_AGE = None
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 # Application definition
 
@@ -99,12 +102,16 @@ GRAPHQL_JWT = {
     ],
 }
 GRAPHQL_AUTH = {
-    "EMAIL_FROM": EMAIL_HOST_USER,
+    "EMAIL_FROM": DEFAULT_FROM_EMAIL,
     "EMAIL_TEMPLATE_VARIABLES": {
         "frontend_domain": FRONTEND_URL
     },
+    "SEND_ACTIVATION_EMAIL": True,
+    "ACTIVATION_PATH_ON_EMAIL": "auth/email/activate/",
+    "SEND_PASSWORD_RESET_EMAIL": True,
+    "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password/reset/",
+    "PASSWORD_SET_PATH_ON_EMAIL": "auth/password/set/",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
-    "SEND_ACTIVATION_EMAIL": True
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
