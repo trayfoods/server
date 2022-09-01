@@ -107,10 +107,10 @@ GRAPHQL_AUTH = {
         "frontend_domain": FRONTEND_URL
     },
     "SEND_ACTIVATION_EMAIL": True,
-    "ACTIVATION_PATH_ON_EMAIL": "auth/email/activate/",
+    "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate/",
     "SEND_PASSWORD_RESET_EMAIL": True,
-    "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password/reset/",
-    "PASSWORD_SET_PATH_ON_EMAIL": "auth/password/set/",
+    "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset/",
+    "PASSWORD_SET_PATH_ON_EMAIL": "auth/password-set/",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
 }
 MIDDLEWARE = [
