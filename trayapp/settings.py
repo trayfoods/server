@@ -37,7 +37,6 @@ ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
 #     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 #     SECURE_HSTS_PRELOAD = True
 
-# EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Application definition
 
