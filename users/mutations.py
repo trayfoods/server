@@ -2,9 +2,11 @@ import graphene
 from graphql import GraphQLError
 from .types import VendorType
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
-# from django.contrib.auth.models import User
+from django.contrib.auth.models import User
 from graphql_auth.schema import UserNode
-
+from graphene_file_upload.scalars import Upload
+from graphql_jwt.refresh_token.shortcuts import get_refresh_token
+from graphql_auth.mixins import UpdateAccountMixin
 
 class CreateVendorMutation(graphene.Mutation):
     class Arguments:
@@ -49,6 +51,42 @@ class CreateVendorMutation(graphene.Mutation):
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
         return CreateVendorMutation(user=info.context.user, vendor=vendor, success=success)
+
+
+class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
+    class Arguments:
+        token = graphene.String(required=True)
+        username = graphene.String(required=True)
+        first_name = graphene.String()
+        last_name = graphene.String()
+        email = graphene.String()
+        phone_number = graphene.String()
+        profile_image = Upload()
+
+    user = graphene.Field(UserNode)
+
+    __doc__ = UpdateAccountMixin.__doc__
+
+    @staticmethod
+    def mutate(self, info, token, username, first_name, email, last_name, phone_number=None, profile_image=None):
+        if info.context.user.is_authenticated:
+            user = info.context.user
+            token = get_refresh_token(token, info.context)
+            user = User.objects.filter(username=user.username).first()
+            if token and not user is None:
+                profile = Profile.objects.filter(user=user).first()
+                if not profile is None:
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    user.username = username
+                    user.email = email
+                    user.save()
+                    profile.image = profile_image
+                    profile.save()
+        else:
+            raise GraphQLError("Login required.")
+        # Notice we return an instance of this mutation
+        return UpdateAccountMutation(user=user)
 
 
 class EditVendorMutation(graphene.Mutation):

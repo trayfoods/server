@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
-# load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env')
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -107,11 +107,12 @@ GRAPHQL_AUTH = {
         "frontend_domain": FRONTEND_URL
     },
     "SEND_ACTIVATION_EMAIL": True,
-    "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate/",
+    "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
     "SEND_PASSWORD_RESET_EMAIL": True,
-    "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset/",
-    "PASSWORD_SET_PATH_ON_EMAIL": "auth/password-set/",
+    "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset",
+    "PASSWORD_SET_PATH_ON_EMAIL": "auth/password-set",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
+    "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"]
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

@@ -3,12 +3,13 @@ from django.contrib.auth import get_user_model
 from graphql_auth.schema import UserNode, MeQuery
 from graphql_auth import mutations
 
-from users.mutations import CreateVendorMutation, EditVendorMutation, CreateClientMutation
+from users.mutations import CreateVendorMutation, EditVendorMutation, UpdateAccountMutation, CreateClientMutation
 
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
 
 User = get_user_model()
+
 
 class Query(MeQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
@@ -52,7 +53,6 @@ class Query(MeQuery, graphene.ObjectType):
 
 class AuthMutation(graphene.ObjectType):
     register = mutations.Register.Field()
-    update_account = mutations.UpdateAccount.Field()
     verify_account = mutations.VerifyAccount.Field()
     resend_activation_email = mutations.ResendActivationEmail.Field()
     send_password_reset_email = mutations.SendPasswordResetEmail.Field()
@@ -67,6 +67,7 @@ class AuthMutation(graphene.ObjectType):
 
 
 class Mutation(AuthMutation, graphene.ObjectType):
+    update_account = UpdateAccountMutation.Field()
     create_vendor = CreateVendorMutation.Field()
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()

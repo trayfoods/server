@@ -66,7 +66,6 @@ class AddProductMutation(graphene.Mutation):
                     product.save()
                     # product = Item.objects.filter(
                     #     product_name=product_name.strip()).first()
-                    print(product_images)
                     for product_image in product_images:
                         qs = ItemImage.objects.filter(product=product).first()
                         is_primary = True
