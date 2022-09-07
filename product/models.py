@@ -95,8 +95,6 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 # Signals
-
-
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
     instance.item_image.delete(save=False)

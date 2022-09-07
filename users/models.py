@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.dispatch import receiver
 
 from django.db.models.signals import post_save
+from trayapp.utils import image_resize
 
 
 class Gender(models.Model):
@@ -42,6 +43,11 @@ class Profile(models.Model):
 
     def __str__(self) -> str:
         return self.user.username
+
+    def save(self, *args, **kwargs):
+        if image:
+            image_resize(self.image, 160, 160)
+        super(Profile, self).save(*args, **kwargs)
 
 
 class Vendor(models.Model):
