@@ -7,6 +7,10 @@ from graphql_auth.schema import UserNode
 from graphene_file_upload.scalars import Upload
 from graphql_jwt.refresh_token.shortcuts import get_refresh_token
 from graphql_auth.mixins import UpdateAccountMixin
+from graphql_auth.shortcuts import get_user_by_email
+from django.utils.module_loading import import_string
+from graphql_auth.settings import graphql_auth_settings as app_settings
+
 
 class CreateVendorMutation(graphene.Mutation):
     class Arguments:
@@ -76,17 +80,39 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
             if token and not user is None:
                 profile = Profile.objects.filter(user=user).first()
                 if not profile is None:
+                    send_email = False
                     user.first_name = first_name
                     user.last_name = last_name
                     user.username = username
+                    if user.email != email:
+                        send_email = True
+                        user.status.verified = True
                     user.email = email
                     user.save()
-                    profile.image = profile_image
-                    profile.save()
+                    if profile_image:
+                        profile.profile_image = profile_image
+                    if phone_number:
+                        profile.phone_number = phone_number
+
+                    if send_email == True:
+                        user = get_user_by_email(email)
+                        try:
+                            if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
+                                async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
+                            else:
+                                async_email_func = None
+                            if async_email_func:
+                                async_email_func(
+                                    user.status.resend_activation_email, (info,))
+                            else:
+                                user.status.resend_activation_email(info)
+                        except Exception as e:
+                            raise GraphQLError(str(e))
+                profile.save()
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return UpdateAccountMutation(user=user)
+        return UpdateAccountMutation(user=info.context.user)
 
 
 class EditVendorMutation(graphene.Mutation):
