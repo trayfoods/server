@@ -45,8 +45,8 @@ class Profile(models.Model):
         return self.user.username
 
     def save(self, *args, **kwargs):
-        if image:
-            image_resize(self.image, 160, 160)
+        if self.image:
+            image_resize(self.image, 260, 260)
         super(Profile, self).save(*args, **kwargs)
 
 
