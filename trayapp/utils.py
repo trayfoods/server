@@ -3,6 +3,7 @@ from pathlib import Path
 from io import BytesIO
 from PIL import Image
 from django.core.files import File
+# import blurhash
 
 image_types = {
     "jpg": "JPEG",
@@ -35,6 +36,8 @@ def image_resize(image, width, height):
         file_object = File(buffer)
         # Save the new resized file as usual, which will save to S3 using django-storages
         image.save(img_filename, file_object)
+        # if hash:
+        #     hash = blurhash.encode(image, x_components=4, y_components=3)
 
 def delete_dir(empty_dir):
     """path could either be relative or absolute. """

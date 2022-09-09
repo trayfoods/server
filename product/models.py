@@ -34,6 +34,7 @@ class ItemImage(models.Model):
                                         upload_to=item_directory_path,
                                         null=True, blank=True,
                                         help_text=_('Upload Item Image In Webp Format.'))
+    item_image_hash = models.CharField('Item Image Hash', editable=False, max_length=32, null=True, blank=True)
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
