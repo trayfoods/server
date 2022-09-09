@@ -150,14 +150,24 @@ WSGI_APPLICATION = "trayapp.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 if USE_DB == True:
+    # DATABASES = {
+    #     'default': {
+    #         'ENGINE': 'django.db.backends.postgresql',
+    #         'NAME': os.getenv("PGDATABASE"),
+    #         'USER': os.getenv("PGUSER"),
+    #         'PASSWORD': os.getenv("PGPASSWORD"),
+    #         'HOST': os.getenv("PGHOST"),
+    #         'PORT': os.getenv("PGPORT"),
+    #     }
+    # }
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv("PGDATABASE"),
-            'USER': os.getenv("PGUSER"),
-            'PASSWORD': os.getenv("PGPASSWORD"),
-            'HOST': os.getenv("PGHOST"),
-            'PORT': os.getenv("PGPORT"),
+            'NAME': "postgres",
+            'USER': "postgres",
+            'PASSWORD': "ognUNYvxPZKJWaUX",
+            'HOST': "db.wfqwjjsdgjfxuhnegsgj.supabase.co",
+            'PORT': "5432",
         }
     }
 else:

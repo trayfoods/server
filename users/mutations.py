@@ -1,15 +1,25 @@
 import graphene
 from graphql import GraphQLError
+from graphene_file_upload.scalars import Upload
+
+from django.contrib.auth.models import User
+from django.utils.module_loading import import_string
+
+from graphql_jwt.refresh_token.shortcuts import get_refresh_token
+
+from graphql_auth.schema import UserNode
+from graphql_auth.mixins import UpdateAccountMixin
+from graphql_auth.models import UserStatus
+from graphql_auth.settings import graphql_auth_settings as app_settings
+
 from .types import VendorType
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
-from django.contrib.auth.models import User
-from graphql_auth.schema import UserNode
-from graphene_file_upload.scalars import Upload
-from graphql_jwt.refresh_token.shortcuts import get_refresh_token
-from graphql_auth.mixins import UpdateAccountMixin
-from graphql_auth.shortcuts import get_user_by_email
-from django.utils.module_loading import import_string
-from graphql_auth.settings import graphql_auth_settings as app_settings
+
+
+if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
+    async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
+else:
+    async_email_func = None
 
 
 class CreateVendorMutation(graphene.Mutation):
@@ -73,46 +83,52 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
 
     @staticmethod
     def mutate(self, info, token, username, first_name, email, last_name, phone_number=None, profile_image=None):
-        if info.context.user.is_authenticated:
-            user = info.context.user
+        user = info.context.user
+        send_email = False
+        if user.is_authenticated:
             token = get_refresh_token(token, info.context)
-            user = User.objects.filter(username=user.username).first()
-            if token and not user is None:
-                profile = Profile.objects.filter(user=user).first()
-                if not profile is None:
-                    send_email = False
-                    user.first_name = first_name
-                    user.last_name = last_name
-                    user.username = username
-                    if user.email != email:
-                        send_email = True
-                        user.status.verified = True
-                    user.email = email
-                    user.save()
-                    if profile_image:
-                        profile.profile_image = profile_image
-                    if phone_number:
-                        profile.phone_number = phone_number
+            if token:
+                if token.user.username == user.username:
+                    user = User.objects.filter(username=user.username).first()
+                    if token and not user is None:
+                        profile = Profile.objects.filter(user=user).first()
+                        if not profile is None:
+                            user.first_name = first_name
+                            user.last_name = last_name
+                            user.username = username
+                            if profile_image:
+                                profile.image = profile_image
+                            if phone_number:
+                                profile.phone_number = phone_number
 
-                    if send_email == True:
-                        user = get_user_by_email(email)
-                        try:
-                            if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
-                                async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
-                            else:
-                                async_email_func = None
-                            if async_email_func:
-                                async_email_func(
-                                    user.status.resend_activation_email, (info,))
-                            else:
-                                user.status.resend_activation_email(info)
-                        except Exception as e:
-                            raise GraphQLError(str(e))
-                profile.save()
+                            profile.save()
+                            if user.email != email:
+                                send_email = True
+                                user.status.verified = True
+
+                            if send_email == True:
+                                try:
+                                    UserStatus.clean_email(email)
+                                    # TODO CHECK FOR EMAIL ASYNC SETTING
+                                    if async_email_func:
+                                        async_email_func(
+                                            user.status.send_activation_email, (info,))
+                                    else:
+                                        user.status.send_activation_email(info)
+                                    user.email = email
+                                except Exception as e:
+                                    raise GraphQLError(
+                                        "Error trying to send confirmation mail to %s" % email)
+                            user.save()
+                else:
+                    user = None
+                    raise GraphQLError(
+                        "Authorized token required, Hope you know what you are doing...")
         else:
+            user = None
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return UpdateAccountMutation(user=info.context.user)
+        return UpdateAccountMutation(user=user)
 
 
 class EditVendorMutation(graphene.Mutation):
