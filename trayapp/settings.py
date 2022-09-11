@@ -156,7 +156,7 @@ if USE_DB == True:
             'NAME': os.getenv("PGDATABASE").replace('"', '').replace('/', ''),
             'USER': os.getenv("PGUSER"),
             'PASSWORD': os.getenv("PGPASSWORD"),
-            'HOST': os.getenv("PGHOST"),
+            'HOST': "os.getenv("PGHOST")",
             'PORT': os.getenv("PGPORT"),
         }
     }
