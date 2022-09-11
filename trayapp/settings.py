@@ -31,13 +31,13 @@ else:
 
 ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
                  os.getenv("SITE_ORIGIN_URL")]
-# if DEBUG == False:
-#     CSRF_COOKIE_SECURE = True
-#     SESSION_COOKIE_SECURE = True
-#     SECURE_SSL_REDIRECT = True
-#     SECURE_HSTS_SECONDS = 518400
-#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-#     SECURE_HSTS_PRELOAD = True
+if DEBUG == False:
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 518400
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
 
 CONN_MAX_AGE = None
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
@@ -150,14 +150,16 @@ WSGI_APPLICATION = "trayapp.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
+
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-db_from_env = dj_database_url.config(conn_max_age=600)
-DATABASES['default'].update(db_from_env)
+if USE_DB == True:
+    db_from_env = dj_database_url.config(conn_max_age=600)
+    DATABASES['default'].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
