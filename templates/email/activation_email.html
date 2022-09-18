@@ -316,8 +316,8 @@ ul.social li{
             	<tr>
             		<td>
             			<div class="text" style="padding: 0 2.5em; text-align: center;">
-            				<h2>Hey, {% user.username %} please verify your email</h2>
-            				<h3>click on the button below to confirm <b>{% user.email %}</b></h3>
+            				<h2>Hey, {{ user.username }} please verify your email</h2>
+            				<h3>click on the button below to confirm <b>{{ user.email }}</b></h3>
             				<p><a href="{{ frontend_domain }}/{{ path }}/{{ token }}" class="btn btn-primary">Confirm Email</a></p>
             			</div>
             		</td>
