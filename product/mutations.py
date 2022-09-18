@@ -160,28 +160,31 @@ class AddAvaliableProductMutation(graphene.Mutation):
                 user=info.context.user.profile).first()
             # Checking if the current user is equals to the store vendor
             # Then add 0.5 to the store_rank
-            try:
-                if not product.product_creator is None:
-                    if product.product_creator != vendor:
-                        store = Store.objects.filter(
-                            store_nickname=product.product_creator.store.store_nickname).first()
-                        if not store is None:
-                            store.store_rank += 0.5
-                            store.save()
-            except:
-                pass
             if not product is None and not vendor is None:
-                store = get_object_or_404(Store, id=vendor.store.id)
+                try:
+                    if not product.product_creator is None:
+                        if product.product_creator != vendor:
+                            store = Store.objects.filter(
+                                store_nickname=product.product_creator.store.store_nickname).first()
+                            if not store is None:
+                                store.store_rank += 0.5
+                                store.save()
+                except:
+                    pass
+                store = vendor.store
                 if action == "add":
                     vendor.store.store_products.add(product)
                     product.product_avaliable_in.add(store)
+                    product.save()
+                    vendor.save()
                 elif action == "remove":
                     vendor.store.store_products.remove(product)
                     product.product_avaliable_in.remove(store)
+                    product.save()
+                    vendor.save()
                 else:
                     raise GraphQLError(
                         "Enter either `add/remove` for actions.")
-                product.save()
                 success = True
         else:
             raise GraphQLError("Login required.")

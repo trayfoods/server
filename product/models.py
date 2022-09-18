@@ -34,7 +34,8 @@ class ItemImage(models.Model):
                                         upload_to=item_directory_path,
                                         null=True, blank=True,
                                         help_text=_('Upload Item Image In Webp Format.'))
-    item_image_hash = models.CharField('Item Image Hash', editable=False, max_length=32, null=True, blank=True)
+    item_image_hash = models.CharField(
+        'Item Image Hash', editable=False, max_length=32, null=True, blank=True)
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -96,6 +97,8 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 # Signals
+
+
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
     instance.item_image.delete(save=False)

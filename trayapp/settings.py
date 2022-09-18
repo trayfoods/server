@@ -107,7 +107,7 @@ GRAPHQL_AUTH = {
     "EMAIL_TEMPLATE_VARIABLES": {
         "frontend_domain": FRONTEND_URL
     },
-    "SEND_ACTIVATION_EMAIL": True,
+    "SEND_ACTIVATION_EMAIL": DEBUG == False,
     "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
     "SEND_PASSWORD_RESET_EMAIL": True,
     "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset",
