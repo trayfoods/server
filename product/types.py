@@ -49,7 +49,8 @@ class ItemType(DjangoObjectType):
         if storeNickname:
             storeName = Store.objects.filter(store_nickname=storeNickname).first()
             if not storeName is None:
-                item_id = self.id + storeName.id
+                item_id = self.id + storeName.id + Item.objects.last().id
+                print(Item.objects.last().id)
         return item_id
 
     def resolve_product_qty(self, info):
