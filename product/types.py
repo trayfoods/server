@@ -2,7 +2,7 @@ import graphene
 from graphene_django.types import DjangoObjectType
 from pkg_resources import require
 from .models import Item, ItemAttribute, ItemImage
-from users.models import Vendor
+from users.models import Vendor, Store
 
 
 class ItemImageType(DjangoObjectType):
@@ -30,13 +30,13 @@ class ItemAttributeType(DjangoObjectType):
 
 
 class ItemType(DjangoObjectType):
-    id = graphene.Int(flag=graphene.Boolean(required=False))
+    id = graphene.Int(storeNickname=graphene.String(required=False))
     product_images = graphene.List(
         ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
     is_avaliable_for_store = graphene.String()
-    avaliable_store = graphene.String()
+    avaliable_store = graphene.String(storeNickname=graphene.String(required=False))
 
     class Meta:
         model = Item
@@ -44,10 +44,10 @@ class ItemType(DjangoObjectType):
                   'product_price', 'product_avaliable_in', 'has_qty', 'product_creator', 'product_created_on', 'is_avaliable']
 
     # This will add a unqiue id, if the store items are the same
-    def resolve_id(self, info, flag=None):
+    def resolve_id(self, info, storeNickname=None):
         item_id = self.id
-        if flag:
-            storeName = self.product_avaliable_in.first()
+        if storeNickname:
+            storeName = Store.objects.filter(store_nickname=storeNickname).first()
             if not storeName is None:
                 item_id = self.id + storeName.id
         return item_id
@@ -102,21 +102,26 @@ class ItemType(DjangoObjectType):
             is_avaliable = False
         return is_avaliable
 
-    def resolve_avaliable_store(self, info):
+    def resolve_avaliable_store(self, info, storeNickname=None):
         store_nickname = None
-        is_avaliable = len(self.product_avaliable_in.all()) > 0
-        if self.product_creator is None:
-            if is_avaliable:
-                store_nickname = self.product_avaliable_in.first().store_nickname
-        else:
-            isStore = False
-            store = self.product_avaliable_in.filter(
-                store_nickname=self.product_creator.store.store_nickname).first()
-            if not store is None:
-                isStore = True
-            if isStore == True:
-                store_nickname = self.product_creator.store.store_nickname
-            else:
+        if storeNickname:
+            store_nickname = Store.objects.filter(store_nickname=storeNickname).first()
+            if not store_nickname is None:
+                store_nickname = store_nickname.store_nickname
+        if store_nickname == None:
+            is_avaliable = len(self.product_avaliable_in.all()) > 0
+            if self.product_creator is None:
                 if is_avaliable:
                     store_nickname = self.product_avaliable_in.first().store_nickname
+            else:
+                isStore = False
+                store = self.product_avaliable_in.filter(
+                    store_nickname=self.product_creator.store.store_nickname).first()
+                if not store is None:
+                    isStore = True
+                if isStore == True:
+                    store_nickname = self.product_creator.store.store_nickname
+                else:
+                    if is_avaliable:
+                        store_nickname = self.product_avaliable_in.first().store_nickname
         return store_nickname

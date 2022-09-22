@@ -43,11 +43,13 @@ class Query(graphene.ObjectType):
         return items
 
     def resolve_item(self, info, item_slug):
-        item = Item.objects.filter(product_slug=item_slug.strip()).first()
-        if item is None:
+        item = Item.objects.filter(product_slug=item_slug).first()
+        if not item is None:
+            print(item.product_avaliable_in.all())
+            item.product_views += 1
+            item.save()
+        else:
             raise GraphQLError("404: Item Not Found")
-        item.product_views += 1
-        item.save()
         return item
 
     def resolve_all_item_attributes(self, info, **kwargs):
