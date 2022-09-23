@@ -47,10 +47,9 @@ class ItemType(DjangoObjectType):
     def resolve_id(self, info, storeNickname=None):
         item_id = self.id
         if storeNickname:
-            storeName = Store.objects.filter(store_nickname=storeNickname).first()
+            storeName = self.product_avaliable_in.filter(store_nickname=storeNickname).first()
             if not storeName is None:
                 item_id = self.id + storeName.id + Item.objects.last().id
-                print(Item.objects.last().id)
         return item_id
 
     def resolve_product_qty(self, info):
@@ -106,7 +105,7 @@ class ItemType(DjangoObjectType):
     def resolve_avaliable_store(self, info, storeNickname=None):
         store_nickname = None
         if storeNickname:
-            store_nickname = Store.objects.filter(store_nickname=storeNickname).first()
+            store_nickname = self.product_avaliable_in.filter(store_nickname=storeNickname).first()
             if not store_nickname is None:
                 store_nickname = store_nickname.store_nickname
         if store_nickname == None:
