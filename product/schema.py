@@ -45,7 +45,6 @@ class Query(graphene.ObjectType):
     def resolve_item(self, info, item_slug):
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
-            print(item.product_avaliable_in.all())
             item.product_views += 1
             item.save()
         else:
