@@ -35,7 +35,8 @@ class Store(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="images/profile-images/", null=True)
-    image_hash = models.CharField('Image Hash', editable=False, max_length=32, null=True, blank=True)
+    image_hash = models.CharField(
+        'Image Hash', editable=False, max_length=32, null=True, blank=True)
     phone_number = models.CharField(max_length=16)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_student = models.BooleanField(default=False)
