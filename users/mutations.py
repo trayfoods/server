@@ -11,6 +11,7 @@ from graphql_auth.schema import UserNode
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
+from graphql_auth.decorators import verification_required
 
 from .types import VendorType
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
@@ -21,8 +22,15 @@ if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, s
 else:
     async_email_func = None
 
+class Output:
+    """
+    A class to all public classes extend to
+    padronize the output
+    """
 
-class CreateVendorMutation(graphene.Mutation):
+    success = graphene.Boolean(default_value=True)
+
+class CreateVendorMutation(Output, graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
@@ -32,7 +40,7 @@ class CreateVendorMutation(graphene.Mutation):
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
     user = graphene.Field(UserNode)
-    success = graphene.Boolean()
+    # success = graphene.Boolean()
 
     @staticmethod
     def mutate(self, info, store_name, store_category, store_nickname):
@@ -64,7 +72,15 @@ class CreateVendorMutation(graphene.Mutation):
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return CreateVendorMutation(user=info.context.user, vendor=vendor, success=success)
+        return CreateVendorMutation(user=info.context.user, vendor=vendor)
+
+    @verification_required
+    def resolve_mutation(cls, root, info, **kwargs):
+        user = info.context.user
+        if user.profile and user.vendor:
+            return cls(success=True)
+        else:
+            return cls(success=False)
 
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
