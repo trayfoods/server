@@ -22,6 +22,7 @@ if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, s
 else:
     async_email_func = None
 
+
 class Output:
     """
     A class to all public classes extend to
@@ -29,6 +30,7 @@ class Output:
     """
 
     success = graphene.Boolean(default_value=True)
+
 
 class CreateVendorMutation(Output, graphene.Mutation):
     class Arguments:
@@ -40,37 +42,36 @@ class CreateVendorMutation(Output, graphene.Mutation):
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
     user = graphene.Field(UserNode)
-    # success = graphene.Boolean()
 
     @staticmethod
     def mutate(self, info, store_name, store_category, store_nickname):
         success = False
         if info.context.user.is_authenticated:
             vendor = Vendor.objects.filter(
-                user=info.context.user.profile).first()
+                user=info.context.user.profile).first() # get the vendor
             if vendor is None:
                 store_check = Store.objects.filter(
-                    store_nickname=store_nickname.strip()).first()
-                if store_check is None:
+                    store_nickname=store_nickname.strip()).first() # check if the store nickname is already taken
+                if store_check is None: # if not taken
                     store = Store.objects.create(
                         store_name=store_name,
                         store_nickname=store_nickname,
                         store_category=store_category
-                    )
+                    ) # create the store
                     store.save()
                     vendor = Vendor.objects.create(
                         user=info.context.user.profile,
                         store=store)
                     vendor.save()
                     success = True
-                else:
+                else: # if taken
                     raise GraphQLError(
-                        "Store Nickname Already Exists, Please use a unique name")
-            else:
+                        "Store Nickname Already Exists, Please use a unique name") # raise error
+            else: # if vendor already exists
                 success = False
-                raise GraphQLError('You Already A Vendor')
-        else:
-            raise GraphQLError("Login required.")
+                raise GraphQLError('You Already A Vendor') # raise error
+        else: # if user is not authenticated
+            raise GraphQLError("Login required.") # raise error
         # Notice we return an instance of this mutation
         return CreateVendorMutation(user=info.context.user, vendor=vendor)
 
@@ -164,7 +165,7 @@ class EditVendorMutation(graphene.Mutation):
     def mutate(self, info, id, full_name, gender, phone_number, email):
         success = False
         if info.context.user.is_authenticated:
-            vendor = Vendor.objects.get(pk=id)
+            vendor = Vendor.objects.get(pk=id) # get the vendor
             vendor.full_name = full_name
             vendor.gender = gender
             vendor.phone_number = phone_number
@@ -177,44 +178,72 @@ class EditVendorMutation(graphene.Mutation):
         return EditVendorMutation(vendor=vendor, success=success)
 
 
-class CreateClientMutation(graphene.Mutation):
+class CreateClientMutation(Output, graphene.Mutation):
     class Arguments:
         hostel_shortname = graphene.String(required=False)
         room = graphene.String(required=False)
         gender = graphene.String(required=True)
-
-    success = graphene.Boolean()
+        
     user = graphene.Field(UserNode)
 
+    @staticmethod
     def mutate(self, info, gender, hostel_shortname=None, room=None):
-        success = False
         user = info.context.user
         profile = info.context.user.profile
         if user.is_authenticated:
             vendor = Vendor.objects.filter(
-                user=profile).first()
+                user=profile).first() # get the vendor
             if vendor is None:
                 client = Client.objects.filter(
-                    user=profile).first()
-                if client is None:
+                    user=profile).first() # get the client
+                if client is None: # if client does not exist
                     hostel = Hostel.objects.filter(
-                        short_name=hostel_shortname).first()
+                        short_name=hostel_shortname).first() # get the hostel
                     gender = gender.upper()
                     gender = Gender.objects.filter(name=gender).first()
                     if not gender is None:
-                        gender.rank += 0.1
+                        gender.rank += 1 # increment the rank
                         gender.save()
                         new_client = Client.objects.create(
-                            user=profile, hostel=hostel, room=room)
+                            user=profile, hostel=hostel, room=room) # create the client
                         new_client_profile = Profile.objects.filter(
-                            user=user).first()
-                        if not new_client_profile is None:
+                            user=user).first() # get the profile
+                        if not new_client_profile is None: # if profile exists
                             new_client_profile.gender = gender
-                            new_client_profile.save()
+                            new_client_profile.save() # save the profile
                         new_client.save()
-                        success = True
+                        client = new_client # set the client
                     else:
-                        raise GraphQLError("Gender do not exists")
+                        raise GraphQLError("Gender do not exists") # raise error if gender does not exist
         else:
             raise GraphQLError("Login Required.")
-        return CreateClientMutation(user=info.context.user, success=success)
+        return CreateClientMutation(client=client)
+    
+    @verification_required
+    def resolve_mutation(cls, root, info, **kwargs):
+        user = info.context.user
+        if user.profile and user.client:
+            return cls(success=True)
+        else:
+            return cls(success=False)
+
+class EmailVerifiedCheckerMutation(graphene.Mutation):
+    class Argumants:
+        email = graphene.String(required=True)
+
+    # The class attributes define the response of the mutation
+    is_verified = graphene.Boolean()
+
+    def mutate(self, info, email):
+        is_verified = "nah"  # the user email is not verified
+        user = User.objects.filter(email=email).first()  # get the user
+        if not user is None:
+            user_status = UserStatus.objects.filter(
+                user=user).first()  # get the user status
+            if user_status.verified == True:  # check if the user email is verified
+                is_verified = "yah"  # the user email is verified
+            else:
+                is_verified = "nah"
+        else: # the user does not exist
+            is_verified = "user do not exists"
+        return EmailVerifiedCheckerMutation(is_verified=is_verified)
