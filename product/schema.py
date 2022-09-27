@@ -74,8 +74,8 @@ class Query(graphene.ObjectType):
 class Mutation(graphene.ObjectType):
     add_product = AddProductMutation.Field()
     add_product_click = AddProductClickMutation.Field()
-    add_avaliable_product = AddAvaliableProductMutation.Field()
-    add_avaliable_products = AddMultipleAvaliableProductsMutation.Field()
+    add_available_product = AddAvaliableProductMutation.Field()
+    add_available_products = AddMultipleAvaliableProductsMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
