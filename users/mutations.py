@@ -228,22 +228,25 @@ class CreateClientMutation(Output, graphene.Mutation):
             return cls(success=False)
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
-    class Argumants:
+    class Arguments:
         email = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
     is_verified = graphene.Boolean()
+    error = graphene.String()
 
+    @staticmethod
     def mutate(self, info, email):
-        is_verified = "nah"  # the user email is not verified
+        is_verified = False  # the user email is not verified
+        error = None
         user = User.objects.filter(email=email).first()  # get the user
         if not user is None:
             user_status = UserStatus.objects.filter(
                 user=user).first()  # get the user status
             if user_status.verified == True:  # check if the user email is verified
-                is_verified = "yah"  # the user email is verified
+                is_verified = True  # the user email is verified
             else:
-                is_verified = "nah"
+                is_verified = False
         else: # the user does not exist
-            is_verified = "user do not exists"
-        return EmailVerifiedCheckerMutation(is_verified=is_verified)
+            error = "email do not exists"
+        return EmailVerifiedCheckerMutation(is_verified=is_verified, error=error)
