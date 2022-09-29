@@ -18,11 +18,17 @@ class Query(graphene.ObjectType):
     item_attribute = graphene.Field(
         ItemAttributeType, urlParamName=graphene.String())
 
-    search_items = graphene.List(ItemType, query=graphene.String())
+    search_items = graphene.List(ItemType, query=graphene.String(required=True), count=graphene.Int(required=False))
 
-    def resolve_search_items(self, info, query):
-        filtered_items = Item.objects.filter(
-            Q(product_name__icontains=query) | Q(product_desc__icontains=query) | Q(product_slug__iexact=query))[:5]
+    def resolve_search_items(self, info, query, count=None):
+        filtered_items = Item.objects.filter(Q(product_name__icontains=query) | Q(
+            product_desc__icontains=query) | Q(product_slug__iexact=query))
+        if count:
+            count = count + 1
+            if filtered_items.count() >= count:
+                filtered_items = filtered_items[:count]
+        else:
+            filtered_items = filtered_items[:20]
         return filtered_items
 
     def resolve_hero_data(self, info, count=None):
