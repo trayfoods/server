@@ -7,6 +7,7 @@ from users.mutations import CreateVendorMutation, EditVendorMutation, UpdateAcco
 
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -21,6 +22,7 @@ class Query(MeQuery, graphene.ObjectType):
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
+    search_stores = graphene.Field(StoreType, search_query=graphene.String(required=True), count=graphene.Int(required=False))
 
     def resolve_get_user(self, info, username):
         return User.objects.get(username=username)
@@ -49,6 +51,15 @@ class Query(MeQuery, graphene.ObjectType):
             store.store_rank += 0.5
             store.save()
         return store
+    
+    def resolve_search_stores(self, info, search_query, count=None):
+        stores_list = Store.objects.filter(store_nickname=search_query).first()
+        if count:
+            if stores_list.count() >= count:
+                stores_list = stores_list[:count]
+        else:
+            stores_list = stores_list[:20]
+        return stores_list
 
 
 class AuthMutation(graphene.ObjectType):
