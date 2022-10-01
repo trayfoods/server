@@ -3,17 +3,18 @@ from django.contrib.auth import get_user_model
 from graphql_auth.schema import UserNode, MeQuery
 from graphql_auth import mutations
 
-from users.mutations import (CreateVendorMutation, EditVendorMutation, BankAccountVerifier, GetBanksList,
+from users.mutations import (CreateVendorMutation, EditVendorMutation, BankAccountVerifier,
                              UpdateAccountMutation, CreateClientMutation, EmailVerifiedCheckerMutation)
-
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
 from django.db.models import Q
 
+from users.custom_model import BankListQuery
+
 User = get_user_model()
 
 
-class Query(MeQuery, graphene.ObjectType):
+class Query(MeQuery, BankListQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
     get_user = graphene.Field(UserNode, username=graphene.String())
     vendors = graphene.List(VendorType)
@@ -86,7 +87,6 @@ class Mutation(AuthMutation, graphene.ObjectType):
     update_vendor = EditVendorMutation.Field()
     check_email_verification = EmailVerifiedCheckerMutation.Field()
     bank_account_verifier = BankAccountVerifier.Field()
-    bank_list = GetBanksList.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
