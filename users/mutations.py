@@ -13,9 +13,10 @@ from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 
-from .types import VendorType #, BankNode
+from .types import VendorType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
 import requests
+import time
 
 
 if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
@@ -49,30 +50,30 @@ class CreateVendorMutation(Output, graphene.Mutation):
         success = False
         if info.context.user.is_authenticated:
             vendor = Vendor.objects.filter(
-                user=info.context.user.profile).first() # get the vendor
+                user=info.context.user.profile).first()  # get the vendor
             if vendor is None:
                 store_check = Store.objects.filter(
-                    store_nickname=store_nickname.strip()).first() # check if the store nickname is already taken
-                if store_check is None: # if not taken
+                    store_nickname=store_nickname.strip()).first()  # check if the store nickname is already taken
+                if store_check is None:  # if not taken
                     store = Store.objects.create(
                         store_name=store_name,
                         store_nickname=store_nickname,
                         store_category=store_category
-                    ) # create the store
+                    )  # create the store
                     store.save()
                     vendor = Vendor.objects.create(
                         user=info.context.user.profile,
                         store=store)
                     vendor.save()
                     success = True
-                else: # if taken
+                else:  # if taken
                     raise GraphQLError(
-                        "Store Nickname Already Exists, Please use a unique name") # raise error
-            else: # if vendor already exists
+                        "Store Nickname Already Exists, Please use a unique name")  # raise error
+            else:  # if vendor already exists
                 success = False
-                raise GraphQLError('You Already A Vendor') # raise error
-        else: # if user is not authenticated
-            raise GraphQLError("Login required.") # raise error
+                raise GraphQLError('You Already A Vendor')  # raise error
+        else:  # if user is not authenticated
+            raise GraphQLError("Login required.")  # raise error
         # Notice we return an instance of this mutation
         return CreateVendorMutation(user=info.context.user, vendor=vendor)
 
@@ -166,7 +167,7 @@ class EditVendorMutation(graphene.Mutation):
     def mutate(self, info, id, full_name, gender, phone_number, email):
         success = False
         if info.context.user.is_authenticated:
-            vendor = Vendor.objects.get(pk=id) # get the vendor
+            vendor = Vendor.objects.get(pk=id)  # get the vendor
             vendor.full_name = full_name
             vendor.gender = gender
             vendor.phone_number = phone_number
@@ -184,7 +185,7 @@ class CreateClientMutation(Output, graphene.Mutation):
         hostel_shortname = graphene.String(required=False)
         room = graphene.String(required=False)
         gender = graphene.String(required=True)
-        
+
     user = graphene.Field(UserNode)
 
     @staticmethod
@@ -193,33 +194,34 @@ class CreateClientMutation(Output, graphene.Mutation):
         profile = info.context.user.profile
         if user.is_authenticated:
             vendor = Vendor.objects.filter(
-                user=profile).first() # get the vendor
+                user=profile).first()  # get the vendor
             if vendor is None:
                 client = Client.objects.filter(
-                    user=profile).first() # get the client
-                if client is None: # if client does not exist
+                    user=profile).first()  # get the client
+                if client is None:  # if client does not exist
                     hostel = Hostel.objects.filter(
-                        short_name=hostel_shortname).first() # get the hostel
+                        short_name=hostel_shortname).first()  # get the hostel
                     gender = gender.upper()
                     gender = Gender.objects.filter(name=gender).first()
                     if not gender is None:
-                        gender.rank += 1 # increment the rank
+                        gender.rank += 1  # increment the rank
                         gender.save()
                         new_client = Client.objects.create(
-                            user=profile, hostel=hostel, room=room) # create the client
+                            user=profile, hostel=hostel, room=room)  # create the client
                         new_client_profile = Profile.objects.filter(
-                            user=user).first() # get the profile
-                        if not new_client_profile is None: # if profile exists
+                            user=user).first()  # get the profile
+                        if not new_client_profile is None:  # if profile exists
                             new_client_profile.gender = gender
-                            new_client_profile.save() # save the profile
+                            new_client_profile.save()  # save the profile
                         new_client.save()
-                        client = new_client # set the client
+                        client = new_client  # set the client
                     else:
-                        raise GraphQLError("Gender do not exists") # raise error if gender does not exist
+                        # raise error if gender does not exist
+                        raise GraphQLError("Gender do not exists")
         else:
             raise GraphQLError("Login Required.")
         return CreateClientMutation(client=client)
-    
+
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
@@ -227,6 +229,7 @@ class CreateClientMutation(Output, graphene.Mutation):
             return cls(success=True)
         else:
             return cls(success=False)
+
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
     class Arguments:
@@ -248,7 +251,7 @@ class EmailVerifiedCheckerMutation(graphene.Mutation):
                 is_verified = True  # the user email is verified
             else:
                 is_verified = False
-        else: # the user does not exist
+        else:  # the user does not exist
             error = "email do not exists"
         return EmailVerifiedCheckerMutation(is_verified=is_verified, error=error)
 
@@ -269,10 +272,12 @@ class UpdateVendorBankAccount(graphene.Mutation):
         success = False
         error = None
         user = info.context.user
-        if user.is_authenticated: # check if the user is authenticated
-            profile = Profile.objects.filter(user=user).first() # get the profile
-            if not profile is None: # check if the profile exists
-                vendor = Vendor.objects.filter(user=profile).first() # get the vendor
+        if user.is_authenticated:  # check if the user is authenticated
+            profile = Profile.objects.filter(
+                user=user).first()  # get the profile
+            if not profile is None:  # check if the profile exists
+                vendor = Vendor.objects.filter(
+                    user=profile).first()  # get the vendor
                 if not vendor is None:
                     vendor.account_number = account_number
                     vendor.account_name = account_name
@@ -280,13 +285,14 @@ class UpdateVendorBankAccount(graphene.Mutation):
                     vendor.bank_name = bank_name
                     vendor.save()
                     success = True
-                else: # the vendor does not exist
+                else:  # the vendor does not exist
                     error = "Vendor do not exist"
-            else: # the profile does not exist
+            else:  # the profile does not exist
                 error = "Profile do not exist"
-        else: # the user is not authenticated
+        else:  # the user is not authenticated
             error = "Login required"
         return UpdateVendorBankAccount(success=success, error=error)
+
 
 class BankAccountVerifier(graphene.Mutation):
     class Arguments:
@@ -294,56 +300,36 @@ class BankAccountVerifier(graphene.Mutation):
         bank_code = graphene.String(required=True)
 
     success = graphene.Boolean()
-    account_name = graphene.String()
-    account_number = graphene.Int()
-    bank_id = graphene.Int()
+    msg = graphene.String()
+    account = graphene.JSONString()
 
     @staticmethod
     def mutate(self, info, account_number, bank_code):
+        msg = None
+        status = False
+        account = None
         if info.context.user.is_authenticated:
             # Making a GET request
             r = requests.get('https://api.paystack.co/bank/resolve?account_number={}&bank_code={}'.format(account_number, bank_code), headers={
                 "Authorization": "Bearer sk_live_c0b4917e91ce1b6f9722cbdd9afc1124af989ebb"
             })
+            status = r.json()['status']
+            msg = r.json()['message']
+            if status:
+                # check status code for response received
+                # success code - 200
+                data = r.json()['data']
+                account_name = data['account_name']
+                account_number = int(data['account_number'])
+                bank_id = data['bank_id']
+                account = {
+                    "account_name": account_name,
+                    "account_number": account_number,
+                    "bank_id": bank_id
+                }
+            else:
+                account = None
+        else:
+            raise GraphQLError("Login Required")
 
-            # check status code for response received
-            # success code - 200
-            print(r.json())
-
-            # print content of request
-            # print(r.content)
-            data = r.json()['data']
-            account_name = data['account_name']
-            account_number = int(data['account_number'])
-            bank_id = data['bank_id']
-            # {'account_number': '0690000031', 'bank_code': '044', 'account_name': 'Oluwaseun Oluwaseun'}
-            success = True
-
-
-        return BankAccountVerifier(success=success, account_name=account_name, account_number=account_number, bank_id=bank_id)
-
-class GetBanksList(graphene.Mutation):
-    class Arguments:
-        pass
-
-    success = graphene.Boolean()
-    # banks = graphene.Field()
-
-    @staticmethod
-    def mutate(self, info):
-        success = False
-        banks = []
-        # Making a GET request
-        r = requests.get('https://api.paystack.co/bank', headers={
-            "Authorization": "Bearer sk_live_c0b4917e91ce1b6f9722cbdd9afc1124af989ebb"
-        })
-
-        # check status code for response received
-        # success code - 200
-        print(r)
-
-        # print content of request
-        print(r.content)
-        banks = r.json()['data']
-        success = True
-        return GetBanksList(success=success, banks=banks)
+        return BankAccountVerifier(success=status, account=account, msg=msg)
