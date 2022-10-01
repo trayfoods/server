@@ -13,8 +13,9 @@ from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 
-from .types import VendorType
+from .types import VendorType #, BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
+import requests
 
 
 if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
@@ -250,3 +251,99 @@ class EmailVerifiedCheckerMutation(graphene.Mutation):
         else: # the user does not exist
             error = "email do not exists"
         return EmailVerifiedCheckerMutation(is_verified=is_verified, error=error)
+
+
+class UpdateVendorBankAccount(graphene.Mutation):
+    class Arguments:
+        account_number = graphene.String(required=True)
+        account_name = graphene.String(required=True)
+        bank_name = graphene.String(required=True)
+        bank_code = graphene.Int(required=True)
+
+    # The class attributes define the response of the mutation
+    success = graphene.Boolean()
+    error = graphene.String()
+
+    @staticmethod
+    def mutate(self, info, account_number, account_name, bank_name, bank_code):
+        success = False
+        error = None
+        user = info.context.user
+        if user.is_authenticated: # check if the user is authenticated
+            profile = Profile.objects.filter(user=user).first() # get the profile
+            if not profile is None: # check if the profile exists
+                vendor = Vendor.objects.filter(user=profile).first() # get the vendor
+                if not vendor is None:
+                    vendor.account_number = account_number
+                    vendor.account_name = account_name
+                    vendor.bank_code = bank_code
+                    vendor.bank_name = bank_name
+                    vendor.save()
+                    success = True
+                else: # the vendor does not exist
+                    error = "Vendor do not exist"
+            else: # the profile does not exist
+                error = "Profile do not exist"
+        else: # the user is not authenticated
+            error = "Login required"
+        return UpdateVendorBankAccount(success=success, error=error)
+
+class BankAccountVerifier(graphene.Mutation):
+    class Arguments:
+        account_number = graphene.String(required=True)
+        bank_code = graphene.String(required=True)
+
+    success = graphene.Boolean()
+    account_name = graphene.String()
+    account_number = graphene.Int()
+    bank_id = graphene.Int()
+
+    @staticmethod
+    def mutate(self, info, account_number, bank_code):
+        if info.context.user.is_authenticated:
+            # Making a GET request
+            r = requests.get('https://api.paystack.co/bank/resolve?account_number={}&bank_code={}'.format(account_number, bank_code), headers={
+                "Authorization": "Bearer sk_live_c0b4917e91ce1b6f9722cbdd9afc1124af989ebb"
+            })
+
+            # check status code for response received
+            # success code - 200
+            print(r.json())
+
+            # print content of request
+            # print(r.content)
+            data = r.json()['data']
+            account_name = data['account_name']
+            account_number = int(data['account_number'])
+            bank_id = data['bank_id']
+            # {'account_number': '0690000031', 'bank_code': '044', 'account_name': 'Oluwaseun Oluwaseun'}
+            success = True
+
+
+        return BankAccountVerifier(success=success, account_name=account_name, account_number=account_number, bank_id=bank_id)
+
+class GetBanksList(graphene.Mutation):
+    class Arguments:
+        pass
+
+    success = graphene.Boolean()
+    # banks = graphene.Field()
+
+    @staticmethod
+    def mutate(self, info):
+        success = False
+        banks = []
+        # Making a GET request
+        r = requests.get('https://api.paystack.co/bank', headers={
+            "Authorization": "Bearer sk_live_c0b4917e91ce1b6f9722cbdd9afc1124af989ebb"
+        })
+
+        # check status code for response received
+        # success code - 200
+        print(r)
+
+        # print content of request
+        print(r.content)
+        banks = r.json()['data']
+        success = True
+        return GetBanksList(success=success, banks=banks)
