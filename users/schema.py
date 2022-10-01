@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from graphql_auth.schema import UserNode, MeQuery
 from graphql_auth import mutations
 
-from users.mutations import CreateVendorMutation, EditVendorMutation, UpdateAccountMutation, CreateClientMutation, EmailVerifiedCheckerMutation
+from users.mutations import (CreateVendorMutation, EditVendorMutation, BankAccountVerifier, GetBanksList,
+                             UpdateAccountMutation, CreateClientMutation, EmailVerifiedCheckerMutation)
 
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
@@ -22,7 +23,8 @@ class Query(MeQuery, graphene.ObjectType):
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
-    search_stores = graphene.Field(StoreType, search_query=graphene.String(required=True), count=graphene.Int(required=False))
+    search_stores = graphene.Field(StoreType, search_query=graphene.String(
+        required=True), count=graphene.Int(required=False))
 
     def resolve_get_user(self, info, username):
         return User.objects.get(username=username)
@@ -51,7 +53,7 @@ class Query(MeQuery, graphene.ObjectType):
             store.store_rank += 0.5
             store.save()
         return store
-    
+
     def resolve_search_stores(self, info, search_query, count=None):
         stores_list = Store.objects.filter(store_nickname=search_query).first()
         if count:
@@ -83,6 +85,8 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
     check_email_verification = EmailVerifiedCheckerMutation.Field()
+    bank_account_verifier = BankAccountVerifier.Field()
+    bank_list = GetBanksList.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

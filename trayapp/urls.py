@@ -6,11 +6,13 @@ from graphene_file_upload.django import FileUploadGraphQLView
 # from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from .views import index_view
+from users.views import get_bank_list
 
 urlpatterns = [
     path('admin/', admin.site.urls, name="admin"),
     path('', index_view, name="index"),
     path("graphql/", csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)), name="api"),
+    path("bank_list/", get_bank_list, name="bank_list"),
 ]
 
 if settings.DEBUG:

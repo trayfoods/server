@@ -55,6 +55,10 @@ class Profile(models.Model):
 class Vendor(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=20, null=True, blank=True)
+    account_name = models.CharField(max_length=60, null=True, blank=True)
+    bank_name = models.CharField(max_length=20, null=True, blank=True)
+    bank_code = models.IntegerField(default=0)
 
     def __str__(self) -> str:
         return self.user.user.username
