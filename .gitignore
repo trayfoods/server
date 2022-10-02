@@ -133,3 +133,5 @@ static-root/
 media-root/
 
 public/
+
+fly.toml
