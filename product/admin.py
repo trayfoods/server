@@ -10,11 +10,12 @@ class ItemImageInlineAdmin(admin.TabularInline):
 
 
 class ItemAdmin(admin.ModelAdmin):
-    inline = [ItemImageInlineAdmin]
+    inlines = [ItemImageInlineAdmin]
     list_display = ("product_name", "product_category",
                     "product_type", "product_price",)
     prepopulated_fields = {"product_slug": (
         "product_name", "product_category", "product_type")}
+    readonly_fields = ("product_images",)
 
 
 class ItemAttributeAdmin(admin.ModelAdmin):

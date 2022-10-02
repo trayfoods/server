@@ -135,3 +135,5 @@ media-root/
 public/
 
 fly.toml
+
+settings/
