@@ -1,0 +1,55 @@
+# fly.toml file generated for trayfoods on 2022-10-02T22:45:29+01:00
+
+app = "trayfoods"
+kill_signal = "SIGINT"
+kill_timeout = 5
+processes = []
+
+[deploy]
+  release_command = "python manage.py migrate --noinput"
+
+[env]
+  PORT = "8000"
+  DEBUG="False" # Set to True to enable debug mode
+  USE_S3="True" # set to False if you don't want to use S3
+  REACT_SITE="trayfoods.pages.dev"
+  SITE_ORIGIN_URL="trayfoods.fly.dev"
+  EMAIL_HOST_USER="trayfoodapp@gmail.com"
+  USE_DB="True"
+  AWS_DEFAULT_ACL="None"
+  AWS_STORAGE_BUCKET_NAME="tray-assets"
+  DISABLE_COLLECTSTATIC=1
+
+[experimental]
+  allowed_public_ports = []
+  auto_rollback = true
+
+[[services]]
+  http_checks = []
+  internal_port = 8000
+  processes = ["app"]
+  protocol = "tcp"
+  script_checks = []
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    force_https = true
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    restart_limit = 0
+    timeout = "2s"
+
+[[statics]]
+  guest_path = "/app/public"
+  url_prefix = "/static/"
