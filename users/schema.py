@@ -86,7 +86,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
     check_email_verification = EmailVerifiedCheckerMutation.Field()
-    update_vendor_bank_account = UpdateVendorBankAccount.Field()
+    update_vendor_bank_details = UpdateVendorBankAccount.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

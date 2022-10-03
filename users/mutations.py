@@ -256,19 +256,17 @@ class EmailVerifiedCheckerMutation(graphene.Mutation):
         return EmailVerifiedCheckerMutation(is_verified=is_verified, error=error)
 
 
-class UpdateVendorBankAccount(graphene.Mutation):
+class UpdateVendorBankAccount(Output, graphene.Mutation):
     class Arguments:
         account_number = graphene.String(required=True)
         account_name = graphene.String(required=True)
-        bank_name = graphene.String(required=True)
         bank_code = graphene.Int(required=True)
 
     # The class attributes define the response of the mutation
-    success = graphene.Boolean()
     error = graphene.String()
 
     @staticmethod
-    def mutate(self, info, account_number, account_name, bank_name, bank_code):
+    def mutate(self, info, account_number, account_name, bank_code):
         success = False
         error = None
         user = info.context.user
@@ -282,7 +280,6 @@ class UpdateVendorBankAccount(graphene.Mutation):
                     vendor.account_number = account_number
                     vendor.account_name = account_name
                     vendor.bank_code = bank_code
-                    vendor.bank_name = bank_name
                     vendor.save()
                     success = True
                 else:  # the vendor does not exist
