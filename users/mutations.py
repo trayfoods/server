@@ -15,8 +15,6 @@ from graphql_auth.decorators import verification_required
 
 from .types import VendorType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
-import requests
-import time
 
 
 if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):

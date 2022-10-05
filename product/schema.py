@@ -4,7 +4,7 @@ from product.types import ItemType, ItemAttributeType
 from product.mutations import (AddAvaliableProductMutation,
                                AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
 from product.models import Item, ItemAttribute
-
+from trayapp.custom_model import ItemsAvalibilityNode
 # basic searching
 from django.db.models import Q
 
@@ -18,7 +18,40 @@ class Query(graphene.ObjectType):
     item_attribute = graphene.Field(
         ItemAttributeType, urlParamName=graphene.String())
 
-    search_items = graphene.List(ItemType, query=graphene.String(required=True), count=graphene.Int(required=False))
+    search_items = graphene.List(ItemType, query=graphene.String(
+        required=True), count=graphene.Int(required=False))
+
+    check_muliple_items_is_avaliable = graphene.List(
+        ItemsAvalibilityNode, items_slug_store_nickName=graphene.String(required=True))
+
+    def resolve_check_muliple_items_is_avaliable(self, info, items_slug_store_nickName):
+        list_of_items = []
+        if items_slug_store_nickName.find(">") > -1 and items_slug_store_nickName.find(",") > -1:
+            list_of_items_str = items_slug_store_nickName.split(",")
+            if list_of_items_str:
+                for item_str in list_of_items_str:
+                    if item_str != "":
+                        item_slug, store_nickName = item_str.split(">")
+                        item = Item.objects.filter(
+                            product_slug=item_slug).first()
+                        if not item is None:
+                            new_item = {
+                                "product_slug": item.product_slug,
+                                "store_avaliable_in": item.product_avaliable_in.all(),
+                                "is_avaliable": False,
+                                "avaliable_store": store_nickName
+                            }
+                            store_checker = item.product_avaliable_in.filter(
+                                store_nickname=store_nickName).first()
+                            if store_checker:
+                                new_item = {
+                                    "product_slug": item.product_slug,
+                                    "store_avaliable_in": item.product_avaliable_in.all(),
+                                    "is_avaliable": True,
+                                    "avaliable_store": store_checker.store_nickname
+                                }
+                            list_of_items.append(new_item)
+        return list_of_items
 
     def resolve_search_items(self, info, query, count=None):
         filtered_items = Item.objects.filter(Q(product_name__icontains=query) | Q(
