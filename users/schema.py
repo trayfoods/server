@@ -9,7 +9,7 @@ from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
 from django.db.models import Q
 
-from users.custom_model import BankListQuery
+from trayapp.custom_model import BankListQuery
 
 User = get_user_model()
 

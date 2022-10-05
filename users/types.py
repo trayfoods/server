@@ -66,7 +66,3 @@ class StoreType(DjangoObjectType):
     def resolve_vendor(self, info):
         vendor = Vendor.objects.filter(store=self).first()
         return vendor
-
-# class BankNode(graphene.ObjectType):
-#     def resolve_bank(self, info):
-#         return self.bank

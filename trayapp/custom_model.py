@@ -3,6 +3,7 @@ import graphql
 from graphql import GraphQLError
 
 from trayapp.utils import get_banks_list, get_bank_account_details
+from users.types import StoreType
 
 
 class Output:
@@ -24,6 +25,13 @@ class SubBankNode(graphene.ObjectType):
     longcode = graphene.String()
     active = graphene.Boolean()
     is_deleted = graphene.Boolean()
+
+
+class ItemsAvalibilityNode(graphene.ObjectType):
+    product_slug = graphene.String()
+    store_avaliable_in = graphene.List(StoreType)
+    is_avaliable = graphene.Boolean()
+    avaliable_store = graphene.String()
 
 
 class BankNode(Output, graphene.ObjectType):
