@@ -258,7 +258,7 @@ class UpdateVendorBankAccount(Output, graphene.Mutation):
     class Arguments:
         account_number = graphene.String(required=True)
         account_name = graphene.String(required=True)
-        bank_code = graphene.Int(required=True)
+        bank_code = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
     error = graphene.String()
