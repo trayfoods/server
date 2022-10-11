@@ -51,6 +51,9 @@ class VendorType(DjangoObjectType):
         fields = ['id', 'profile', 'store', 'account_number',
                   'account_name', 'bank_code', 'created_at']
 
+    def resolve_id(self, info):
+        return self.pk
+
     def resolve_profile(self, info):
         user = Profile.objects.filter(user=self.user.user).first()
         return user
