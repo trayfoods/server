@@ -26,7 +26,7 @@ class Store(models.Model):
     # store_location = models.PointField(null=True) # Spatial Field Types
 
     def __str__(self):
-        return f"{self.store_name}"
+        return f"{self.store_nickname}"
 
     class Meta:
         ordering = ['-store_rank']
@@ -57,7 +57,8 @@ class Vendor(models.Model):
     store = models.ForeignKey(Store, on_delete=models.CASCADE)
     account_number = models.CharField(max_length=20, null=True, blank=True)
     account_name = models.CharField(max_length=60, null=True, blank=True)
-    bank_code = models.IntegerField(default=0)
+    bank_code = models.CharField(max_length=20, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return self.user.user.username

@@ -48,7 +48,8 @@ class VendorType(DjangoObjectType):
 
     class Meta:
         model = Vendor
-        fields = ['id', 'profile', 'store']
+        fields = ['id', 'profile', 'store', 'account_number',
+                  'account_name', 'bank_code', 'created_at']
 
     def resolve_profile(self, info):
         user = Profile.objects.filter(user=self.user.user).first()
