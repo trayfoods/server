@@ -7,9 +7,9 @@ from users.mutations import (CreateVendorMutation, EditVendorMutation, UpdateVen
                              UpdateAccountMutation, CreateClientMutation, EmailVerifiedCheckerMutation)
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
-from django.db.models import Q
+from graphql_auth.models import UserStatus
 
-from trayapp.custom_model import BankListQuery
+from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 
 User = get_user_model()
 
@@ -20,6 +20,9 @@ class Query(MeQuery, BankListQuery, graphene.ObjectType):
     vendors = graphene.List(VendorType)
     clients = graphene.List(ClientType)
     hostels = graphene.List(HostelType)
+
+    check_email_verification = graphene.Field(
+        EmailVerifiedNode, email=graphene.String())
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
     client = graphene.Field(ClientType, client_id=graphene.Int())
@@ -64,6 +67,23 @@ class Query(MeQuery, BankListQuery, graphene.ObjectType):
             stores_list = stores_list[:20]
         return stores_list
 
+    def resolve_check_email_verification(self, info, email):
+        data = {
+            "success": False,
+            "msg": None
+        }
+        user = User.objects.filter(email=email).first()  # get the user
+        if not user is None:
+            user_status = UserStatus.objects.filter(
+                user=user).first()  # get the user status
+            if user_status.verified == True:  # check if the user email is verified
+                data["success"] = True  # the user email is verified
+            else:
+                data["success"] = False
+        else:  # the user does not exist
+            data["msg"] = "email do not exists"
+        return data
+
 
 class AuthMutation(graphene.ObjectType):
     register = mutations.Register.Field()
@@ -85,7 +105,6 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_vendor = CreateVendorMutation.Field()
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
-    check_email_verification = EmailVerifiedCheckerMutation.Field()
     update_vendor_bank_details = UpdateVendorBankAccount.Field()
 
 

@@ -16,8 +16,6 @@ class Output:
     msg = graphene.String(default_value="ok")
 
 # Our BankNode model
-
-
 class SubBankNode(graphene.ObjectType):
     id = graphene.Int()
     name = graphene.String()
@@ -26,6 +24,8 @@ class SubBankNode(graphene.ObjectType):
     active = graphene.Boolean()
     is_deleted = graphene.Boolean()
 
+class EmailVerifiedNode(Output, graphene.ObjectType):
+    pass
 
 class ItemsAvalibilityNode(graphene.ObjectType):
     product_slug = graphene.String()
