@@ -9,7 +9,7 @@ from trayapp.utils import image_resize
 
 class Gender(models.Model):
     name = models.CharField(
-        max_length=20, help_text="NAME SHOULD BE IN UPPERCASE!")
+        max_length=20, help_text="SHOULD BE IN UPPERCASE!")
     rank = models.FloatField(default=0)
 
     def __str__(self) -> str:
