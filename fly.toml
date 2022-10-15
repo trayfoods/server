@@ -1,4 +1,4 @@
-# fly.toml file generated for trayfoods on 2022-10-02T22:45:29+01:00
+# fly.toml file generated for trayfoods on 2022-10-15T10:31:11+01:00
 
 app = "trayfoods"
 kill_signal = "SIGINT"
@@ -6,19 +6,19 @@ kill_timeout = 5
 processes = []
 
 [deploy]
-  release_command = "python manage.py migrate --noinput"
+  release_command = "python manage.py migrate"
 
 [env]
+  AWS_DEFAULT_ACL = "None"
+  AWS_STORAGE_BUCKET_NAME = "tray-assets"
+  DEBUG = "False"
+  DISABLE_COLLECTSTATIC = "1"
+  EMAIL_HOST_USER = "trayfoodapp@gmail.com"
   PORT = "8000"
-  DEBUG="False" # Set to True to enable debug mode
-  USE_S3="True" # set to False if you don't want to use S3
-  REACT_SITE="trayfoods.pages.dev"
-  SITE_ORIGIN_URL="trayfoods.fly.dev"
-  EMAIL_HOST_USER="trayfoodapp@gmail.com"
-  USE_DB="True"
-  AWS_DEFAULT_ACL="None"
-  AWS_STORAGE_BUCKET_NAME="tray-assets"
-  DISABLE_COLLECTSTATIC=1
+  REACT_SITE = "trayfoods.pages.dev"
+  SITE_ORIGIN_URL = "trayfoods.fly.dev"
+  USE_DB = "True"
+  USE_S3 = "True"
 
 [experimental]
   allowed_public_ports = []
