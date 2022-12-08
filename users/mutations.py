@@ -212,13 +212,14 @@ class CreateClientMutation(Output, graphene.Mutation):
                             new_client_profile.gender = gender
                             new_client_profile.save()  # save the profile
                         new_client.save()
-                        client = new_client  # set the client
+                        user = User.objects.get(
+                            username=user.username)  # set the client
                     else:
                         # raise error if gender does not exist
                         raise GraphQLError("Gender do not exists")
         else:
             raise GraphQLError("Login Required.")
-        return CreateClientMutation(client=client)
+        return CreateClientMutation(user=info.context.user)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
