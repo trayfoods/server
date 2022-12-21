@@ -1,8 +1,9 @@
+from django.utils import timezone
 import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute
 from product.types import ItemType
-from users.models import Vendor, Store
+from users.models import UserActivity, Vendor, Store
 from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
 
@@ -173,15 +174,25 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     pass
                 store = vendor.store
                 if action == "add":
+                    new_activity = UserActivity.objects.create(
+                        user_id=info.context.user.id,
+                        activity_message=f"Added {product.product_name} as avaliable product",
+                        activity_type="add_to_items", item=product, timestamp=timezone.now())
                     vendor.store.store_products.add(product)
                     product.product_avaliable_in.add(store)
                     product.save()
                     vendor.save()
+                    new_activity.save()
                 elif action == "remove":
+                    new_activity = UserActivity.objects.create(
+                        user_id=info.context.user.id,
+                        activity_message=f"Removed {product.product_name} as avaliable product",
+                        activity_type="remove_from_items", item=product, timestamp=timezone.now())
                     vendor.store.store_products.remove(product)
                     product.product_avaliable_in.remove(store)
                     product.save()
                     vendor.save()
+                    new_activity.save()
                 else:
                     raise GraphQLError(
                         "Enter either `add/remove` for actions.")
@@ -204,7 +215,11 @@ class AddProductClickMutation(graphene.Mutation):
     def mutate(self, info, slug):
         success = False
         item = Item.objects.filter(product_slug=slug).first()
-        if not item is None:
+        if not item is None and info.context.user.is_authenticated:
+            new_activity = UserActivity.objects.create(
+                user_id=info.context.user.id,
+                activity_message=None,
+                activity_type="click", item=item, timestamp=timezone.now())
             if item.product_creator:
                 store = Store.objects.filter(
                     store_nickname=item.product_creator.store.store_nickname).first()
@@ -213,6 +228,7 @@ class AddProductClickMutation(graphene.Mutation):
                     store.save()
             item.product_clicks += 1
             item.save()
+            new_activity.save()
             success = True
 
         return AddProductClickMutation(item=item, success=success)

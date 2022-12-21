@@ -6,6 +6,8 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from trayapp.utils import image_resize
 
+from product.models import Item
+
 
 class Gender(models.Model):
     name = models.CharField(
@@ -83,6 +85,24 @@ class Client(models.Model):
 
 class Deliverer(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+
+
+ACTIVITY_TYPES = (
+    ('view', 'view'), ('click', 'click'), ('purchase', 'purchase'),
+    ("add_to_items", "add_to_items"), ("remove_from_order", "remove_from_order"),
+    ("add_to_order", "add_to_order"), ("remove_from_items", "remove_from_items")
+)
+
+
+class UserActivity(models.Model):
+    user_id = models.CharField(max_length=100)
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField()
+    activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
+    activity_message = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.user_id} - {self.item.name} - {self.timestamp}'
 
 
 @receiver(post_save, sender=User)
