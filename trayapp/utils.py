@@ -100,3 +100,11 @@ def get_bank_account_details(data):
     # success code - 200
     bank_details = r.json()
     return bank_details
+
+def get_dataframe_from_qs(queryset):
+    """
+    Get a pandas dataframe from a queryset
+    """
+    import pandas as pd
+    df = pd.DataFrame.from_records(queryset.values())
+    return df

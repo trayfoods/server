@@ -4,6 +4,8 @@ from product.types import ItemType, ItemAttributeType
 from product.mutations import (AddAvaliableProductMutation,
                                AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
 from product.models import Item, ItemAttribute
+from product.utils import recommend_items
+from users.models import UserActivity
 from trayapp.custom_model import ItemsAvalibilityNode
 # basic searching
 from django.db.models import Q
@@ -66,7 +68,7 @@ class Query(graphene.ObjectType):
 
     def resolve_hero_data(self, info, count=None):
         items = Item.objects.filter(product_type__urlParamName__icontains="dish").exclude(
-            product_type__urlParamName__icontains="not").order_by("-product_views")
+            product_type__urlParamName__icontains="not").order_by("-product_clicks")
         if count:
             count = count + 1
             if items.count() >= count:
@@ -74,7 +76,12 @@ class Query(graphene.ObjectType):
         return items
 
     def resolve_items(self, info, count=None):
-        items = Item.objects.all().distinct()
+        if self.context.user.is_authenticated:
+            items = Item.objects.all().distinct()
+            if UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
+                items = recommend_items(self.context.user.id)
+        else:
+            items = Item.objects.all().distinct()
         if count:
             count = count + 1
             if items.count() >= count:
