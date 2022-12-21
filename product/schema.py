@@ -7,13 +7,14 @@ from product.models import Item, ItemAttribute
 from product.utils import recommend_items
 from users.models import UserActivity
 from trayapp.custom_model import ItemsAvalibilityNode
+from django.utils import timezone
 # basic searching
 from django.db.models import Q
 
 
 class Query(graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
-    items = graphene.List(ItemType, count=graphene.Int(required=False))
+    items = graphene.List(ItemType, count=graphene.Int(required=True))
     item = graphene.Field(ItemType, item_slug=graphene.String())
 
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
@@ -75,24 +76,31 @@ class Query(graphene.ObjectType):
                 items = items[:count]
         return items
 
-    def resolve_items(self, info, count=None):
-        if self.context.user.is_authenticated:
-            items = Item.objects.all().distinct()
-            if UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                items = recommend_items(self.context.user.id)
-        else:
-            items = Item.objects.all().distinct()
+    def resolve_items(self, info, count):
         if count:
             count = count + 1
-            if items.count() >= count:
-                items = items[:count]
-        return items
+            if info.context.user.is_authenticated:
+                items = Item.objects.all().distinct()
+                if UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
+                    items = recommend_items(info.context.user.id, num_recommendations=count)
+            else:
+                items = Item.objects.all().distinct()
+                if items.count() >= count:
+                    items = items[:count]
+                return items
+        else:
+            GraphQLError("There should be a count param in the items query")
 
     def resolve_item(self, info, item_slug):
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
+            new_activity = UserActivity.objects.create(
+                user_id=info.context.user.id,
+                activity_message=None,
+                activity_type="click", item=item, timestamp=timezone.now())
             item.product_views += 1
             item.save()
+            new_activity.save()
         else:
             raise GraphQLError("404: Item Not Found")
         return item
