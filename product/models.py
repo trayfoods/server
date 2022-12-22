@@ -53,7 +53,7 @@ class Item(models.Model):
     product_name = models.CharField(max_length=200)
     product_qty = models.IntegerField(default=0)
     product_price = models.FloatField()
-    product_calories = models.IntegerField(blank=True, null=True)
+    product_calories = models.IntegerField(default=0)
     product_desc = models.CharField(max_length=500, blank=True, null=True)
     product_category = models.ForeignKey(
         "ItemAttribute", related_name="product_category", on_delete=models.SET_NULL, null=True)

@@ -82,7 +82,13 @@ class Query(graphene.ObjectType):
             if info.context.user.is_authenticated:
                 items = Item.objects.all().distinct()
                 if UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                    items = recommend_items(info.context.user.id, num_recommendations=count)
+                    items = recommend_items(info.context.user.id, n=count if (
+                        items.count() >= count) else items.count())
+                    if items is None:
+                        items = Item.objects.all().distinct()
+                    if items.count() >= count:
+                        items = items[:count]
+                    return items
             else:
                 items = Item.objects.all().distinct()
                 if items.count() >= count:
@@ -94,13 +100,14 @@ class Query(graphene.ObjectType):
     def resolve_item(self, info, item_slug):
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
-            new_activity = UserActivity.objects.create(
-                user_id=info.context.user.id,
-                activity_message=None,
-                activity_type="click", item=item, timestamp=timezone.now())
             item.product_views += 1
             item.save()
-            new_activity.save()
+            if info.context.user.is_authenticated:
+                new_activity = UserActivity.objects.create(
+                    user_id=info.context.user.id,
+                    activity_message=None,
+                    activity_type="view", item=item, timestamp=timezone.now())
+                new_activity.save()
         else:
             raise GraphQLError("404: Item Not Found")
         return item
