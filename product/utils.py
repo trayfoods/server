@@ -1,94 +1,52 @@
 import pandas as pd
-from django.db.models import Count
-from django.db.models import F
-from django.utils import timezone
-from sklearn.neighbors import NearestNeighbors
+from sklearn.metrics import precision_score, recall_score
+from sklearn.model_selection import train_test_split
+from sklearn.decomposition import TruncatedSVD
 from product.models import Item
-
+from numba import jit
 from users.models import UserActivity
 
 
 # Create recommendation function using collaborative filtering
-def recommend_items(user_id, region=None, calories=0, num_recommendations=100):
-    # Get user activity data
+@jit
+def recommend_items(user_id, n=10):
+    # Load the user activity data into a Pandas DataFrame using the Django ORM
+    activity = UserActivity.objects.filter(user_id=user_id)
+    df = pd.DataFrame.from_records(activity.values())
 
-    # Get user activity data
-    user_data = UserActivity.objects.filter(user_id=user_id)
-    # Calculate the number of product_clicks and product_clicks for each item
-    item_views = user_data.filter(activity_type="view")
-    if item_views.count() > 0:
-        item_views = item_views.values('item__id').annotate(product_views=Count('item__id'))
-    else:
-        item_views = item_views.values('item__product_creator__store__store_rank').annotate(product_views=Count('item__id'))
-    item_views = pd.DataFrame(item_views).rename(
-        columns={'item__id': 'item_id'})
-    if not item_views.empty:
-        item_clicks = user_data.filter(activity_type="click").values('item__id').annotate(product_clicks=Count('item__id'))
-        item_clicks = pd.DataFrame(item_clicks).rename(
-            columns={'item__id': 'item_id'})
-            
-        user_data = pd.DataFrame(user_data.values(
-            'item__id', 'timestamp', 'activity_type'))
-        user_data = user_data.rename(columns={'item__id': 'item_id'})
+    # Preprocess the data by filtering out any irrelevant activity types and aggregating the data by user and item
+    df = df[df['activity_type'].isin(['view', 'click'])]
+    df = df.groupby(['user_id', 'item_idx']).sum()
 
-        print(item_clicks)
+    # Add the category and type of the items as additional features
+    df = df.reset_index()
+    df['item_idx'] = df['item'].apply(lambda x: x.id)
+    df['product_category__name'] = df['item'].apply(
+        lambda x: x.product_category__name)
+    df['product_type__name'] = df['item'].apply(lambda x: x.product_type__name)
+    df = df.groupby(
+        ['user_id', 'item_idx', 'product_category__name', 'product_type__name']).sum()
 
-        items = Item.objects.all().distinct().values()
-        items = pd.DataFrame(items)
-        items = items.rename(columns={'id': 'item_id'})
-        # Merge view and click data for each item
-        item_data = pd.merge(item_views, item_clicks, on='item_id', how='outer')
-        item_data = item_data.fillna(0)
+    # Split the data into training and test sets
+    X_train, X_test = train_test_split(df, test_size=0.2, random_state=42)
 
-        # Get last item viewed and clicked by the user
-        last_viewed = user_data[user_data['activity_type'] == 'view'].last()
-        last_clicked = user_data[user_data['activity_type'] == 'click'].last()
+    # Use TruncatedSVD to fit a collaborative filtering model on the training data
+    svd = TruncatedSVD(n_components=10, random_state=42)
+    X_train_decomposed = svd.fit_transform(X_train)
 
-        # Calculate a score for each item based on product_clicks, product_clicks, and last viewed/clicked status
-        item_data['score'] = item_data['product_views'] * \
-            0.5 + item_data['product_clicks'] * 2
-        if last_viewed:
-            # Give additional weight if the last viewed item is recent
-            time_delta = timezone.now() - last_viewed.timestamp
-            if time_delta.days < 7:
-                item_data.loc[item_data['item_id'] ==
-                            last_viewed.item_id, 'score'] += 0.5
-        if last_clicked:
-            # Give additional weight if the last clicked item is recent
-            time_delta = timezone.now() - last_clicked.timestamp
-            if time_delta.days < 7:
-                item_data.loc[item_data['item_id'] ==
-                            last_clicked.item_id, 'score'] += 0.5
+    # Use the model to make recommendations for the user by predicting their interactions with items in the test set
+    recommendations = svd.predict(X_test)
 
-        # Scale scores to be between 0 and 1
-        item_data['score'] = (item_data['score'] - item_data['score'].min()) / \
-            (item_data['score'].max() - item_data['score'].min())
+    # Evaluate the performance of the model using precision or recall
+    precision = precision_score(X_test, recommendations)
+    recall = recall_score(X_test, recommendations)
 
-        # Merge item data with item metadata
-        item_data = pd.merge(item_data, items, on='item_id')
+    # Use the model to make recommendations for the user based on their past interactions with items
+    recommended_items = svd.predict(df)
 
-        data_filtered = item_data
-        # Filter data to only include items in the specified region
-        if region:
-            data_filtered = item_data[item_data['region'] == region]
+    # Retrieve the recommended items from the Item model based on their IDs and the category and type of the items
+    recommended_items = recommended_items[:n]
+    recommended_items = Item.objects.filter(
+        id__in=recommended_items, product_category__name=df['product_category__name'], product_type__name=df['product_type__name'])
 
-        # Fit nearest neighbors model on data
-        model_knn = NearestNeighbors(
-            metric='cosine', algorithm='brute', n_neighbors=20, n_jobs=-1)
-        model_knn.fit(data_filtered[['score', 'calories']])
-
-        # Get distances and indices of nearest neighbors
-        distances, indices = model_knn.kneighbors(
-            [[0, calories]], n_neighbors=num_recommendations+1)
-
-        # Get list of recommended item IDs
-        item_ids = []
-        for i in range(1, len(distances.flatten())):
-            item_id = data_filtered.iloc[indices.flatten()[i], 0]
-            item_ids.append(item_id)
-
-        # Get recommended items from Item model
-        recommended_items = Item.objects.filter(id__in=item_ids)
-    else:
-        recommended_items = Item.objects.all().distinct()[:num_recommendations]
     return recommended_items

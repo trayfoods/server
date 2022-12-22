@@ -47,3 +47,6 @@ toml==0.10.2
 tzdata==2022.1
 urllib3==1.26.11
 whitenoise==6.2.0
+numba
+pandas
+sklearn
