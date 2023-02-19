@@ -79,20 +79,11 @@ class Query(graphene.ObjectType):
     def resolve_items(self, info, count):
         if count:
             count = count + 1
-            if info.context.user.is_authenticated:
-                items = Item.objects.all().distinct()
-                if UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                    items = recommend_items(info.context.user.id, n=count if (
-                        items.count() >= count) else items.count())
-                    if items is None:
-                        items = Item.objects.all().distinct()
-                    if items.count() >= count:
-                        items = items[:count]
-                    return items
+            items = Item.objects.all().distinct()
+            items = items[:count if items.count() >= count else items.count()]
+            if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
+                return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
             else:
-                items = Item.objects.all().distinct()
-                if items.count() >= count:
-                    items = items[:count]
                 return items
         else:
             GraphQLError("There should be a count param in the items query")
