@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width"> <!-- Forcing initial-scale shouldn't be necessary -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge"> <!-- Use the latest (edge) version of IE rendering engine -->
     <meta name="x-apple-disable-message-reformatting">  <!-- Disable auto-scale in iOS 10 Mail entirely -->
-    <title></title> <!-- The title tag shows in email notifications, like Android 4.4. -->
+    <title>Activate Your TrayFoods Account</title> <!-- The title tag shows in email notifications, like Android 4.4. -->
 
     <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
 
@@ -318,7 +318,11 @@ ul.social li{
             			<div class="text" style="padding: 0 2.5em; text-align: center;">
             				<h2>Hey, {{ user.username }} please verify your email</h2>
             				<h3>click on the button below to confirm <b>{{ user.email }}</b></h3>
-            				<p><a href="{{ frontend_domain }}/{{ path }}/{{ token }}" class="btn btn-primary">Confirm Email</a></p>
+            				<a href="{{ frontend_domain }}/{{ path }}/{{ token }}" class="btn btn-primary"><button>Confirm Email</button></a>
+							<br />
+							<br />
+							<p>Button did't work? click below link</p>
+							<a href="{{ frontend_domain }}/{{ path }}/{{ token }}" class="btn btn-primary">{{ frontend_domain }}/{{ path }}/{{ token }}</a>
             			</div>
             		</td>
             	</tr>
