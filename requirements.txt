@@ -19,7 +19,7 @@ Django==3.2.18
 django-cleanup==6.0.0
 django-cors-headers==3.12.0
 django-extensions==3.1.5
-django-filter==21.1
+django-filter
 django-graphql-auth==0.3.16
 django-graphql-jwt==0.3.0
 django-storages==1.12.3
