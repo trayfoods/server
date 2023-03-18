@@ -1,9 +1,12 @@
 from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
-from django.contrib.auth.models import User
+
 from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
 
 class UserType(DjangoObjectType):
     class Meta:

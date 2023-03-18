@@ -74,6 +74,8 @@ INSTALLED_APPS = [
     "rest_framework",
 ]
 
+AUTH_USER_MODEL = 'users.UserAccount'
+
 # CHANNEL_LAYERS = {
 #     "default": {
 #         "BACKEND": "asgiref.inmemory.ChannelLayer",
