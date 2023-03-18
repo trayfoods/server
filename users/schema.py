@@ -3,8 +3,8 @@ from django.contrib.auth import get_user_model
 from graphql_auth.schema import UserNode, MeQuery
 from graphql_auth import mutations
 
-from users.mutations import (CreateVendorMutation, EditVendorMutation, UpdateVendorBankAccount,
-                             UpdateAccountMutation, CreateClientMutation, EmailVerifiedCheckerMutation)
+from .mutations import (CreateVendorMutation, EditVendorMutation, UpdateVendorBankAccount,
+                             UpdateAccountMutation, CreateClientMutation)
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType
 from graphql_auth.models import UserStatus
@@ -106,6 +106,5 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
     update_vendor_bank_details = UpdateVendorBankAccount.Field()
-
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
