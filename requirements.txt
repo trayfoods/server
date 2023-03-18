@@ -21,7 +21,7 @@ django-cors-headers==3.12.0
 django-extensions==3.1.5
 django-filter
 django-graphql-auth
-django-graphql-jwt==0.3.4
+django-graphql-jwt
 django-storages==1.12.3
 django-unused-media==0.2.2
 djangorestframework==3.13.1
