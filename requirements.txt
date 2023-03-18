@@ -49,7 +49,7 @@ psycopg2-binary==2.9.3
 pycodestyle==2.8.0
 pycparser==2.21
 pydot==1.4.2
-PyJWT==1.7.1
+PyJWT==2.4.0
 pyparsing==3.0.9
 python-dateutil==2.8.2
 python-dotenv==0.20.0
