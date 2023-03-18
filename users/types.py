@@ -4,13 +4,11 @@ from graphene_django.types import DjangoObjectType
 
 from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
-from django.conf import settings
-
-User = settings.AUTH_USER_MODEL
+from .models import UserAccount
 
 class UserType(DjangoObjectType):
     class Meta:
-        model = User
+        model = UserAccount
         fields = ["username", "first_name", "last_name", "email", "is_active"]
 
 
