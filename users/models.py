@@ -1,6 +1,6 @@
 from django.db import models
 # from django.contrib.gis.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 
 from django.db.models.signals import post_save
@@ -8,6 +8,12 @@ from trayapp.utils import image_resize
 
 from product.models import Item
 
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
+
+class UserAccount(AbstractUser):
+    role = models.CharField(max_length=20, default="student")
 
 class Gender(models.Model):
     name = models.CharField(

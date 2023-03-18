@@ -2,7 +2,6 @@ import graphene
 from graphql import GraphQLError
 from graphene_file_upload.scalars import Upload
 
-from django.contrib.auth.models import User
 from django.utils.module_loading import import_string
 
 from graphql_jwt.refresh_token.shortcuts import get_refresh_token
@@ -15,7 +14,9 @@ from graphql_auth.decorators import verification_required
 
 from .types import VendorType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile
+from django.conf import settings
 
+User = settings.AUTH_USER_MODEL
 
 if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
     async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
