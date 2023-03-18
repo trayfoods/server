@@ -2,6 +2,9 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+import django
+from django.utils.encoding import force_str
+django.utils.encoding.force_text = force_str
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,11 +28,11 @@ EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
 if DEBUG == True:
-    FRONTEND_URL = "localhost:3000"
+    FRONTEND_URL = "http://localhost:3000"
 else:
     FRONTEND_URL = "https://%s" % os.getenv("REACT_SITE")
 
-ALLOWED_HOSTS = ["192.168.137.1", "localhost", "%s" %
+ALLOWED_HOSTS = ["127.0.0.1", "192.168.137.1", "localhost", "%s" %
                  os.getenv("SITE_ORIGIN_URL")]
 if DEBUG == False:
     CSRF_COOKIE_SECURE = True
@@ -47,6 +50,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 INSTALLED_APPS = [
     # "django.contrib.gis",
+    # "channels",
+    # "channels_api",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -66,8 +71,16 @@ INSTALLED_APPS = [
     "corsheaders",
 
     "django_extensions",
-
+    "rest_framework",
 ]
+
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "asgiref.inmemory.ChannelLayer",
+#         "ROUTING": "trayapp.routing.project_routing",  # Our project routing
+#     },
+# }
+
 GRAPH_MODELS = {
     "all_applications": True,
     "group_models": True,
@@ -147,6 +160,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trayapp.wsgi.application"
+# ASGI_APPLICATION = "trayapp.asgi.application"
 
 
 # Database
