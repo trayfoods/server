@@ -1,15 +1,18 @@
 from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
+from graphql_auth.schema import UserNode
 
 from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
 from .models import UserAccount
 
-class UserType(DjangoObjectType):
-    class Meta:
-        model = UserAccount
-        fields = ["username", "first_name", "last_name", "email", "is_active"]
+class UserType(UserNode, graphene.ObjectType):
+
+    def resolve_role(self, info):
+        role = self.role
+        print(self.profile)
+        return role
 
 
 class GenderType(DjangoObjectType):

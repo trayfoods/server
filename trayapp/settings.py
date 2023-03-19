@@ -129,7 +129,8 @@ GRAPHQL_AUTH = {
     "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset",
     "PASSWORD_SET_PATH_ON_EMAIL": "auth/password-set",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
-    "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"]
+    "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"],
+    "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"]
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

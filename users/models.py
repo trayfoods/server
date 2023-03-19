@@ -13,7 +13,7 @@ from django.conf import settings
 User = settings.AUTH_USER_MODEL
 
 class UserAccount(AbstractUser, models.Model):
-    role = models.CharField(max_length=20, default="student")
+    role = models.CharField(max_length=20, default="client")
 
 class Gender(models.Model):
     name = models.CharField(
