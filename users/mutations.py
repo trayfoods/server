@@ -13,10 +13,9 @@ from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 
 from .types import VendorType  # , BankNode
-from .models import Vendor, Store, Client, Hostel, Gender, Profile
-from django.conf import settings
+from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount
 
-User = settings.AUTH_USER_MODEL
+User = UserAccount
 
 if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
     async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
@@ -47,9 +46,10 @@ class CreateVendorMutation(Output, graphene.Mutation):
     @staticmethod
     def mutate(self, info, store_name, store_category, store_nickname):
         success = False
-        if info.context.user.is_authenticated:
+        user = info.context.user
+        if user.is_authenticated:
             vendor = Vendor.objects.filter(
-                user=info.context.user.profile).first()  # get the vendor
+                user=user.profile).first()  # get the vendor
             if vendor is None:
                 store_check = Store.objects.filter(
                     store_nickname=store_nickname.strip()).first()  # check if the store nickname is already taken
@@ -61,9 +61,13 @@ class CreateVendorMutation(Output, graphene.Mutation):
                     )  # create the store
                     store.save()
                     vendor = Vendor.objects.create(
-                        user=info.context.user.profile,
+                        user=user.profile,
                         store=store)
                     vendor.save()
+                    userqs = User.objects.filter(username=user.username).first()
+                    if not userqs is None:
+                        userqs.role = "vendor" # do not touch
+                        userqs.save()
                     success = True
                 else:  # if taken
                     raise GraphQLError(
@@ -74,15 +78,15 @@ class CreateVendorMutation(Output, graphene.Mutation):
         else:  # if user is not authenticated
             raise GraphQLError("Login required.")  # raise error
         # Notice we return an instance of this mutation
-        return CreateVendorMutation(user=info.context.user, vendor=vendor)
+        return CreateVendorMutation(user=user, vendor=vendor, success=success)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
         if user.profile and user.vendor:
-            return cls(success=True)
+            return cls(success=True, user=user, vendor=user.vendor)
         else:
-            return cls(success=False)
+            return cls(success=False, user=user, vendor=None)
 
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
@@ -213,22 +217,24 @@ class CreateClientMutation(Output, graphene.Mutation):
                             new_client_profile.gender = gender
                             new_client_profile.save()  # save the profile
                         new_client.save()
-                        user = User.objects.get(
-                            username=user.username)  # set the client
+                        user = User.objects.filter(username=user.username).first()
+                        if not user is None:
+                            user.role = "student" # do not touch
+                            user.save()
                     else:
                         # raise error if gender does not exist
                         raise GraphQLError("Gender do not exists")
         else:
             raise GraphQLError("Login Required.")
-        return CreateClientMutation(user=info.context.user)
+        return CreateClientMutation(user=user)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
         if user.profile and user.client:
-            return cls(success=True)
+            return cls(success=True, user=user)
         else:
-            return cls(success=False)
+            return cls(success=False, user=user)
 
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
