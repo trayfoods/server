@@ -7,7 +7,7 @@ from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
 from .models import UserAccount
 
-class UserType(UserNode, graphene.ObjectType):
+class UserNodeType(UserNode, graphene.ObjectType):
 
     def resolve_role(self, info):
         role = self.role

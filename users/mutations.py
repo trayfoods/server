@@ -6,13 +6,12 @@ from django.utils.module_loading import import_string
 
 from graphql_jwt.refresh_token.shortcuts import get_refresh_token
 
-from graphql_auth.schema import UserNode
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 
-from .types import VendorType  # , BankNode
+from .types import VendorType, UserNodeType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount
 
 User = UserAccount
@@ -41,7 +40,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
 
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
-    user = graphene.Field(UserNode)
+    user = graphene.Field(UserNodeType)
 
     @staticmethod
     def mutate(self, info, store_name, store_category, store_nickname):
@@ -99,7 +98,7 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         phone_number = graphene.String()
         profile_image = Upload()
 
-    user = graphene.Field(UserNode)
+    user = graphene.Field(UserNodeType)
 
     __doc__ = UpdateAccountMixin.__doc__
 
@@ -189,7 +188,7 @@ class CreateClientMutation(Output, graphene.Mutation):
         room = graphene.String(required=False)
         gender = graphene.String(required=True)
 
-    user = graphene.Field(UserNode)
+    user = graphene.Field(UserNodeType)
 
     @staticmethod
     def mutate(self, info, gender, hostel_shortname=None, room=None):

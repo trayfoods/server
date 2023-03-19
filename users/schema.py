@@ -1,12 +1,12 @@
 import graphene
 from django.contrib.auth import get_user_model
-from graphql_auth.schema import UserNode, MeQuery
+from graphql_auth.schema import MeQuery
 from graphql_auth import mutations
 
 from .mutations import (CreateVendorMutation, EditVendorMutation, UpdateVendorBankAccount,
                              UpdateAccountMutation, CreateClientMutation)
 from .models import Client, Vendor, Store, Hostel
-from .types import ClientType, VendorType, StoreType, HostelType
+from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
 from graphql_auth.models import UserStatus
 
 from trayapp.custom_model import BankListQuery, EmailVerifiedNode
@@ -16,7 +16,7 @@ User = get_user_model()
 
 class Query(MeQuery, BankListQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
-    get_user = graphene.Field(UserNode, username=graphene.String())
+    get_user = graphene.Field(UserNodeType, username=graphene.String())
     vendors = graphene.List(VendorType)
     clients = graphene.List(ClientType)
     hostels = graphene.List(HostelType)
