@@ -8,6 +8,9 @@ from .models import Client, Vendor, Store, Profile, Hostel, Gender
 from .models import UserAccount
 
 class UserNodeType(UserNode, graphene.ObjectType):
+    class Meta:
+        model = UserAccount
+        fields = ["username", "first_name", "last_name", "email", "is_active", "role"]
 
     def resolve_role(self, info):
         role = self.role
