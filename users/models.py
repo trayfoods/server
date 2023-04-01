@@ -12,8 +12,10 @@ from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
+
 class UserAccount(AbstractUser, models.Model):
     role = models.CharField(max_length=20, default="client")
+
 
 class Gender(models.Model):
     name = models.CharField(
@@ -66,6 +68,8 @@ class Vendor(models.Model):
     account_number = models.CharField(max_length=20, null=True, blank=True)
     account_name = models.CharField(max_length=60, null=True, blank=True)
     bank_code = models.CharField(max_length=20, null=True, blank=True)
+    country_code = models.CharField(max_length=6, null=True, blank=True)
+    balance = models.FloatField(null=True, default=00.00, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
