@@ -7,15 +7,32 @@ from .models import Client, Vendor, Store, Profile, Hostel, Gender
 
 from .models import UserAccount
 
+class ProfileType(DjangoObjectType):
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
+    def resolve_image(self, info, *args, **kwargs):
+        if self.image:
+            image = info.context.build_absolute_uri(self.image.url)
+        else:
+            image = None
+        return image
+    
 class UserNodeType(UserNode, graphene.ObjectType):
+    profile = graphene.Field(ProfileType)
     class Meta:
         model = UserAccount
-        fields = ["username", "first_name", "last_name", "email", "is_active", "role"]
+        fields = ["id", "username", "first_name", "last_name", "email", "is_active", "role", "profile"]
 
     def resolve_role(self, info):
         role = self.role
         print(self.profile)
         return role
+    
+    def resolve_profile(self, info):
+        # user = Profile.objects.filter(user=).first()
+        return self.profile
 
 
 class GenderType(DjangoObjectType):
@@ -37,19 +54,6 @@ class ClientType(DjangoObjectType):
         fields = '__all__'
 
 
-class ProfileType(DjangoObjectType):
-    class Meta:
-        model = Profile
-        fields = '__all__'
-
-    def resolve_image(self, info, *args, **kwargs):
-        if self.image:
-            image = info.context.build_absolute_uri(self.image.url)
-        else:
-            image = None
-        return image
-
-
 class VendorType(DjangoObjectType):
     profile = graphene.Field(ProfileType)
 
@@ -62,8 +66,8 @@ class VendorType(DjangoObjectType):
         return self.pk
 
     def resolve_profile(self, info):
-        user = Profile.objects.filter(user=self.user.user).first()
-        return user
+        # user = Profile.objects.filter(user=).first()
+        return self.user.user.profile
 
 
 class StoreType(DjangoObjectType):

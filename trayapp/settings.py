@@ -3,8 +3,8 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 import django
-from django.utils.encoding import force_str
-django.utils.encoding.force_text = force_str
+# from django.utils.encoding import force_str
+# django.utils.encoding.force_text = force_str
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,17 +34,18 @@ else:
 
 ALLOWED_HOSTS = ["127.0.0.1", "192.168.137.1", "localhost", "%s" %
                  os.getenv("SITE_ORIGIN_URL")]
-if DEBUG == False:
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = True
-    SECURE_HSTS_SECONDS = 518400
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
-    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-CONN_MAX_AGE = None
+CSRF_COOKIE_SECURE = DEBUG == False
+SESSION_COOKIE_SECURE = DEBUG == False
+SECURE_SSL_REDIRECT = DEBUG == False
+SECURE_HSTS_SECONDS = 518400 if(DEBUG == False) else None
+SECURE_HSTS_INCLUDE_SUBDOMAINS = DEBUG == False
+SECURE_HSTS_PRELOAD = DEBUG == False
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if(DEBUG == False) else None
+
+CONN_MAX_AGE = 8600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
+print(DEBUG == False)
 
 # Application definition
 
@@ -102,7 +103,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    # "JWT_VERIFY_EXPIRATION": True,
+    "JWT_VERIFY_EXPIRATION": True,
 
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
@@ -254,7 +255,7 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if DEBUG:
+if DEBUG == True:
     CORS_ORIGIN_ALLOW_ALL = True
 else:
     CORS_ORIGIN_WHITELIST = (
