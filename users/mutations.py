@@ -85,7 +85,9 @@ class CreateVendorMutation(Output, graphene.Mutation):
         if user.profile and user.vendor:
             return cls(success=True, user=user, vendor=user.vendor)
         else:
-            return cls(success=False, user=user, vendor=None)
+            vendor = Vendor.objects.filter(
+                user=user.profile).first()
+            return cls(success=False, user=user, vendor=vendor)
 
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
