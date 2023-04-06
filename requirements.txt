@@ -1,4 +1,5 @@
 aniso8601==7.0.0
+asgiref==3.6.0
 attrs==22.1.0
 autobahn==22.7.1
 Automat==20.2.0
@@ -8,18 +9,18 @@ boto3==1.24.45
 botocore==1.27.45
 certifi==2022.12.7
 cffi==1.15.1
-channels
-channels-api==0.4.1 
+channels==1.1.1
+channels-api==0.4.1
 charset-normalizer==2.1.0
 constantly==15.1.0
 cryptography==39.0.1
-daphne
+daphne==4.0.0
 dj-database-url==1.0.0
 Django==3.2.18
 django-cleanup==6.0.0
 django-cors-headers==3.12.0
 django-extensions==3.1.5
-django-filter
+django-filter==2.4.0
 django-graphql-auth==0.3.16
 django-graphql-jwt==0.3.0
 django-storages==1.12.3
@@ -41,15 +42,19 @@ joblib==1.2.0
 llvmlite==0.39.1
 numba==0.56.4
 numpy==1.23.5
+opencv-python==4.7.0.72
 pandas==1.5.2
 Pillow==9.3.0
 promise==2.3
 psycopg2==2.9.3
 psycopg2-binary==2.9.3
+pyasn1==0.4.8
+pyasn1-modules==0.2.8
 pycodestyle==2.8.0
 pycparser==2.21
 pydot==1.4.2
 PyJWT==1.7.1
+pyOpenSSL==23.1.1
 pyparsing==3.0.9
 python-dateutil==2.8.2
 python-dotenv==0.20.0
@@ -59,6 +64,7 @@ Rx==1.6.1
 s3transfer==0.6.0
 scikit-learn==1.2.0
 scipy==1.9.3
+service-identity==21.1.0
 singledispatch==3.7.0
 six==1.16.0
 sqlparse==0.4.2
@@ -66,6 +72,7 @@ text-unidecode==1.3
 threadpoolctl==3.1.0
 toml==0.10.2
 Twisted==22.10.0
+# twisted-iocpsupport==1.0.3
 txaio==22.2.1
 typing_extensions==4.3.0
 tzdata==2022.1
