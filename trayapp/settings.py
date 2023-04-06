@@ -2,9 +2,6 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
-import django
-# from django.utils.encoding import force_str
-# django.utils.encoding.force_text = force_str
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -45,7 +42,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if(DEBUG == False)
 
 CONN_MAX_AGE = 8600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
-print(DEBUG == False)
 
 # Application definition
 
@@ -103,7 +99,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    "JWT_VERIFY_EXPIRATION": True,
+    # "JWT_VERIFY_EXPIRATION": True,
 
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
