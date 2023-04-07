@@ -10,19 +10,19 @@ from trayapp.custom_model import ItemsAvalibilityNode
 from django.utils import timezone
 # basic searching
 from django.db.models import Q
-from io import BytesIO
-from PIL import Image
-import cv2
-import numpy as np
-import base64
-from graphene.types.scalars import String
+# from io import BytesIO
+# from PIL import Image
+# import cv2
+# import numpy as np
+# import base64
+# from graphene.types.scalars import String
 
 class Query(graphene.ObjectType):
-    remove_background = graphene.Field(
-        String,
-        image_b64=graphene.String(required=True),
-        description="Remove the background from an image"
-    )
+    # remove_background = graphene.Field(
+    #     String,
+    #     image_b64=graphene.String(required=True),
+    #     description="Remove the background from an image"
+    # )
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
     items = graphene.List(ItemType, count=graphene.Int(required=True))
     item = graphene.Field(ItemType, item_slug=graphene.String())
@@ -132,49 +132,49 @@ class Query(graphene.ObjectType):
             urlParamName=urlParamName).first()
         return item_attribute
 
-    def resolve_remove_background(self, info, image_b64):
-        # Decode the base64 encoded image to a numpy array
-        img_data = base64.b64decode(image_b64)
-        img_array = np.frombuffer(img_data, np.uint8)
-        img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
+    # def resolve_remove_background(self, info, image_b64):
+    #     # Decode the base64 encoded image to a numpy array
+    #     img_data = base64.b64decode(image_b64)
+    #     img_array = np.frombuffer(img_data, np.uint8)
+    #     img = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
 
-        # Convert the image to grayscale and adjust the contrast
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
-        gray = clahe.apply(gray)
+    #     # Convert the image to grayscale and adjust the contrast
+    #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+    #     gray = clahe.apply(gray)
 
-        # Apply edge detection to find the contours of the object
-        edges = cv2.Canny(gray, 50, 150)
+    #     # Apply edge detection to find the contours of the object
+    #     edges = cv2.Canny(gray, 50, 150)
 
-        # Dilate the edges to close any gaps in the object
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        edges = cv2.dilate(edges, kernel, iterations=1)
+    #     # Dilate the edges to close any gaps in the object
+    #     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    #     edges = cv2.dilate(edges, kernel, iterations=1)
 
-        # Find the contours of the object and select the largest one
-        contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
-        if contour_sizes:
-            largest_contour = max(contour_sizes, key=lambda x: x[0])[1]
-        else:
-            largest_contour = None
+    #     # Find the contours of the object and select the largest one
+    #     contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #     contour_sizes = [(cv2.contourArea(contour), contour) for contour in contours]
+    #     if contour_sizes:
+    #         largest_contour = max(contour_sizes, key=lambda x: x[0])[1]
+    #     else:
+    #         largest_contour = None
 
-        # Create a mask from the largest contour
-        mask = np.zeros(edges.shape, dtype=np.uint8)
-        if largest_contour is not None:
-            cv2.drawContours(mask, [largest_contour], -1, 255, -1)
+    #     # Create a mask from the largest contour
+    #     mask = np.zeros(edges.shape, dtype=np.uint8)
+    #     if largest_contour is not None:
+    #         cv2.drawContours(mask, [largest_contour], -1, 255, -1)
 
-        # Apply the mask to the original image to remove the background
-        result = cv2.bitwise_and(img, img, mask=mask)
+    #     # Apply the mask to the original image to remove the background
+    #     result = cv2.bitwise_and(img, img, mask=mask)
 
-        # Convert the resulting image to PIL Image format
-        result_pil = Image.fromarray(result)
+    #     # Convert the resulting image to PIL Image format
+    #     result_pil = Image.fromarray(result)
 
-        # Convert the PIL Image to base64 encoding
-        buffered = BytesIO()
-        result_pil.save(buffered, format="PNG")
-        result_base64 = base64.b64encode(buffered.getvalue()).decode()
+    #     # Convert the PIL Image to base64 encoding
+    #     buffered = BytesIO()
+    #     result_pil.save(buffered, format="PNG")
+    #     result_base64 = base64.b64encode(buffered.getvalue()).decode()
 
-        return result_base64
+    #     return result_base64
     
 class Mutation(graphene.ObjectType):
     add_product = AddProductMutation.Field()
