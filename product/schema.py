@@ -18,6 +18,7 @@ import base64
 
 class Query(graphene.ObjectType):
     remove_background = graphene.Field(
+        String,
         image_b64=graphene.String(required=True),
         description="Remove the background from an image"
     )
