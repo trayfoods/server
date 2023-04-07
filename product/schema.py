@@ -15,6 +15,7 @@ from PIL import Image
 import cv2
 import numpy as np
 import base64
+from graphene.types.scalars import String
 
 class Query(graphene.ObjectType):
     remove_background = graphene.Field(
