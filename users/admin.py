@@ -7,7 +7,7 @@ class UserAccountAdmin(admin.ModelAdmin):
                     'username', 'role')
     search_fields = ('username', 'role',
                      'first_name', 'last_name', 'email')
-    list_filter = ('created_at',)
+    list_filter = ('id',)
 
 class VendorAdmin(admin.ModelAdmin):
     list_display = ('user', 'store', 'account_number',
