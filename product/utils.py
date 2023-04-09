@@ -6,9 +6,8 @@ from product.models import Item
 from numba import jit
 from users.models import UserActivity
 
-
 # Create recommendation function using collaborative filtering
-# @jit
+@jit
 def recommend_items(user_id, n=10):
     # Load the user activity data into a Pandas DataFrame using the Django ORM
     activity = UserActivity.objects.filter(
@@ -27,6 +26,14 @@ def recommend_items(user_id, n=10):
     df['views'] = df['view']
     df = df.drop(columns=['click', 'view'])
 
+    # Check if there is enough data to split into training and test sets
+    if len(df) <= 1:
+        # If not, return the available items
+        item_ids = df.index.get_level_values('item__id')
+        recommended_items = Item.objects.filter(
+            id__in=item_ids)[:n]
+        return recommended_items
+
     # Split the data into training and test sets
     X_train, X_test = train_test_split(df, test_size=0.2, random_state=42)
 
@@ -40,7 +47,7 @@ def recommend_items(user_id, n=10):
 
     # Retrieve the recommended items from the Item model based on their IDs and the category and type of the items
     item_ids = [int(x[0]) for x in recommended_items]
-    print(item_ids)
+    # print(item_ids)
     recommended_items = Item.objects.filter(
         id__in=item_ids)[:n]
 
