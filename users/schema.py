@@ -14,9 +14,9 @@ from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 User = get_user_model()
 
 
-class Query(MeQuery, BankListQuery, graphene.ObjectType):
+class Query(BankListQuery, graphene.ObjectType):
     # vendors = DjangoFilterConnectionField(VendorType)
-    get_user = graphene.Field(UserNodeType, username=graphene.String())
+    me = graphene.Field(UserNodeType)
     vendors = graphene.List(VendorType)
     clients = graphene.List(ClientType)
     hostels = graphene.List(HostelType)
@@ -30,8 +30,11 @@ class Query(MeQuery, BankListQuery, graphene.ObjectType):
     search_stores = graphene.Field(StoreType, search_query=graphene.String(
         required=True), count=graphene.Int(required=False))
 
-    def resolve_get_user(self, info, username):
-        return User.objects.get(username=username)
+    def resolve_me(self, info):
+        user = info.context.user
+        if user.is_authenticated:
+            return user
+        return None
 
     def resolve_vendors(self, info, **kwargs):
         return Vendor.objects.all().order_by('-id')
