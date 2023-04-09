@@ -1,6 +1,13 @@
 from django.contrib import admin
-from users.models import Client, Vendor, Store, Profile, Hostel, Gender
+from users.models import Client, Vendor, Store, Profile, Hostel, Gender, UserAccount
 
+
+class UserAccountAdmin(admin.ModelAdmin):
+    list_display = ('email', 'first_name', 'last_name',
+                    'username', 'role')
+    search_fields = ('username', 'role',
+                     'first_name', 'last_name', 'email')
+    list_filter = ('created_at',)
 
 class VendorAdmin(admin.ModelAdmin):
     list_display = ('user', 'store', 'account_number',
@@ -9,7 +16,7 @@ class VendorAdmin(admin.ModelAdmin):
                      'store__store_name', 'account_number', 'account_name')
     list_filter = ('created_at',)
 
-
+admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Gender)
 admin.site.register(Profile)
 admin.site.register(Store)
