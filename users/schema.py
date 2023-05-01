@@ -9,7 +9,7 @@ from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType, AccountType
 from graphql_auth.models import UserStatus
 
-from trayapp.custom_model import BankListQuery, EmailVerifiedNode
+from trayapp.custom_model import BankListQuery, EmailVerifiedNode, AccountInfoNode
 
 User = get_user_model()
 
@@ -25,7 +25,9 @@ class Query(BankListQuery, graphene.ObjectType):
         EmailVerifiedNode, email=graphene.String())
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
-    get_acct_info = graphene.Field(AccountType)
+
+    get_acct_info = graphene.Field(AccountInfoNode)
+
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
     search_stores = graphene.Field(StoreType, search_query=graphene.String(
