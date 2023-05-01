@@ -104,13 +104,13 @@ class Hostel(models.Model):
 class Client(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
-    room = models.TextField(null=True, blank=True)
+    room = models.JSONField(default=dict, null=True, blank=True)
 
 
 class Deliverer(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    details = models.JSONField(default=dict, null=True, blank=True)
+    extra_details = models.JSONField(default=dict, null=True, blank=True)
 
 
 ACTIVITY_TYPES = (
