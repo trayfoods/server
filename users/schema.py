@@ -6,7 +6,7 @@ from graphql_auth import mutations
 from .mutations import (CreateVendorMutation, EditVendorMutation, UpdateVendorBankAccount,
                              UpdateAccountMutation, CreateClientMutation)
 from .models import Client, Vendor, Store, Hostel
-from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType, AccountType
+from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
 from graphql_auth.models import UserStatus
 
 from trayapp.custom_model import BankListQuery, EmailVerifiedNode, AccountInfoNode
