@@ -37,6 +37,11 @@ class ItemsAvalibilityNode(graphene.ObjectType):
 class BankNode(Output, graphene.ObjectType):
     banks = graphene.List(SubBankNode)
 
+class AccountInfoNode(Output, graphene.ObjectType):
+    balance = graphene.String()
+
+    def balance(self, info):
+        return self.balance
 
 class BankAccountNode(Output, graphene.ObjectType):
     bank_id = graphene.Int()

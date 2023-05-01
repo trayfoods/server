@@ -69,11 +69,6 @@ class VendorType(DjangoObjectType):
         # user = Profile.objects.filter(user=).first()
         return self.user.user.profile
 
-class AccountType(DjangoObjectType):
-
-    class Meta:
-        model = Vendor
-        fields = ['balance']
 
 class StoreType(DjangoObjectType):
     vendor = graphene.Field(VendorType)
