@@ -1,4 +1,5 @@
 from django.db import models
+
 # from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
@@ -18,8 +19,7 @@ class UserAccount(AbstractUser, models.Model):
 
 
 class Gender(models.Model):
-    name = models.CharField(
-        max_length=20, help_text="SHOULD BE IN UPPERCASE!")
+    name = models.CharField(max_length=20, help_text="SHOULD BE IN UPPERCASE!")
     rank = models.FloatField(default=0)
 
     def __str__(self) -> str:
@@ -32,21 +32,23 @@ class Store(models.Model):
     store_category = models.CharField(max_length=15)
     store_rank = models.FloatField(default=0)
     store_products = models.ManyToManyField(
-        "product.Item", related_name="store_items", blank=True)
+        "product.Item", related_name="store_items", blank=True
+    )
     # store_location = models.PointField(null=True) # Spatial Field Types
 
     def __str__(self):
         return f"{self.store_nickname}"
 
     class Meta:
-        ordering = ['-store_rank']
+        ordering = ["-store_rank"]
 
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="images/profile-images/", null=True)
     image_hash = models.CharField(
-        'Image Hash', editable=False, max_length=32, null=True, blank=True)
+        "Image Hash", editable=False, max_length=32, null=True, blank=True
+    )
     phone_number = models.CharField(max_length=16)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_student = models.BooleanField(default=False)
@@ -75,6 +77,18 @@ class Vendor(models.Model):
     def __str__(self) -> str:
         return self.user.user.username
 
+class Transaction(models.Model):
+    TYPE_OF_TRANSACTION = (
+        ("pending", "pending"),
+        ("credit", "credit"),
+        ("debit", "debit"),
+        ("failed", "failed")
+    )
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    title = models.CharField(max_length=50)
+    desc = models.CharField(max_length=200, null=True, blank=True)
+    amount = models.FloatField(null=True, default=00.00, blank=True)
+    _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
@@ -95,12 +109,18 @@ class Client(models.Model):
 
 class Deliverer(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
+    details = models.JSONField(default=dict, null=True, blank=True)
 
 
 ACTIVITY_TYPES = (
-    ('view', 'view'), ('click', 'click'), ('purchase', 'purchase'),
-    ("add_to_items", "add_to_items"), ("remove_from_order", "remove_from_order"),
-    ("add_to_order", "add_to_order"), ("remove_from_items", "remove_from_items")
+    ("view", "view"),
+    ("click", "click"),
+    ("purchase", "purchase"),
+    ("add_to_items", "add_to_items"),
+    ("remove_from_order", "remove_from_order"),
+    ("add_to_order", "add_to_order"),
+    ("remove_from_items", "remove_from_items"),
 )
 
 
@@ -112,7 +132,7 @@ class UserActivity(models.Model):
     activity_message = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f'{self.user_id} - {self.item.product_slug} - {self.timestamp}'
+        return f"{self.user_id} - {self.item.product_slug} - {self.timestamp}"
 
     @property
     def item_idx(self):
