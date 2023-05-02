@@ -3,7 +3,9 @@ import graphql
 from graphql import GraphQLError
 
 from trayapp.utils import get_banks_list, get_bank_account_details
-from users.types import StoreType
+from users.types import StoreType, TransactionType
+
+from users.models import Vendor, Transaction
 
 
 class Output:
@@ -39,9 +41,7 @@ class BankNode(Output, graphene.ObjectType):
 
 class AccountInfoNode(Output, graphene.ObjectType):
     balance = graphene.String()
-
-    def balance(self, info):
-        return self.balance
+    transactions = graphene.List(TransactionType)
 
 class BankAccountNode(Output, graphene.ObjectType):
     bank_id = graphene.Int()
@@ -58,6 +58,27 @@ class BankListQuery(graphene.ObjectType):
                                currency=graphene.String(required=False))
     validate_bank_account = graphene.Field(BankAccountNode, account_number=graphene.String(
         required=True), bank_code=graphene.String(required=True))
+
+    account_info = graphene.Field(AccountInfoNode)
+
+    def resolve_account_info(self, info: graphql.ResolveInfo, **kwargs):
+        user = info.context.user
+        data = {
+            'msg': "An Error Occured",
+            'success': False,
+            'balance': None,
+            'transactions': None
+        }
+        if user and user.is_authenticated:
+            vendor = Vendor.objects.get(user=user.profile)
+            transactions = Transaction.objects.filter(user=user.profile)
+            data = {
+                'msg': "ok",
+                'success': True,
+                'balance': vendor.balance,
+                'transactions': transactions
+             }
+        return data
 
     # This is the function that will be called when we query the bank list
     def resolve_banksList(self, info: graphql.ResolveInfo, use_cursor=False, perPage=10, page=1, currency="NGN"):

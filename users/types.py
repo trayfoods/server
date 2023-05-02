@@ -3,9 +3,7 @@ import graphene
 from graphene_django.types import DjangoObjectType
 from graphql_auth.schema import UserNode
 
-from .models import Client, Vendor, Store, Profile, Hostel, Gender
-
-from .models import UserAccount
+from .models import UserAccount, Client, Vendor, Store, Profile, Hostel, Gender, Transaction 
 
 class ProfileType(DjangoObjectType):
     class Meta:
@@ -52,6 +50,12 @@ class ClientType(DjangoObjectType):
     class Meta:
         model = Client
         fields = '__all__'
+
+class TransactionType(DjangoObjectType):
+    class Meta:
+        model = Transaction
+        fields = ["id", "title", "amount", "desc", "createdAt", "_type"]
+
 
 
 class VendorType(DjangoObjectType):

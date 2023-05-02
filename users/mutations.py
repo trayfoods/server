@@ -10,6 +10,7 @@ from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
+from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import VendorType, UserNodeType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount
@@ -43,6 +44,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
     user = graphene.Field(UserNodeType)
 
     @staticmethod
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, store_name, store_category, store_nickname):
         success = False
         user = info.context.user
@@ -105,6 +107,7 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
     __doc__ = UpdateAccountMixin.__doc__
 
     @staticmethod
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, token, username, first_name, email, last_name, phone_number=None, profile_image=None):
         user = info.context.user
         send_email = False
@@ -193,6 +196,7 @@ class CreateClientMutation(Output, graphene.Mutation):
     user = graphene.Field(UserNodeType)
 
     @staticmethod
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, gender, hostel_shortname=None, room=None):
         user = info.context.user
         profile = info.context.user.profile
@@ -273,6 +277,7 @@ class UpdateVendorBankAccount(Output, graphene.Mutation):
     error = graphene.String()
 
     @staticmethod
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, account_number, account_name, bank_code):
         success = False
         error = None
