@@ -26,8 +26,6 @@ class Query(BankListQuery, graphene.ObjectType):
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
 
-    get_acct_info = graphene.Field(AccountInfoNode)
-
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
     search_stores = graphene.Field(StoreType, search_query=graphene.String(
@@ -38,9 +36,6 @@ class Query(BankListQuery, graphene.ObjectType):
         if user.is_authenticated:
             return user
         return None
-
-    def get_acct_info(self, info, **kwargs):
-        return Vendor.objects.get(pk=vendor_id)
 
     def resolve_vendors(self, info, **kwargs):
         return Vendor.objects.all().order_by('-id')
