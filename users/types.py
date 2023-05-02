@@ -54,7 +54,7 @@ class ClientType(DjangoObjectType):
 class TransactionType(DjangoObjectType):
     class Meta:
         model = Transaction
-        fields = ["id", "title", "amount", "desc", "createdAt", "_type"]
+        fields = ["id", "title", "amount", "desc", "created_at", "_type"]
 
 
 
