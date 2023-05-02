@@ -71,7 +71,7 @@ class Vendor(models.Model):
     account_name = models.CharField(max_length=60, null=True, blank=True)
     bank_code = models.CharField(max_length=20, null=True, blank=True)
     country_code = models.CharField(max_length=6, null=True, blank=True)
-    balance = models.FloatField(null=True, default=00.00, blank=True, editable=False)
+    balance = models.DecimalField(max_digits=100, null=True, default=00.00, decimal_places=2, blank=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -88,7 +88,7 @@ class Transaction(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE, editable=False)
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=200, null=True, blank=True)
-    amount = models.FloatField(null=True, default=00.00, blank=True, editable=False)
+    amount = models.DecimalField(max_digits=100, null=True, default=00.00, decimal_places=2, blank=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
     created_at = models.DateTimeField(auto_now_add=True)
 
