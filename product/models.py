@@ -3,7 +3,9 @@ from django.db import models
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
-from trayapp.utils import image_resize
+from django.conf import settings
+
+User = settings.AUTH_USER_MODEL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
@@ -60,7 +62,7 @@ class Item(models.Model):
     product_type = models.ForeignKey(
         "ItemAttribute", related_name="product_type", on_delete=models.SET_NULL, null=True)
     product_images = models.ManyToManyField(
-        "ItemImage", related_name="product_image", blank=True)
+        "ItemImage", related_name="product_image", blank=True, editable=False)
     product_avaliable_in = models.ManyToManyField(
         "users.Store", related_name="avaliable_in_store", blank=True)
     product_creator = models.ForeignKey(
@@ -96,9 +98,15 @@ class ItemAttribute(models.Model):
             self.urlParamName = slugify(self.urlParamName)
         return super().save(*args, **kwargs)
 
+
+class Order(models.Model):
+    item = models.ForeignKey(Item, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    details = models.JSONField(default=dict, null=True, blank=True)
+
+    def __str__(self):
+        return 'Order #' + self.id
 # Signals
-
-
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
     instance.item_image.delete(save=False)
