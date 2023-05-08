@@ -29,20 +29,28 @@ def item_directory_path(instance, filename):
 
 class ItemImage(models.Model):
     product = models.ForeignKey("Item", on_delete=models.CASCADE)
-    item_image = models.ImageField('Item Image', upload_to=item_directory_path,  # callback function
-                                   null=False, blank=False,
-                                   help_text=_('Upload Item Image.'))
-    item_image_webp = models.ImageField('Webp Item Image',
-                                        upload_to=item_directory_path,
-                                        null=True, blank=True,
-                                        help_text=_('Upload Item Image In Webp Format.'))
+    item_image = models.ImageField(
+        "Item Image",
+        upload_to=item_directory_path,  # callback function
+        null=False,
+        blank=False,
+        help_text=_("Upload Item Image."),
+    )
+    item_image_webp = models.ImageField(
+        "Webp Item Image",
+        upload_to=item_directory_path,
+        null=True,
+        blank=True,
+        help_text=_("Upload Item Image In Webp Format."),
+    )
     item_image_hash = models.CharField(
-        'Item Image Hash', editable=False, max_length=32, null=True, blank=True)
+        "Item Image Hash", editable=False, max_length=32, null=True, blank=True
+    )
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-id']
+        ordering = ["-id"]
 
     def __str__(self) -> str:
         return self.product.product_slug
@@ -58,22 +66,33 @@ class Item(models.Model):
     product_calories = models.IntegerField(default=0)
     product_desc = models.CharField(max_length=500, blank=True, null=True)
     product_category = models.ForeignKey(
-        "ItemAttribute", related_name="product_category", on_delete=models.SET_NULL, null=True)
+        "ItemAttribute",
+        related_name="product_category",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
     product_type = models.ForeignKey(
-        "ItemAttribute", related_name="product_type", on_delete=models.SET_NULL, null=True)
+        "ItemAttribute",
+        related_name="product_type",
+        on_delete=models.SET_NULL,
+        null=True,
+    )
     product_images = models.ManyToManyField(
-        "ItemImage", related_name="product_image", blank=True, editable=False)
+        "ItemImage", related_name="product_image", blank=True, editable=False
+    )
     product_avaliable_in = models.ManyToManyField(
-        "users.Store", related_name="avaliable_in_store", blank=True)
+        "users.Store", related_name="avaliable_in_store", blank=True
+    )
     product_creator = models.ForeignKey(
-        "users.Vendor", null=True, on_delete=models.SET_NULL, blank=True)
+        "users.Vendor", null=True, on_delete=models.SET_NULL, blank=True
+    )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
 
     class Meta:
-        ordering = ['-product_clicks']
+        ordering = ["-product_clicks"]
 
     def __str__(self):
         return self.product_name
@@ -105,11 +124,17 @@ class Order(models.Model):
     order_payment_id = models.CharField(max_length=20, null=True, blank=True)
     order_payment_currency = models.CharField(max_length=20, null=True, blank=True)
     order_payment_method = models.CharField(max_length=20, null=True, blank=True)
-    order_payment_status = models.CharField(max_length=20, default="failed", choices=(("failed", "failed"), ("success", "success")))
+    order_payment_status = models.CharField(
+        max_length=20,
+        default="failed",
+        choices=(("failed", "failed"), ("success", "success")),
+    )
     order_created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return 'Order #' + self.id
+        return "Order #" + self.id
+
+
 # Signals
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
