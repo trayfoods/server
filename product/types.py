@@ -1,10 +1,8 @@
 import graphene
 from graphene_django.types import DjangoObjectType
-from .models import Item, ItemAttribute, ItemImage
+from .models import Item, ItemAttribute, ItemImage, Order
 from users.models import Vendor
 from users.types import StoreType
-
-from .types import Order
 
 
 class ItemImageType(DjangoObjectType):
