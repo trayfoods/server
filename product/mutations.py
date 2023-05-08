@@ -4,8 +4,9 @@ from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
-from django.shortcuts import get_object_or_404
+# from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
+from .types import OrderDetailsType, OrderType
 
 
 class AddProductMutation(graphene.Mutation):
@@ -233,6 +234,12 @@ class AddProductClickMutation(graphene.Mutation):
 
         return AddProductClickMutation(item=item, success=success)
 
-# class CreateOrderMutation(graphene.Mutation):
-#     class Arguments:
-#         details = graphene.
+class CreateOrderMutation(graphene.Mutation):
+    class Arguments:
+        order_details = OrderDetailsType()
+
+    order = graphene.Field(OrderType)
+    success = graphene.Boolean()
+
+    def mutate(self, info, slug):
+        pass

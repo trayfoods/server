@@ -4,6 +4,8 @@ from .models import Item, ItemAttribute, ItemImage
 from users.models import Vendor
 from users.types import StoreType
 
+from .types import Order
+
 
 class ItemImageType(DjangoObjectType):
     product_image = graphene.String()
@@ -126,6 +128,22 @@ class ItemType(DjangoObjectType):
                         store = self.product_avaliable_in.first()
         return store
 
+class StoreOrderInfoType(graphene.InputObjectType):
+    id = graphene.ID(required=True)
+    storeId = graphene.String(required=True)
+    total = graphene.String()
+    count = graphene.String()
+    items = graphene.String(required=True)
+
 class OrderDetailsType(graphene.InputObjectType):
-    overall_price = graphene.
+    overall_price = graphene.Int(required=True)
+    stores_infos = graphene.List(graphene.String, required=True)
+
+class OrderType(DjangoObjectType):
+    class Meta:
+        model = Order
+        fields = ['id', 'order_user', 'order_details', 'order_payment_id', 'order_payment_currency',
+                   'order_payment_method', 'order_payment_status', 'order_created_on']
     
+    def resolve_order_details(self, info, **kwargs):
+        return OrderDetailsType(**kwargs)
