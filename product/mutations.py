@@ -232,3 +232,7 @@ class AddProductClickMutation(graphene.Mutation):
             success = True
 
         return AddProductClickMutation(item=item, success=success)
+
+# class CreateOrderMutation(graphene.Mutation):
+#     class Arguments:
+#         details = graphene.
