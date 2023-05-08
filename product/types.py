@@ -135,7 +135,7 @@ class StoreOrderInfoType(graphene.InputObjectType):
 
 class OrderDetailsType(graphene.InputObjectType):
     overall_price = graphene.Int(required=True)
-    stores_infos = graphene.List(graphene.String, required=True)
+    stores_infos = graphene.List(StoreOrderInfoType, required=True)
 
 class OrderType(DjangoObjectType):
     class Meta:
