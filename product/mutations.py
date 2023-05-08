@@ -1,12 +1,13 @@
 from django.utils import timezone
 import graphene
 from graphql import GraphQLError
-from product.models import Item, ItemImage, ItemAttribute
+from product.models import Item, ItemImage, ItemAttribute, Order
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
-# from django.shortcuts import get_object_or_404
 from graphene_file_upload.scalars import Upload
 from .types import OrderDetailsType, OrderType
+
+from trayapp.permissions import IsAuthenticated, permission_checker
 
 
 class AddProductMutation(graphene.Mutation):
@@ -26,6 +27,7 @@ class AddProductMutation(graphene.Mutation):
     product = graphene.Field(ItemType)
     success = graphene.Boolean()
 
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, product_name, product_price, product_category, product_type, product_images, product_slug, product_desc=None, product_calories=None):
         success = False
         product = None
@@ -101,6 +103,8 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
     product = graphene.List(ItemType)
     success = graphene.Boolean()
 
+
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, products, action):
         success = False
         product_list = None
@@ -152,7 +156,8 @@ class AddAvaliableProductMutation(graphene.Mutation):
     # The class attributes define the response of the mutation
     product = graphene.Field(ItemType)
     success = graphene.Boolean()
-
+    
+    @permission_checker([IsAuthenticated])
     def mutate(self, info, product_slug, action):
         success = False
         if info.context.user.is_authenticated:
@@ -241,5 +246,6 @@ class CreateOrderMutation(graphene.Mutation):
     order = graphene.Field(OrderType)
     success = graphene.Boolean()
 
-    def mutate(self, info, slug):
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, order_details):
         pass

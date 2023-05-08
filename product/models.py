@@ -105,7 +105,7 @@ class Order(models.Model):
     order_payment_id = models.CharField(max_length=20, null=True, blank=True)
     order_payment_currency = models.CharField(max_length=20, null=True, blank=True)
     order_payment_method = models.CharField(max_length=20, null=True, blank=True)
-    order_payment_status = models.CharField(max_length=20, choices=(("failed", "failed"), ("success", "success")))
+    order_payment_status = models.CharField(max_length=20, default="failed", choices=(("failed", "failed"), ("success", "success")))
     order_created_on = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
