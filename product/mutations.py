@@ -28,45 +28,84 @@ class AddProductMutation(graphene.Mutation):
     success = graphene.Boolean()
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, product_name, product_price, product_category, product_type, product_images, product_slug, product_desc=None, product_calories=None):
+    def mutate(
+        self,
+        info,
+        product_name,
+        product_price,
+        product_category,
+        product_type,
+        product_images,
+        product_slug,
+        product_desc=None,
+        product_calories=None,
+    ):
         success = False
         product = None
         if info.context.user.is_authenticated:
-            store = Vendor.objects.filter(
-                user=info.context.user.profile).first().store
-            product = Item.objects.filter(
-                product_name=product_name.strip()).first()
-            vendor = Vendor.objects.filter(
-                user=info.context.user.profile).first()
+            store = Vendor.objects.filter(user=info.context.user.profile).first().store
+            product = Item.objects.filter(product_name=product_name.strip()).first()
+            vendor = Vendor.objects.filter(user=info.context.user.profile).first()
             if vendor is None:
                 success = False
-                raise GraphQLError(
-                    "You Need To Become A Vendor To Add New Item")
+                raise GraphQLError("You Need To Become A Vendor To Add New Item")
             if not product is None:
                 success = False
                 is_vendor_in_product_ava = product.product_avaliable_in.filter(
-                    store_nickname=vendor.store.store_nickname).first()
+                    store_nickname=vendor.store.store_nickname
+                ).first()
                 if not is_vendor_in_product_ava is None:
                     raise GraphQLError("Item Already In Your Store")
-                elif product.product_creator == vendor and is_vendor_in_product_ava is None:
+                elif (
+                    product.product_creator == vendor
+                    and is_vendor_in_product_ava is None
+                ):
                     store.store_products.add(product)
                     success = True
-                elif product.product_creator == vendor and not is_vendor_in_product_ava is None:
+                elif (
+                    product.product_creator == vendor
+                    and not is_vendor_in_product_ava is None
+                ):
                     raise GraphQLError("Item Already In Your Store")
 
             else:
                 product_category = ItemAttribute.objects.filter(
-                    urlParamName=product_category).first()
+                    urlParamName=product_category
+                ).first()
                 product_type = ItemAttribute.objects.filter(
-                    urlParamName=product_type).first()
-                if product is None and not vendor is None and not product_category is None and not product_type is None:
+                    urlParamName=product_type
+                ).first()
+                if (
+                    product is None
+                    and not vendor is None
+                    and not product_category is None
+                    and not product_type is None
+                ):
                     # Checking if sulg already exists
-                    if not Item.objects.filter(product_slug=product_slug).first() is None:
-                        product = Item.objects.create(product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
-                                                      product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
+                    if (
+                        not Item.objects.filter(product_slug=product_slug).first()
+                        is None
+                    ):
+                        product = Item.objects.create(
+                            product_name=product_name.strip(),
+                            product_price=product_price,
+                            product_category=product_category,
+                            product_type=product_type,
+                            product_desc=product_desc,
+                            product_calories=product_calories,
+                            product_creator=vendor,
+                        )
                     else:
-                        product = Item.objects.create(product_slug=product_slug, product_name=product_name.strip(), product_price=product_price, product_category=product_category, product_type=product_type,
-                                                      product_desc=product_desc, product_calories=product_calories, product_creator=vendor)
+                        product = Item.objects.create(
+                            product_slug=product_slug,
+                            product_name=product_name.strip(),
+                            product_price=product_price,
+                            product_category=product_category,
+                            product_type=product_type,
+                            product_desc=product_desc,
+                            product_calories=product_calories,
+                            product_creator=vendor,
+                        )
                     product.save()
                     # product = Item.objects.filter(
                     #     product_name=product_name.strip()).first()
@@ -76,10 +115,14 @@ class AddProductMutation(graphene.Mutation):
                         if not qs is None:
                             is_primary = False
                         productImage = ItemImage.objects.create(
-                            product=product, item_image=product_image, is_primary=is_primary)
+                            product=product,
+                            item_image=product_image,
+                            is_primary=is_primary,
+                        )
                         productImage.save()
                         product = Item.objects.filter(
-                            product_name=product_name.strip()).first()
+                            product_name=product_name.strip()
+                        ).first()
                         if not product is None:
                             product.product_avaliable_in.add(vendor.store)
                             product.product_images.add(productImage)
@@ -103,26 +146,24 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
     product = graphene.List(ItemType)
     success = graphene.Boolean()
 
-
     @permission_checker([IsAuthenticated])
     def mutate(self, info, products, action):
         success = False
         product_list = None
         if info.context.user.is_authenticated:
-            products = products.split(',')
+            products = products.split(",")
             for item in products:
-                product = Item.objects.filter(
-                    product_slug=item.strip()).first()
+                product = Item.objects.filter(product_slug=item.strip()).first()
                 product_list.append(product)
-                vendor = Vendor.objects.filter(
-                    user=info.context.user.profile).first()
+                vendor = Vendor.objects.filter(user=info.context.user.profile).first()
                 # Checking if the current user is equals to the store vendor
                 # Then add 0.5 to the store_rank
                 try:
                     if not product.product_creator is None:
                         if product.product_creator != vendor:
                             store = Store.objects.filter(
-                                store_nickname=product.product_creator.store.store_nickname).first()
+                                store_nickname=product.product_creator.store.store_nickname
+                            ).first()
                             if not store is None:
                                 store.store_rank += 0.5
                                 store.save()
@@ -136,14 +177,15 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                         product.product_avaliable_in.remove(vendor.store)
                         vendor.store.store_products.remove(product)
                     else:
-                        raise GraphQLError(
-                            "Enter either `add/remove` for actions.")
+                        raise GraphQLError("Enter either `add/remove` for actions.")
                     product.save()
                     success = True
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
-        return AddMultipleAvaliableProductsMutation(product=product_list, success=success)
+        return AddMultipleAvaliableProductsMutation(
+            product=product_list, success=success
+        )
 
 
 # This Mutation Only Add One Product to the storeProducts as available
@@ -156,15 +198,13 @@ class AddAvaliableProductMutation(graphene.Mutation):
     # The class attributes define the response of the mutation
     product = graphene.Field(ItemType)
     success = graphene.Boolean()
-    
+
     @permission_checker([IsAuthenticated])
     def mutate(self, info, product_slug, action):
         success = False
         if info.context.user.is_authenticated:
-            product = Item.objects.filter(
-                product_slug=product_slug.strip()).first()
-            vendor = Vendor.objects.filter(
-                user=info.context.user.profile).first()
+            product = Item.objects.filter(product_slug=product_slug.strip()).first()
+            vendor = Vendor.objects.filter(user=info.context.user.profile).first()
             # Checking if the current user is equals to the store vendor
             # Then add 0.5 to the store_rank
             if not product is None and not vendor is None:
@@ -172,7 +212,8 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     if not product.product_creator is None:
                         if product.product_creator != vendor:
                             store = Store.objects.filter(
-                                store_nickname=product.product_creator.store.store_nickname).first()
+                                store_nickname=product.product_creator.store.store_nickname
+                            ).first()
                             if not store is None:
                                 store.store_rank += 0.5
                                 store.save()
@@ -183,7 +224,10 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     new_activity = UserActivity.objects.create(
                         user_id=info.context.user.id,
                         activity_message=f"Added {product.product_name} as avaliable product",
-                        activity_type="add_to_items", item=product, timestamp=timezone.now())
+                        activity_type="add_to_items",
+                        item=product,
+                        timestamp=timezone.now(),
+                    )
                     vendor.store.store_products.add(product)
                     product.product_avaliable_in.add(store)
                     product.save()
@@ -193,15 +237,17 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     new_activity = UserActivity.objects.create(
                         user_id=info.context.user.id,
                         activity_message=f"Removed {product.product_name} as avaliable product",
-                        activity_type="remove_from_items", item=product, timestamp=timezone.now())
+                        activity_type="remove_from_items",
+                        item=product,
+                        timestamp=timezone.now(),
+                    )
                     vendor.store.store_products.remove(product)
                     product.product_avaliable_in.remove(store)
                     product.save()
                     vendor.save()
                     new_activity.save()
                 else:
-                    raise GraphQLError(
-                        "Enter either `add/remove` for actions.")
+                    raise GraphQLError("Enter either `add/remove` for actions.")
                 success = True
         else:
             raise GraphQLError("Login required.")
@@ -225,10 +271,14 @@ class AddProductClickMutation(graphene.Mutation):
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
                 activity_message=None,
-                activity_type="click", item=item, timestamp=timezone.now())
+                activity_type="click",
+                item=item,
+                timestamp=timezone.now(),
+            )
             if item.product_creator:
                 store = Store.objects.filter(
-                    store_nickname=item.product_creator.store.store_nickname).first()
+                    store_nickname=item.product_creator.store.store_nickname
+                ).first()
                 if not store is None:
                     store.store_rank += 0.5
                     store.save()
@@ -239,13 +289,24 @@ class AddProductClickMutation(graphene.Mutation):
 
         return AddProductClickMutation(item=item, success=success)
 
+
 class CreateOrderMutation(graphene.Mutation):
     class Arguments:
-        order_details = OrderDetailsType()
+        order_details = OrderDetailsType(required=True)
 
     order = graphene.Field(OrderType)
     success = graphene.Boolean()
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, order_details):
-        pass
+    def mutate(self, info, order_details, **kwargs):
+        order_user = info.context.user
+        order_payment_status = "pending"
+        order_details = kwargs.get("order_details", None)
+        create_order = Order.objects.create(
+            order_user=order_user,
+            order_payment_status=order_payment_status,
+            order_details=order_details,
+        )
+        create_order.save()
+
+        return CreateOrderMutation(order=create_order, success=True)
