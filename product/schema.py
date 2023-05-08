@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 from product.types import ItemType, ItemAttributeType
 from product.mutations import (AddAvaliableProductMutation,
-                               AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation)
+                               AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation, CreateOrderMutation)
 from product.models import Item, ItemAttribute
 from product.utils import recommend_items
 from users.models import UserActivity
@@ -184,6 +184,7 @@ class Mutation(graphene.ObjectType):
     add_product_click = AddProductClickMutation.Field()
     add_available_product = AddAvaliableProductMutation.Field()
     add_available_products = AddMultipleAvaliableProductsMutation.Field()
+    create_order = CreateOrderMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
