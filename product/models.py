@@ -126,8 +126,8 @@ class Order(models.Model):
     order_payment_method = models.CharField(max_length=20, null=True, blank=True)
     order_payment_status = models.CharField(
         max_length=20,
-        default="failed",
-        choices=(("failed", "failed"), ("success", "success")),
+        default="pending",
+        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
     )
     order_created_on = models.DateTimeField(auto_now_add=True)
 
