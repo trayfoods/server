@@ -1,7 +1,7 @@
 import graphene
 from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage
-from users.models import Vendor, Store
+from users.models import Vendor
 from users.types import StoreType
 
 
@@ -125,3 +125,7 @@ class ItemType(DjangoObjectType):
                     if is_avaliable:
                         store = self.product_avaliable_in.first()
         return store
+
+class OrderDetailsType(graphene.InputObjectType):
+    overall_price = graphene.
+    
