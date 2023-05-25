@@ -9,6 +9,7 @@ from .types import OrderDetailsType, OrderType
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
+import json
 
 class AddProductMutation(graphene.Mutation):
     class Arguments:
@@ -301,7 +302,8 @@ class CreateOrderMutation(graphene.Mutation):
     def mutate(self, info, order_details, **kwargs):
         order_user = info.context.user
         order_payment_status = "pending"
-        order_details = kwargs.get("order_details", None)
+        order_details = json.dumps(order_details)
+        print('order_details', order_details)
         create_order = Order.objects.create(
             order_user=order_user,
             order_payment_status=order_payment_status,

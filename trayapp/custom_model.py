@@ -7,6 +7,53 @@ from users.types import StoreType, TransactionType
 
 from users.models import Vendor, Transaction
 
+from graphene.types import Scalar
+import json
+
+
+class JSONField(Scalar):
+    """
+    Custom scalar type for Django JSONField.
+    """
+
+    @staticmethod
+    def serialize(json_value):
+        """
+        Serialize the JSONField value.
+
+        :param json_value: The JSONField value.
+        :type json_value: dict
+        :return: Serialized JSONField value.
+        :rtype: dict
+        """
+        return json_value
+
+    @staticmethod
+    def parse_value(json_string):
+        """
+        Deserialize the JSONField value.
+
+        :param json_string: The JSONField value as a string.
+        :type json_string: str
+        :return: Deserialized JSONField value.
+        :rtype: dict
+        """
+        try:
+            return json.loads(json_string)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def parse_literal(node):
+        """
+        Parse a literal GraphQL node value.
+
+        :param node: The GraphQL node.
+        :type node: Node
+        :return: Deserialized JSONField value.
+        :rtype: dict
+        """
+        return node.value
 
 class Output:
     """

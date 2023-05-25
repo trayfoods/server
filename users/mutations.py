@@ -79,7 +79,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
         else:  # if user is not authenticated
             raise GraphQLError("Login required.")  # raise error
         # Notice we return an instance of this mutation
-        return CreateVendorMutation(user=user, vendor=vendor, success=success)
+        return CreateVendorMutation(user=info.context.user, vendor=vendor, success=success)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
