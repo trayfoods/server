@@ -25,11 +25,9 @@ class UserNodeType(UserNode, graphene.ObjectType):
 
     def resolve_role(self, info):
         role = self.role
-        print(self.profile)
         return role
     
     def resolve_profile(self, info):
-        # user = Profile.objects.filter(user=).first()
         return self.profile
 
 

@@ -1,9 +1,11 @@
 import os
+import uuid
 from django.db import models
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+import datetime
 
 User = settings.AUTH_USER_MODEL
 
@@ -119,6 +121,12 @@ class ItemAttribute(models.Model):
 
 
 class Order(models.Model):
+    order_id = models.CharField(
+        max_length=17,
+        unique=True,
+        primary_key=True,
+        editable=False,
+    )
     order_user = models.ForeignKey(User, on_delete=models.CASCADE)
     order_details = models.JSONField(default=dict, null=True, blank=True)
     order_payment_id = models.CharField(max_length=20, null=True, blank=True)
@@ -131,8 +139,22 @@ class Order(models.Model):
     )
     order_created_on = models.DateTimeField(auto_now_add=True)
 
+    def save(self, *args, **kwargs):
+        if not self.order_id:
+            # Generate a custom ID if it doesn't exist
+            self.order_id = self.generate_order_id()
+        super().save(*args, **kwargs)
+
+    def generate_order_id(self):
+        # Get the current date
+        current_date = datetime.date.today()
+        year = current_date.year
+        # Implement order ID generation logic here
+        # For example, you can use a combination of static value and random number
+        return f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
+
     def __str__(self):
-        return "Order #" + self.id
+        return "Order #" + str(self.order_id)
 
 
 # Signals
