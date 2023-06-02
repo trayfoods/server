@@ -3,11 +3,10 @@ from django.db.models import Count
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import TruncatedSVD
 from product.models import Item
-from numba import jit
+# from numba import jit
 from users.models import UserActivity
 
 # Create recommendation function using collaborative filtering
-@jit
 def recommend_items(user_id, n=10):
     # Load the user activity data into a Pandas DataFrame using the Django ORM
     activity = UserActivity.objects.filter(
