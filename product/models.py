@@ -67,6 +67,12 @@ class Item(models.Model):
     product_price = models.FloatField()
     product_calories = models.IntegerField(default=0)
     product_desc = models.CharField(max_length=500, blank=True, null=True)
+    product_share_visibility = models.CharField(
+        max_length=20,
+        choices=(("private", "private"), ("public", "public")),
+        default="public",
+        editable=False,
+    )
     product_category = models.ForeignKey(
         "ItemAttribute",
         related_name="product_category",
