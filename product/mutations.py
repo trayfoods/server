@@ -19,6 +19,7 @@ class AddProductMutation(graphene.Mutation):
         product_price = graphene.Int(required=True)
         product_type = graphene.String(required=True)
         product_category = graphene.String(required=True)
+        product_share_visibility = graphene.String(required=True)
         product_desc = graphene.String()
         product_calories = graphene.Int()
 
@@ -36,6 +37,7 @@ class AddProductMutation(graphene.Mutation):
         product_price,
         product_category,
         product_type,
+        product_share_visibility,
         product_images,
         product_slug,
         product_desc=None,
@@ -92,6 +94,7 @@ class AddProductMutation(graphene.Mutation):
                             product_price=product_price,
                             product_category=product_category,
                             product_type=product_type,
+                            product_share_visibility=product_share_visibility,
                             product_desc=product_desc,
                             product_calories=product_calories,
                             product_creator=vendor,
@@ -103,6 +106,7 @@ class AddProductMutation(graphene.Mutation):
                             product_price=product_price,
                             product_category=product_category,
                             product_type=product_type,
+                            product_share_visibility=product_share_visibility,
                             product_desc=product_desc,
                             product_calories=product_calories,
                             product_creator=vendor,
