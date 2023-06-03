@@ -54,6 +54,7 @@ class ItemType(DjangoObjectType):
             "product_slug",
             "product_calories",
             "product_type",
+            "product_share_visibility",
             "product_category",
             "product_images",
             "product_desc",
@@ -75,6 +76,19 @@ class ItemType(DjangoObjectType):
             if not storeName is None:
                 item_id = self.id + storeName.id + Item.objects.last().id
         return item_id
+    
+    def resolve_product_share_visibility(self, info):
+        user = info.context.user
+        product_share_visibility = self.product_share_visibility
+        # check if the user is authenticated
+        if user.is_authenticated:
+            # check if the user is a vendor
+            vendor = Vendor.objects.filter(user=user.profile).first()
+            if not vendor is None:
+                # check if the vendor is the creator of the product
+                if vendor.store == self.product_creator.store:
+                    product_share_visibility = "public"
+        return product_share_visibility
 
     def resolve_product_qty(self, info):
         product_qty = self.product_qty
