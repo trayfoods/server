@@ -62,6 +62,7 @@ class ItemType(DjangoObjectType):
             "product_price",
             "product_avaliable_in",
             "has_qty",
+            "editable",
             "product_creator",
             "product_created_on",
             "is_avaliable",
@@ -89,7 +90,7 @@ class ItemType(DjangoObjectType):
             if not storeName is None:
                 item_id = self.id + storeName.id + Item.objects.last().id
         return item_id
-    
+
     def resolve_product_share_visibility(self, info):
         user = info.context.user
         product_share_visibility = self.product_share_visibility
