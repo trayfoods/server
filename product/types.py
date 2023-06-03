@@ -36,6 +36,7 @@ class ItemType(DjangoObjectType):
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
+    editable = graphene.Boolean()
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.Field(
         StoreType, storeNickname=graphene.String(required=False)
@@ -65,6 +66,18 @@ class ItemType(DjangoObjectType):
             "product_created_on",
             "is_avaliable",
         ]
+
+    def resolve_editable(self, info):
+        user = info.context.user
+        editable = False
+        if user.is_authenticated:
+            vendor = Vendor.objects.filter(user=user.profile).first()
+            if not vendor is None:
+                if vendor.store == self.product_creator.store:
+                    # check if other stored have added this item
+                    if self.product_avaliable_in.all().count() < 2:
+                        editable = True
+        return editable
 
     # This will add a unqiue id, if the store items are the same
     def resolve_id(self, info, storeNickname=None):
