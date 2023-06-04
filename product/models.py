@@ -156,7 +156,7 @@ class Rating(models.Model):
     stars = models.IntegerField()
     comment = models.TextField(null=True, blank=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
-    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         self.comment = filter_comment(self.comment)
