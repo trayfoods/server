@@ -11,6 +11,16 @@ User = settings.AUTH_USER_MODEL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
+# profanity filter
+from better_profanity import profanity
+
+def filter_comment(comment):
+    # better-profanity
+    if profanity.contains_profanity(comment):
+        comment = profanity.censor(comment)
+
+    return comment
+
 
 def item_directory_path(instance, filename):
     """
@@ -79,18 +89,18 @@ class Item(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-#     food_categories = [
-#     "Fast Food",
-#     "Asian Cuisine",
-#     "Italian Cuisine",
-#     "American Cuisine",
-#     "Mexican Cuisine",
-#     "Healthy and Salad Options",
-#     "Desserts and Sweets",
-#     "Breakfast and Brunch",
-#     "Middle Eastern Cuisine",
-#     "Beverages"
-# ]
+    #     food_categories = [
+    #     "Fast Food",
+    #     "Asian Cuisine",
+    #     "Italian Cuisine",
+    #     "American Cuisine",
+    #     "Mexican Cuisine",
+    #     "Healthy and Salad Options",
+    #     "Desserts and Sweets",
+    #     "Breakfast and Brunch",
+    #     "Middle Eastern Cuisine",
+    #     "Beverages"
+    # ]
 
     product_type = models.ForeignKey(
         "ItemAttribute",
@@ -122,6 +132,27 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
+
+    @property
+    def average_rating(self):
+        ratings = self.ratings.all()
+        count = ratings.count()
+        if count > 0:
+            total = sum(rating.stars for rating in ratings)
+            return total / count
+        return 0.0
+
+
+class Rating(models.Model):
+    user = models.ForeignKey("users.Profile", on_delete=models.CASCADE, related_name="ratings")
+    stars = models.IntegerField()
+    comment = models.TextField()
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
+
+    def save(self, *args, **kwargs):
+        self.comment = filter_comment(self.comment)
+        super().save(*args, **kwargs)
 
 
 class ItemAttribute(models.Model):

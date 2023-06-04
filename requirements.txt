@@ -78,3 +78,6 @@ tzdata==2022.1
 urllib3==1.26.11
 whitenoise==6.2.0
 zope.interface==5.4.0
+# profanity packages
+profanity-check==1.0.3
+better-profanity==0.7.0

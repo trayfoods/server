@@ -59,7 +59,7 @@ class UserNodeType(UserNode, graphene.ObjectType):
 
         if client is None and vendor is None:
             role = "client"
-        return role.upper()
+        return role.lower()
 
     def resolve_profile(self, info):
         return self.profile
