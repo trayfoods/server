@@ -1,11 +1,11 @@
 from django.utils import timezone
 import graphene
 from graphql import GraphQLError
-from product.models import Item, ItemImage, ItemAttribute, Order
+from product.models import Item, ItemImage, ItemAttribute, Order, Rating
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
 from graphene_file_upload.scalars import Upload
-from .types import OrderDetailsType, OrderType
+from .types import OrderDetailsType, OrderType, ReviewsInputType
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -316,3 +316,22 @@ class CreateOrderMutation(graphene.Mutation):
         create_order.save()
 
         return CreateOrderMutation(order=create_order, success=True)
+
+class RateItemMutation(graphene.Mutation):
+    class Arguments:
+        item_slug = graphene.ID(required=True)
+        rating = graphene.Argument(ReviewsInputType, required=True)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(root, info, item_slug, rating):
+        user = info.context.user
+        try:
+            item = Item.objects.get(product_slug=item_slug)
+        except Item.DoesNotExist:
+            raise ValueError("Invalid item ID")
+
+        Rating.objects.create(user=user.profile, item=item, stars=rating.stars, comment=rating.comment)
+        return RateItemMutation(success=True)

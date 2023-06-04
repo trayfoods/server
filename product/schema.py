@@ -2,7 +2,8 @@ import graphene
 from graphql import GraphQLError
 from product.types import ItemType, ItemAttributeType
 from product.mutations import (AddAvaliableProductMutation,
-                               AddMultipleAvaliableProductsMutation, AddProductMutation, AddProductClickMutation, CreateOrderMutation)
+                               AddMultipleAvaliableProductsMutation, AddProductMutation, 
+                               AddProductClickMutation, CreateOrderMutation, RateItemMutation)
 from product.models import Item, ItemAttribute
 from product.utils import recommend_items
 from users.models import UserActivity
@@ -91,13 +92,13 @@ class Query(graphene.ObjectType):
             count = count + 1
             items = Item.objects.all().distinct()
             items = items[:count if items.count() >= count else items.count()]
-            try:
-                if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                    return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
-                else:
-                    return items
-            except:
-                return items
+            # try:
+            #     if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
+            #         return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
+            #     else:
+            #         return items
+            # except:
+            return items
         else:
             GraphQLError("There should be a count param in the items query")
 
@@ -185,6 +186,7 @@ class Mutation(graphene.ObjectType):
     add_available_product = AddAvaliableProductMutation.Field()
     add_available_products = AddMultipleAvaliableProductsMutation.Field()
     create_order = CreateOrderMutation.Field()
+    rate_item = RateItemMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
