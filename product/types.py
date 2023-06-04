@@ -37,6 +37,7 @@ class ItemType(DjangoObjectType):
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
     editable = graphene.Boolean()
+    rating = graphene.Float()
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.Field(
         StoreType, storeNickname=graphene.String(required=False)
@@ -63,6 +64,7 @@ class ItemType(DjangoObjectType):
             "product_avaliable_in",
             "has_qty",
             "editable",
+            "rating",
             "product_creator",
             "product_created_on",
             "is_avaliable",
@@ -79,6 +81,9 @@ class ItemType(DjangoObjectType):
                     if self.product_avaliable_in.all().count() < 2:
                         editable = True
         return editable
+    
+    def resolve_rating(self, info):
+        return self.average_rating
 
     # This will add a unqiue id, if the store items are the same
     def resolve_id(self, info, storeNickname=None):
