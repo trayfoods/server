@@ -37,7 +37,7 @@ class RatingEnum(graphene.Enum):
     FOUR_STARS = 4
     FIVE_STARS = 5
 
-class ReviewsInputType(graphene.InputObjectType):
+class RatingInputType(graphene.InputObjectType):
     stars = graphene.Field(RatingEnum, required=True)
     comment = graphene.String()
 
