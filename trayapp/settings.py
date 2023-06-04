@@ -5,19 +5,19 @@ import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = 'True' in os.getenv("DEBUG")
-USE_S3 = 'True' in os.getenv("USE_S3")
-USE_DB = 'True' in os.getenv("USE_DB")
+DEBUG = "True" in os.getenv("DEBUG")
+USE_S3 = "True" in os.getenv("USE_S3")
+USE_DB = "True" in os.getenv("USE_DB")
 
 # EMAIL_INFOS
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
 DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
@@ -29,16 +29,22 @@ if DEBUG == True:
 else:
     FRONTEND_URL = "https://%s" % os.getenv("REACT_SITE")
 
-ALLOWED_HOSTS = ["127.0.0.1", "192.168.137.1", "localhost", "%s" %
-                 os.getenv("SITE_ORIGIN_URL")]
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "192.168.137.1",
+    "localhost",
+    "%s" % os.getenv("SITE_ORIGIN_URL"),
+]
 
 CSRF_COOKIE_SECURE = DEBUG == False
 SESSION_COOKIE_SECURE = DEBUG == False
 SECURE_SSL_REDIRECT = DEBUG == False
-SECURE_HSTS_SECONDS = 518400 if(DEBUG == False) else None
+SECURE_HSTS_SECONDS = 518400 if (DEBUG == False) else None
 SECURE_HSTS_INCLUDE_SUBDOMAINS = DEBUG == False
 SECURE_HSTS_PRELOAD = DEBUG == False
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https') if(DEBUG == False) else None
+SECURE_PROXY_SSL_HEADER = (
+    ("HTTP_X_FORWARDED_PROTO", "https") if (DEBUG == False) else None
+)
 
 CONN_MAX_AGE = 8600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
@@ -57,21 +63,18 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL
     "users",
     "product",
-
     "graphene_django",
     "graphql_auth",
     "django_filters",
     "django_cleanup.apps.CleanupConfig",
     "django_unused_media",
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
-
     "corsheaders",
-
     "django_extensions",
     "rest_framework",
 ]
 
-AUTH_USER_MODEL = 'users.UserAccount'
+AUTH_USER_MODEL = "users.UserAccount"
 
 # CHANNEL_LAYERS = {
 #     "default": {
@@ -90,7 +93,7 @@ GRAPHENE = {
     "SCHEMA": "trayapp.schema.schema",
     "MIDDLEWARE": [
         "graphql_jwt.middleware.JSONWebTokenMiddleware",
-    ]
+    ],
 }
 
 AUTHENTICATION_BACKENDS = [
@@ -100,7 +103,6 @@ AUTHENTICATION_BACKENDS = [
 
 GRAPHQL_JWT = {
     # "JWT_VERIFY_EXPIRATION": True,
-
     # optional
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
     "JWT_ALLOW_ANY_CLASSES": [
@@ -112,14 +114,12 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.ObtainJSONWebToken",
         "graphql_auth.mutations.VerifyToken",
         "graphql_auth.mutations.RefreshToken",
-        "graphql_auth.mutations.RevokeToken"
+        "graphql_auth.mutations.RevokeToken",
     ],
 }
 GRAPHQL_AUTH = {
     "EMAIL_FROM": DEFAULT_FROM_EMAIL,
-    "EMAIL_TEMPLATE_VARIABLES": {
-        "frontend_domain": FRONTEND_URL
-    },
+    "EMAIL_TEMPLATE_VARIABLES": {"frontend_domain": FRONTEND_URL},
     "SEND_ACTIVATION_EMAIL": DEBUG == False,
     "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
     "SEND_PASSWORD_RESET_EMAIL": True,
@@ -127,7 +127,7 @@ GRAPHQL_AUTH = {
     "PASSWORD_SET_PATH_ON_EMAIL": "auth/password-set",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
     "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"],
-    "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"]
+    "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -174,7 +174,7 @@ DATABASES = {
 }
 if USE_DB == True:
     db_from_env = dj_database_url.config(conn_max_age=600)
-    DATABASES['default'].update(db_from_env)
+    DATABASES["default"].update(db_from_env)
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -213,7 +213,7 @@ if USE_S3:
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
     AWS_DEFAULT_ACL = os.getenv("AWS_DEFAULT_ACL")
-    if AWS_DEFAULT_ACL == 'None':
+    if AWS_DEFAULT_ACL == "None":
         AWS_DEFAULT_ACL = None
     AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.eu-west-2.amazonaws.com"
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
@@ -258,7 +258,7 @@ else:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://192.168.137.1:3000",
-        FRONTEND_URL
+        FRONTEND_URL,
     )
 
 CORS_ALLOW_METHODS = (
