@@ -1,7 +1,7 @@
 from django.utils import timezone
 import graphene
 from graphql import GraphQLError
-from product.models import Item, ItemImage, ItemAttribute, Order, Rating
+from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
 from graphene_file_upload.scalars import Upload
@@ -330,8 +330,15 @@ class RateItemMutation(graphene.Mutation):
         user = info.context.user
         try:
             item = Item.objects.get(product_slug=item_slug)
+            try:
+                rating_qs = Rating.objects.get(user=user, item=item)
+                print(rating_qs)
+                rating_qs.stars = rating.stars
+                rating_qs.comment = filter_comment(rating.comment)
+                rating_qs.save()
+            except Rating.DoesNotExist:
+                Rating.objects.create(user=user, item=item, stars=rating.stars, comment=rating.comment)
         except Item.DoesNotExist:
-            raise ValueError("Invalid item ID")
-
-        Rating.objects.create(user=user.profile, item=item, stars=rating.stars, comment=rating.comment)
+            raise ValueError("Invalid Item Slug")
+        
         return RateItemMutation(success=True)

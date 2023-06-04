@@ -14,6 +14,7 @@ PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 # profanity filter
 from better_profanity import profanity
 
+
 def filter_comment(comment):
     # better-profanity
     if profanity.contains_profanity(comment):
@@ -132,23 +133,30 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
-
+    
+    @property
+    def total_ratings(self):
+        return self.ratings.count()
+    
     @property
     def average_rating(self):
         ratings = self.ratings.all()
         count = ratings.count()
         if count > 0:
-            total = sum(rating.stars for rating in ratings)
-            return total / count
+            sum_up = sum(rating.stars for rating in ratings)
+            total = sum_up / count
+            rounded_up = round(total * 10**1) / (10**1)
+            return rounded_up
         return 0.0
+    
 
 
 class Rating(models.Model):
-    user = models.ForeignKey("users.Profile", on_delete=models.CASCADE, related_name="ratings")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
-    comment = models.TextField()
+    comment = models.TextField(null=True, blank=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
+    created_on = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         self.comment = filter_comment(self.comment)
