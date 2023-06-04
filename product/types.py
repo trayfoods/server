@@ -1,7 +1,7 @@
 import graphene
 from graphene_django.types import DjangoObjectType
 from graphql import GraphQLError
-from .models import Item, ItemAttribute, ItemImage, Order
+from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Vendor
 from users.types import StoreType
 
@@ -30,6 +30,21 @@ class ItemAttributeType(DjangoObjectType):
         model = ItemAttribute
         fields = "__all__"
 
+class RatingEnum(graphene.Enum):
+    ONE_STAR = 1
+    TWO_STARS = 2
+    THREE_STARS = 3
+    FOUR_STARS = 4
+    FIVE_STARS = 5
+
+class ReviewsInputType(graphene.InputObjectType):
+    stars = graphene.Field(RatingEnum, required=True)
+    comment = graphene.String()
+
+class ReviewsType(DjangoObjectType):
+    class Meta:
+        model = Rating
+        fields = "__all__"
 
 class ItemType(DjangoObjectType):
     id = graphene.Int(storeNickname=graphene.String(required=False))
@@ -37,7 +52,8 @@ class ItemType(DjangoObjectType):
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
     editable = graphene.Boolean()
-    rating = graphene.Float()
+    average_rating = graphene.Float()
+    reviews = graphene.List(ReviewsType)
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.Field(
         StoreType, storeNickname=graphene.String(required=False)
@@ -64,11 +80,16 @@ class ItemType(DjangoObjectType):
             "product_avaliable_in",
             "has_qty",
             "editable",
-            "rating",
+            "average_rating",
+            "reviews",
             "product_creator",
             "product_created_on",
             "is_avaliable",
         ]
+
+    def resolve_reviews(self, info):
+        item_ratings = Rating.objects.filter(item=self)
+        return item_ratings
 
     def resolve_editable(self, info):
         user = info.context.user
@@ -83,7 +104,7 @@ class ItemType(DjangoObjectType):
                         editable = False
         return editable
     
-    def resolve_rating(self, info):
+    def resolve_average_rating(self, info):
         return self.average_rating
 
     # This will add a unqiue id, if the store items are the same
