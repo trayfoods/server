@@ -5,7 +5,7 @@ from product.models import Item, ItemImage, ItemAttribute, Order, Rating
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
 from graphene_file_upload.scalars import Upload
-from .types import OrderDetailsType, OrderType, ReviewsInputType
+from .types import OrderDetailsType, OrderType, RatingInputType
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -320,7 +320,7 @@ class CreateOrderMutation(graphene.Mutation):
 class RateItemMutation(graphene.Mutation):
     class Arguments:
         item_slug = graphene.ID(required=True)
-        rating = graphene.Argument(ReviewsInputType, required=True)
+        rating = graphene.Argument(RatingInputType, required=True)
 
     success = graphene.Boolean()
 
