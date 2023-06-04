@@ -78,8 +78,9 @@ class ItemType(DjangoObjectType):
             if not vendor is None:
                 if vendor.store == self.product_creator.store:
                     # check if other stored have added this item
-                    if self.product_avaliable_in.all().count() < 2:
-                        editable = True
+                    editable = True
+                    if self.product_avaliable_in.all().count() > 1:
+                        editable = False
         return editable
     
     def resolve_rating(self, info):
