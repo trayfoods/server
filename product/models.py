@@ -154,7 +154,7 @@ class Item(models.Model):
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
-    comment = models.TextField(null=True, blank=True)
+    comment = models.TextField(max_length=300, null=True, blank=True)
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
     updated_on = models.DateTimeField(auto_now=True)
 
