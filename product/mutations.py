@@ -342,3 +342,49 @@ class RateItemMutation(graphene.Mutation):
             raise ValueError("Invalid Item Slug")
         
         return RateItemMutation(success=True)
+    
+class DeleteRatingMutation(graphene.Mutation):
+    class Arguments:
+        item_slug = graphene.ID(required=True)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(root, info, item_slug):
+        user = info.context.user
+        try:
+            item = Item.objects.get(product_slug=item_slug)
+            try:
+                rating_qs = Rating.objects.get(user=user, item=item)
+                rating_qs.delete()
+            except Rating.DoesNotExist:
+                raise ValueError("Rating Does Not Exist")
+        except Item.DoesNotExist:
+            raise ValueError("Invalid Item Slug")
+        
+        return DeleteRatingMutation(success=True)
+    
+class RatingHelpfulMutation(graphene.Mutation):
+    class Arguments:
+        rating_id = graphene.ID(required=True)
+        helpful = graphene.Boolean(required=True)
+
+    success = graphene.Boolean()
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(root, info, rating_id, helpful):
+        user = info.context.user
+        try:
+            rating = Rating.objects.get(id=rating_id, user=user)
+            # update rating helpful_count
+            if helpful:
+                rating.helpful_count += 1
+            else:
+                rating.helpful_count -= 1
+            rating.save()
+        except Rating.DoesNotExist:
+            raise ValueError("Invalid Rating Id")
+        
+        return RatingHelpfulMutation(success=True)
