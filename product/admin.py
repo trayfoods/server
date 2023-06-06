@@ -59,9 +59,13 @@ class ItemImageAdmin(admin.ModelAdmin):
     )
     readonly_fields = (get_item_original_image, get_item_webp_image)
 
+class RatingAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "stars",
+                    "helpful_count",)
+    readonly_fields = ("helpful_count", "stars")
 
 admin.site.register(Item, ItemAdmin)
-admin.site.register(Rating)
+admin.site.register(Rating, RatingAdmin)
 admin.site.register(ItemAttribute, ItemAttributeAdmin)
 admin.site.register(ItemImage, ItemImageAdmin)
 admin.site.register(Order)
