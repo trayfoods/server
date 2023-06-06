@@ -167,6 +167,9 @@ class Rating(models.Model):
         index_together = ("user", "item")
         ordering = ["-updated_on", "-helpful_count"]
 
+    def __str__(self):
+        return f"{self.user.username} - {self.item.product_name}"
+
     def save(self, *args, **kwargs):
         self.comment = filter_comment(self.comment)
         super().save(*args, **kwargs)
