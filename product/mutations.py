@@ -325,6 +325,7 @@ class RateItemMutation(graphene.Mutation):
         rating = graphene.Argument(RatingInputType, required=True)
 
     success = graphene.Boolean()
+    review_id = graphene.ID()
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -334,7 +335,6 @@ class RateItemMutation(graphene.Mutation):
             item = Item.objects.get(product_slug=item_slug)
             try:
                 rating_qs = Rating.objects.get(user=user, item=item)
-                print(rating_qs)
                 rating_qs.stars = rating.stars
                 rating_qs.comment = filter_comment(rating.comment)
                 rating_qs.save()
@@ -345,7 +345,7 @@ class RateItemMutation(graphene.Mutation):
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
 
-        return RateItemMutation(success=True)
+        return RateItemMutation(success=True, review_id=rating_qs.id)
 
 
 class DeleteRatingMutation(graphene.Mutation):
@@ -371,26 +371,26 @@ class DeleteRatingMutation(graphene.Mutation):
         return DeleteRatingMutation(success=True)
 
 
-class RatingHelpfulMutation(graphene.Mutation):
+class HelpfulReviewMutation(graphene.Mutation):
     class Arguments:
-        rating_id = graphene.ID(required=True)
+        review_id = graphene.ID(required=True)
         helpful = graphene.Boolean(required=True)
 
     success = graphene.Boolean()
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(root, info, rating_id, helpful):
+    def mutate(root, info, review_id, helpful):
         user = info.context.user
         try:
-            rating = Rating.objects.get(id=rating_id, user=user)
-            # update rating helpful_count
+            rating = Rating.objects.get(id=review_id, user=user)
+            # update rating users_liked
             if helpful:
-                rating.helpful_count += 1
+                rating.users_liked.add(user)
             else:
-                rating.helpful_count -= 1
+                rating.users_liked.remove(user)
             rating.save()
         except Rating.DoesNotExist:
             raise ValueError("Invalid Rating Id")
 
-        return RatingHelpfulMutation(success=True)
+        return HelpfulReviewMutation(success=True)
