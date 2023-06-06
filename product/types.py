@@ -30,6 +30,7 @@ class ItemAttributeType(DjangoObjectType):
         model = ItemAttribute
         fields = "__all__"
 
+
 class RatingEnum(graphene.Enum):
     ONE_STAR = 1
     TWO_STARS = 2
@@ -37,14 +38,17 @@ class RatingEnum(graphene.Enum):
     FOUR_STARS = 4
     FIVE_STARS = 5
 
+
 class RatingInputType(graphene.InputObjectType):
     stars = graphene.Field(RatingEnum, required=True)
     comment = graphene.String()
+
 
 class ReviewsType(DjangoObjectType):
     class Meta:
         model = Rating
         fields = "__all__"
+
 
 class ItemType(DjangoObjectType):
     id = graphene.Int(storeNickname=graphene.String(required=False))
@@ -93,9 +97,7 @@ class ItemType(DjangoObjectType):
         user = info.context.user
         current_user_review = None
         if user.is_authenticated:
-            current_user_review = Rating.objects.filter(
-                item=self, user=user
-            ).first()
+            current_user_review = Rating.objects.filter(item=self, user=user).first()
         return current_user_review
 
     def resolve_reviews(self, info):
@@ -114,7 +116,7 @@ class ItemType(DjangoObjectType):
                     if self.product_avaliable_in.all().count() > 1:
                         editable = False
         return editable
-    
+
     def resolve_average_rating(self, info):
         return self.average_rating
 

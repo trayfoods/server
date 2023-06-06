@@ -11,6 +11,7 @@ from trayapp.permissions import IsAuthenticated, permission_checker
 
 import json
 
+
 class AddProductMutation(graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
@@ -307,7 +308,7 @@ class CreateOrderMutation(graphene.Mutation):
         order_user = info.context.user
         order_payment_status = "pending"
         order_details = json.dumps(order_details)
-        print('order_details', order_details)
+        print("order_details", order_details)
         create_order = Order.objects.create(
             order_user=order_user,
             order_payment_status=order_payment_status,
@@ -316,6 +317,7 @@ class CreateOrderMutation(graphene.Mutation):
         create_order.save()
 
         return CreateOrderMutation(order=create_order, success=True)
+
 
 class RateItemMutation(graphene.Mutation):
     class Arguments:
@@ -337,12 +339,15 @@ class RateItemMutation(graphene.Mutation):
                 rating_qs.comment = filter_comment(rating.comment)
                 rating_qs.save()
             except Rating.DoesNotExist:
-                Rating.objects.create(user=user, item=item, stars=rating.stars, comment=rating.comment)
+                Rating.objects.create(
+                    user=user, item=item, stars=rating.stars, comment=rating.comment
+                )
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
-        
+
         return RateItemMutation(success=True)
-    
+
+
 class DeleteRatingMutation(graphene.Mutation):
     class Arguments:
         item_slug = graphene.ID(required=True)
@@ -362,9 +367,10 @@ class DeleteRatingMutation(graphene.Mutation):
                 raise ValueError("Rating Does Not Exist")
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
-        
+
         return DeleteRatingMutation(success=True)
-    
+
+
 class RatingHelpfulMutation(graphene.Mutation):
     class Arguments:
         rating_id = graphene.ID(required=True)
@@ -386,5 +392,5 @@ class RatingHelpfulMutation(graphene.Mutation):
             rating.save()
         except Rating.DoesNotExist:
             raise ValueError("Invalid Rating Id")
-        
+
         return RatingHelpfulMutation(success=True)
