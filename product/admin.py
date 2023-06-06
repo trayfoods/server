@@ -61,8 +61,8 @@ class ItemImageAdmin(admin.ModelAdmin):
 
 class RatingAdmin(admin.ModelAdmin):
     list_display = ("__str__", "stars",
-                    "helpful_count",)
-    readonly_fields = ("helpful_count", "stars")
+                    "updated_on",)
+    readonly_fields = ("users_liked", "stars")
 
 admin.site.register(Item, ItemAdmin)
 admin.site.register(Rating, RatingAdmin)

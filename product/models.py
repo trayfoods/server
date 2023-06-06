@@ -154,11 +154,8 @@ class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
     comment = models.TextField(max_length=300, null=True, blank=True)
-    helpful_count = models.IntegerField(
-        default=0, editable=False, null=True, blank=True
-    )
-    user_liked = models.ManyToManyField(
-        User, related_name="user_liked", blank=True, editable=False
+    users_liked = models.ManyToManyField(
+        User, related_name="users_liked", blank=True, editable=False
     )
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
     updated_on = models.DateTimeField(auto_now=True)
@@ -166,7 +163,7 @@ class Rating(models.Model):
     class Meta:
         unique_together = ("user", "item")
         index_together = ("user", "item")
-        ordering = ["-updated_on", "-helpful_count"]
+        ordering = ["-updated_on"]
 
     def __str__(self):
         return f"{self.user.username} - {self.item.product_name}"

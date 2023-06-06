@@ -45,9 +45,20 @@ class RatingInputType(graphene.InputObjectType):
 
 
 class ReviewsType(DjangoObjectType):
+    did_user_like = graphene.Boolean()
+    helpful_count = graphene.Int()
     class Meta:
         model = Rating
         fields = "__all__"
+
+    def resolve_did_user_like(self, info, *args, **kwargs):
+        user = info.context.user
+        if user.is_authenticated:
+            return self.users_liked.filter(id=user.id).exists()
+        return False
+    
+    def resolve_helpful_count(self, info, *args, **kwargs):
+        return self.users_liked.count()
 
 
 class ItemType(DjangoObjectType):
