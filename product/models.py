@@ -133,11 +133,11 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
-    
+
     @property
     def total_ratings(self):
         return self.ratings.count()
-    
+
     @property
     def average_rating(self):
         ratings = self.ratings.all()
@@ -148,14 +148,15 @@ class Item(models.Model):
             rounded_up = round(total * 10**1) / (10**1)
             return rounded_up
         return 0.0
-    
 
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
     comment = models.TextField(max_length=300, null=True, blank=True)
-    helpful_count = models.IntegerField(default=0, editable=False, null=True, blank=True)
+    helpful_count = models.IntegerField(
+        default=0, editable=False, null=True, blank=True
+    )
     user_liked = models.ManyToManyField(
         User, related_name="user_liked", blank=True, editable=False
     )
