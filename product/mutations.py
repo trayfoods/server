@@ -339,9 +339,10 @@ class RateItemMutation(graphene.Mutation):
                 rating_qs.comment = filter_comment(rating.comment)
                 rating_qs.save()
             except Rating.DoesNotExist:
-                Rating.objects.create(
+                rating_qs = Rating.objects.create(
                     user=user, item=item, stars=rating.stars, comment=rating.comment
                 )
+                rating_qs.save()
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
 
