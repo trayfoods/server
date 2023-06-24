@@ -137,5 +137,9 @@ class StoreType(DjangoObjectType):
         if vendor is None:
             return None
         profile = vendor.user
-        image = info.context.build_absolute_uri(profile.image.url)
+        image = None
+        try:
+            image = info.context.build_absolute_uri(profile.image.url)
+        except:
+            pass
         return image
