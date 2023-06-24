@@ -1,8 +1,9 @@
 from django.db import models
-
-# from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
+from django.utils.translation import gettext_lazy as _
+
+# from django.contrib.gis.db import models
 
 from django.db.models.signals import post_save
 from trayapp.utils import image_resize
@@ -15,6 +16,7 @@ User = settings.AUTH_USER_MODEL
 
 
 class UserAccount(AbstractUser, models.Model):
+    password = models.CharField(_('password'), max_length=128, editable=False)
     role = models.CharField(
         max_length=20,
         default="client",
@@ -99,6 +101,7 @@ class Transaction(models.Model):
         ("credit", "credit"),
         ("debit", "debit"),
         ("failed", "failed"),
+        ("unknown", "unknown"),
     )
     user = models.OneToOneField(Profile, on_delete=models.CASCADE, editable=False)
     title = models.CharField(max_length=50)
@@ -111,8 +114,8 @@ class Transaction(models.Model):
         blank=True,
         editable=False,
     )
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
-    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class Hostel(models.Model):
