@@ -148,6 +148,11 @@ class Item(models.Model):
             rounded_up = round(total * 10**1) / (10**1)
             return rounded_up
         return 0.0
+    
+    @property
+    # check if the current user is the creator of the product
+    def is_creator(self):
+        return self.product_creator == self.request.user
 
 
 class Rating(models.Model):
