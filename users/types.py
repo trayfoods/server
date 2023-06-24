@@ -114,6 +114,7 @@ class VendorType(DjangoObjectType):
 
 class StoreType(DjangoObjectType):
     vendor = graphene.Field(VendorType)
+    store_image = graphene.String()
 
     class Meta:
         model = Store
@@ -121,6 +122,7 @@ class StoreType(DjangoObjectType):
             "store_name",
             "store_category",
             "vendor",
+            "store_image",
             "store_rank",
             "store_nickname",
             "store_products",
@@ -129,3 +131,11 @@ class StoreType(DjangoObjectType):
     def resolve_vendor(self, info):
         vendor = Vendor.objects.filter(store=self).first()
         return vendor
+    
+    def resolve_store_image(self, info):
+        vendor = Vendor.objects.filter(store=self).first()
+        if vendor is None:
+            return None
+        profile = vendor.user
+        image = info.context.build_absolute_uri(profile.image.url)
+        return image

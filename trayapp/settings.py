@@ -54,8 +54,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 INSTALLED_APPS = [
     # "django.contrib.gis",
-    # "channels",
-    # "channels_api",
+    "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -77,12 +76,14 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = "users.UserAccount"
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "asgiref.inmemory.ChannelLayer",
-#         "ROUTING": "trayapp.routing.project_routing",  # Our project routing
-#     },
-# }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
 
 GRAPH_MODELS = {
     "all_applications": True,
@@ -162,7 +163,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "trayapp.wsgi.application"
-# ASGI_APPLICATION = "trayapp.asgi.application"
+ASGI_APPLICATION = "trayapp.asgi.application"
 
 
 # Database

@@ -1,10 +1,16 @@
 import graphene
 from django.contrib.auth import get_user_model
-from graphql_auth.schema import MeQuery
 from graphql_auth import mutations
+from django.db.models import Q
 
-from .mutations import (CreateVendorMutation, EditVendorMutation, UpdateVendorBankAccount,
-                             UpdateAccountMutation, CreateClientMutation)
+from trayapp.utils import paginate_queryset
+from .mutations import (
+    CreateVendorMutation,
+    EditVendorMutation,
+    UpdateVendorBankAccount,
+    UpdateAccountMutation,
+    CreateClientMutation,
+)
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
 from graphql_auth.models import UserStatus
@@ -22,14 +28,44 @@ class Query(BankListQuery, graphene.ObjectType):
     hostels = graphene.List(HostelType)
 
     check_email_verification = graphene.Field(
-        EmailVerifiedNode, email=graphene.String())
+        EmailVerifiedNode, email=graphene.String()
+    )
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
 
     client = graphene.Field(ClientType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
-    search_stores = graphene.Field(StoreType, search_query=graphene.String(
-        required=True), count=graphene.Int(required=False))
+    search_stores = graphene.Field(
+        StoreType,
+        search_query=graphene.String(required=True),
+        count=graphene.Int(required=False),
+    )
+
+    get_trending_stores = graphene.List(
+        StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
+    )
+
+    def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
+        """
+        Resolve the get_trending_stores query.
+
+        Args:
+            info: The GraphQL ResolveInfo object.
+            page: The page number for pagination.
+            count: The maximum number of stores to return.
+            page_size: The number of stores to display per page.
+
+        Returns:
+            A paginated queryset of trending stores.
+        """
+        stores_list = Store.objects.all().order_by("-store_rank")
+        if count is not None:
+            if stores_list.count() >= count:
+                stores_list = stores_list[:count]
+        else:
+            stores_list = stores_list
+        paginated_queryset = paginate_queryset(stores_list, page_size, page)
+        return paginated_queryset
 
     def resolve_me(self, info):
         user = info.context.user
@@ -38,19 +74,13 @@ class Query(BankListQuery, graphene.ObjectType):
         return None
 
     def resolve_vendors(self, info, **kwargs):
-        return Vendor.objects.all().order_by('-id')
+        return Vendor.objects.all().order_by("-id")
 
     def resolve_hostels(self, info, **kwargs):
         return Hostel.objects.all()
 
     def resolve_vendor(self, info, vendor_id):
         return Vendor.objects.get(pk=vendor_id)
-
-    def resolve_clients(self, info, **kwargs):
-        if not info.context.user.is_authenticated():
-            return Client.objects.none()
-        else:
-            return Client.objects.all().order_by('-id')
 
     def resolve_client(self, info, client_id):
         return Client.objects.get(pk=client_id)
@@ -63,7 +93,9 @@ class Query(BankListQuery, graphene.ObjectType):
         return store
 
     def resolve_search_stores(self, info, search_query, count=None):
-        stores_list = Store.objects.filter(store_nickname=search_query).first()
+        stores_list = Store.objects.filter(
+            Q(store_nickname__icontains=search_query)
+        ).first()
         if count:
             if stores_list.count() >= count:
                 stores_list = stores_list[:count]
@@ -72,14 +104,12 @@ class Query(BankListQuery, graphene.ObjectType):
         return stores_list
 
     def resolve_check_email_verification(self, info, email):
-        data = {
-            "success": False,
-            "msg": None
-        }
+        data = {"success": False, "msg": None}
         user = User.objects.filter(email=email).first()  # get the user
         if not user is None:
             user_status = UserStatus.objects.filter(
-                user=user).first()  # get the user status
+                user=user
+            ).first()  # get the user status
             if user_status.verified == True:  # check if the user email is verified
                 data["success"] = True  # the user email is verified
             else:
@@ -110,5 +140,6 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
     update_vendor_bank_details = UpdateVendorBankAccount.Field()
+
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

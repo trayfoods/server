@@ -60,7 +60,7 @@ def save_image(sender, instance, **kwargs):
 
         #  item_image
         file, name, content_type, size = image_resized(
-            instance.item_image, 600, 600)
+            instance.item_image, 800, 600)
         new_item_image = InMemoryUploadedFile(
             file, 'ImageField', name, content_type, size, None)
         instance.item_image = new_item_image
@@ -85,7 +85,7 @@ def save_image(sender, instance, **kwargs):
             delete_dir(old.url.replace(old.name, "").replace(
                 old.format, "").replace(".", ""))
             file, name, content_type, size = image_resized(
-                instance.item_image, 600, 600)
+                instance.item_image, 800, 600)
             new_item_image = InMemoryUploadedFile(
                 file, 'ImageField', name, content_type, size, None)
             instance.item_image = new_item_image
