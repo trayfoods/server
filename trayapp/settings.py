@@ -54,6 +54,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 INSTALLED_APPS = [
     # "django.contrib.gis",
+    # "daphne",
     "channels",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -79,6 +80,7 @@ AUTH_USER_MODEL = "users.UserAccount"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
+        'ROUTING': 'trayapp.routing.websocket_urlpatterns',
         "CONFIG": {
             "hosts": [("localhost", 6379)],
         },
