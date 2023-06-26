@@ -208,55 +208,56 @@ class AddAvaliableProductMutation(graphene.Mutation):
     @permission_checker([IsAuthenticated])
     def mutate(self, info, product_slug, action):
         success = False
-        if info.context.user.is_authenticated:
-            product = Item.objects.filter(product_slug=product_slug.strip()).first()
-            vendor = Vendor.objects.filter(user=info.context.user.profile).first()
-            # Checking if the current user is equals to the store vendor
-            # Then add 0.5 to the store_rank
-            if not product is None and not vendor is None:
-                try:
-                    if not product.product_creator is None:
-                        if product.product_creator != vendor:
-                            store = Store.objects.filter(
-                                store_nickname=product.product_creator.store.store_nickname
-                            ).first()
-                            if not store is None:
-                                store.store_rank += 0.5
-                                store.save()
-                except:
-                    pass
-                store = vendor.store
-                if action == "add":
-                    new_activity = UserActivity.objects.create(
-                        user_id=info.context.user.id,
-                        activity_message=f"Added {product.product_name} as avaliable product",
-                        activity_type="add_to_items",
-                        item=product,
-                        timestamp=timezone.now(),
-                    )
-                    vendor.store.store_products.add(product)
-                    product.product_avaliable_in.add(store)
-                    product.save()
-                    vendor.save()
-                    new_activity.save()
-                elif action == "remove":
-                    new_activity = UserActivity.objects.create(
-                        user_id=info.context.user.id,
-                        activity_message=f"Removed {product.product_name} as avaliable product",
-                        activity_type="remove_from_items",
-                        item=product,
-                        timestamp=timezone.now(),
-                    )
-                    vendor.store.store_products.remove(product)
-                    product.product_avaliable_in.remove(store)
-                    product.save()
-                    vendor.save()
-                    new_activity.save()
-                else:
-                    raise GraphQLError("Enter either `add/remove` for actions.")
-                success = True
-        else:
-            raise GraphQLError("Login required.")
+        product = Item.objects.filter(product_slug=product_slug.strip()).first()
+        user = info.context.user
+        profile = user.profile
+        # Checking if the current user is equals to the store vendor
+        # Then add 0.5 to the store_rank
+        if not product is None and user.profile.is_vendor:
+            vendor = profile.vendor
+            if product.product_creator != vendor and product.product_share_visibility == "private": # then check if the user is a vendor
+                raise GraphQLError("You are not allowed to add this product to your store.")
+            try:
+                if not product.product_creator is None:
+                    if product.product_creator != vendor:
+                        store = Store.objects.filter(
+                            store_nickname=product.product_creator.store.store_nickname
+                        ).first()
+                        if not store is None:
+                            store.store_rank += 0.5
+                            store.save()
+            except:
+                pass
+            store = vendor.store
+            if action == "add":
+                new_activity = UserActivity.objects.create(
+                    user_id=info.context.user.id,
+                    activity_message=f"Added {product.product_name} as avaliable product",
+                    activity_type="add_to_items",
+                    item=product,
+                    timestamp=timezone.now(),
+                )
+                vendor.store.store_products.add(product)
+                product.product_avaliable_in.add(store)
+                product.save()
+                vendor.save()
+                new_activity.save()
+            elif action == "remove":
+                new_activity = UserActivity.objects.create(
+                    user_id=info.context.user.id,
+                    activity_message=f"Removed {product.product_name} as avaliable product",
+                    activity_type="remove_from_items",
+                    item=product,
+                    timestamp=timezone.now(),
+                )
+                vendor.store.store_products.remove(product)
+                product.product_avaliable_in.remove(store)
+                product.save()
+                vendor.save()
+                new_activity.save()
+            else:
+                raise GraphQLError("Enter either `add/remove` for actions.")
+            success = True
         # Notice we return an instance of this mutation
         return AddAvaliableProductMutation(product=product, success=success)
 

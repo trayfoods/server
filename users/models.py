@@ -16,7 +16,7 @@ User = settings.AUTH_USER_MODEL
 
 
 class UserAccount(AbstractUser, models.Model):
-    password = models.CharField(_('password'), max_length=128, editable=False)
+    password = models.CharField(_("password"), max_length=128, editable=False)
     role = models.CharField(
         max_length=20,
         default="client",
@@ -65,12 +65,16 @@ class Profile(models.Model):
     is_verified = models.BooleanField(default=False)
     # location = models.PointField(null=True) # Spatial Field Types
 
+    @property
+    def is_vendor(self):
+        return hasattr(self, "vendor")
+
     def __str__(self) -> str:
         return self.user.username
 
     def save(self, *args, **kwargs):
         if self.image:
-            image_resize(self.image, 260, 260)
+            image_resize(self.image, 300, 300)
         super(Profile, self).save(*args, **kwargs)
 
 

@@ -15,7 +15,7 @@ from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
 from graphql_auth.models import UserStatus
 
-from trayapp.custom_model import BankListQuery, EmailVerifiedNode, AccountInfoNode
+from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 
 User = get_user_model()
 
