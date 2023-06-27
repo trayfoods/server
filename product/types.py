@@ -69,6 +69,7 @@ class ItemType(DjangoObjectType):
     editable = graphene.Boolean()
     average_rating = graphene.Float()
     reviews = graphene.List(ReviewsType)
+    reviews_count = graphene.Int()
     current_user_review = graphene.Field(ReviewsType)
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.Field(
@@ -98,6 +99,7 @@ class ItemType(DjangoObjectType):
             "editable",
             "average_rating",
             "reviews",
+            "reviews_count",
             "current_user_review",
             "product_creator",
             "product_created_on",
@@ -114,6 +116,9 @@ class ItemType(DjangoObjectType):
     def resolve_reviews(self, info):
         item_ratings = Rating.objects.filter(item=self)
         return item_ratings
+    
+    def resolve_reviews_count(self, info):
+        return Rating.objects.filter(item=self).count()
 
     def resolve_editable(self, info):
         user = info.context.user

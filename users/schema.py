@@ -15,7 +15,9 @@ from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
 from graphql_auth.models import UserStatus
 
-from trayapp.custom_model import BankListQuery, EmailVerifiedNode
+from trayapp.custom_model import BankListQuery, EmailVerifiedNode, UniversityNode
+
+import universities
 
 User = get_user_model()
 
@@ -44,6 +46,14 @@ class Query(BankListQuery, graphene.ObjectType):
     get_trending_stores = graphene.List(
         StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
     )
+
+    get_universities = graphene.List(UniversityNode, query=graphene.String(required=True), country=graphene.String())
+
+    def resolve_get_universities(self, info, query, country=None):
+        uni = universities.API()
+        if country:
+            return uni.search(country=country, name=query)
+        return uni.search(name=query)
 
     def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
         """
