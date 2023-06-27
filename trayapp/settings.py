@@ -39,7 +39,7 @@ else:
         "localhost",
         "%s" % os.getenv("SITE_ORIGIN_URL"),
     ]
-
+DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
 SESSION_COOKIE_SECURE = DEBUG == False
 SECURE_SSL_REDIRECT = DEBUG == False
@@ -146,6 +146,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django.middleware.http.ConditionalGetMiddleware",
 ]
 
 ROOT_URLCONF = "trayapp.urls"
