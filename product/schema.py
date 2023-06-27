@@ -5,7 +5,7 @@ from product.mutations import (AddAvaliableProductMutation,
                                AddMultipleAvaliableProductsMutation, AddProductMutation, 
                                AddProductClickMutation, CreateOrderMutation, RateItemMutation, HelpfulReviewMutation)
 from product.models import Item, ItemAttribute
-from product.utils import recommend_items
+# from product.utils import recommend_items
 from users.models import UserActivity
 from trayapp.custom_model import ItemsAvalibilityNode
 from django.utils import timezone

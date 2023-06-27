@@ -30,12 +30,15 @@ if DEBUG == True:
 else:
     FRONTEND_URL = "https://%s" % os.getenv("REACT_SITE")
 
-ALLOWED_HOSTS = [
-    "127.0.0.1",
-    "192.168.137.1",
-    "localhost",
-    "%s" % os.getenv("SITE_ORIGIN_URL"),
-]
+if DEBUG == True:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = [
+        "127.0.0.1",
+        "192.168.137.1",
+        "localhost",
+        "%s" % os.getenv("SITE_ORIGIN_URL"),
+    ]
 
 CSRF_COOKIE_SECURE = DEBUG == False
 SESSION_COOKIE_SECURE = DEBUG == False
@@ -54,8 +57,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 INSTALLED_APPS = [
     # "django.contrib.gis",
-    # "daphne",
-    "channels",
+    "daphne",
+    # "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -80,9 +83,8 @@ AUTH_USER_MODEL = "users.UserAccount"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
-        'ROUTING': 'trayapp.routing.websocket_urlpatterns',
         "CONFIG": {
-            "hosts": [("localhost", 6379)],
+            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
         },
     },
 }
@@ -109,7 +111,7 @@ GRAPHQL_JWT = {
     "JWT_ALLOW_ARGUMENT": True,
     "JWT_VERIFY_EXPIRATION": False,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-    "JWT_REFRESH_TOKEN_EXPIRATION_DELTA": timedelta(days=7),
+    "JWT_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
         "graphql_auth.mutations.VerifyAccount",

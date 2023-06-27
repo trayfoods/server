@@ -54,6 +54,7 @@ def websocket_auth_required(func):
     """
 
     async def wrapper(self, message):
+        print("message", "entered")
         try:
             # Extract the authentication token from the WebSocket headers
             token = (

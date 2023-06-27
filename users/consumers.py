@@ -1,4 +1,4 @@
-from channels.generic.websocket import AsyncConsumer
+from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from graphql_auth.models import UserStatus
@@ -6,38 +6,36 @@ import json
 
 User = get_user_model()
 
-class CheckEmailVerificationConsumer(AsyncConsumer):
+
+class CheckEmailVerificationConsumer(AsyncWebsocketConsumer):
     async def websocket_connect(self, event):
-        print("connected", event)
-        await self.send({
-            'type': 'websocket.accept'
-        })
+        await self.accept()
+        print("CONNECTED")
 
     async def websocket_disconnect(self, event):
         pass
 
     async def websocket_receive(self, event):
-        text_data = event.get('text')
+        text_data = event.get("text")
         if text_data:
             # Parse the incoming JSON message
             try:
                 message = json.loads(text_data)
-                email = message.get('email', '')
+                email = message.get("email", "")
             except json.JSONDecodeError:
-                await self.send({
-                    'type': 'websocket.send',
-                    'text': json.dumps({"success": False, "msg": "Invalid message format"})
-                })
+                await self.send_json_response(
+                    {"success": False, "msg": "Invalid message format"}
+                )
                 return
 
             # Process the query
             response = await self.check_email_verification(email)
 
             # Send the response back to the client
-            await self.send({
-                'type': 'websocket.send',
-                'text': json.dumps(response)
-            })
+            await self.send_json_response(response)
+
+    async def send_json_response(self, data):
+        await self.send(text_data=json.dumps(data))
 
     @database_sync_to_async
     def check_email_verification(self, email):
@@ -50,5 +48,5 @@ class CheckEmailVerificationConsumer(AsyncConsumer):
             else:
                 data["success"] = False
         else:
-            data["msg"] = "email does not exist"
+            data["msg"] = "Email does not exist"
         return data
