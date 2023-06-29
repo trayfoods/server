@@ -111,11 +111,10 @@ class Transaction(models.Model):
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=200, null=True, blank=True)
     amount = models.DecimalField(
-        max_digits=100,
+        max_digits=7,
         null=True,
-        default=00.00,
+        default=0,
         decimal_places=2,
-        blank=True,
         editable=False,
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
@@ -142,7 +141,8 @@ class Client(models.Model):
 class Deliverer(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    extra_details = models.JSONField(default=dict, null=True, blank=True)
+    earnings = models.DecimalField(max_digits=7, decimal_places=2, default=0, editable=False)
+    product_details = models.JSONField(default=dict, editable=False)
 
 
 ACTIVITY_TYPES = (
