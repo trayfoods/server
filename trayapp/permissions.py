@@ -85,3 +85,51 @@ def authenticate_user(token):
     # Use the appropriate method to authenticate the user based on the token
     user = get_user_by_token(token)
     return user
+
+
+from functools import wraps
+from getpass import getpass
+from django.core.management.base import CommandError
+from django.contrib.auth import authenticate
+from django.core.mail import send_mail
+from django.conf import settings
+
+
+def superuser_and_admin_required(email_subject):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **options):
+            # Prompt for username and password
+            username = input("Username: ")
+            password = getpass("Password: ")
+
+            # Authenticate the user
+            user = authenticate(username=username, password=password)
+            if user is None:
+                raise CommandError("Invalid username or password.")
+
+            # Check if the user is a superuser
+            if not user.is_superuser:
+                raise CommandError("You must be a superuser to execute this command.")
+
+            # Check if the user is an admin
+            if not user.is_staff:
+                raise CommandError("You must be an admin to execute this command.")
+
+            # Set the authenticated user to the command object
+            self.user = user
+
+            try:
+                # Send email notification to the admin
+                admin_email = settings.ADMIN_EMAIL  # Replace with your admin email address
+                message = f"User '{user.username}' has logged in to the '{email_subject}' command."
+                send_mail(email_subject, message, settings.DEFAULT_FROM_EMAIL, [admin_email])
+            except:
+                pass
+
+            # Execute the command function
+            return func(self, *args, **options)
+
+        return wrapper
+
+    return decorator

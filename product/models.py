@@ -4,8 +4,8 @@ from django.db import models
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
 import datetime
+from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
@@ -201,10 +201,12 @@ class Order(models.Model):
         editable=False,
     )
     order_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    order_overall_price = models.FloatField(default=0.0)
+    order_items = models.JSONField(default=dict)
     order_details = models.JSONField(default=dict, null=True, blank=True)
     order_payment_id = models.CharField(max_length=20, null=True, blank=True)
-    order_payment_currency = models.CharField(max_length=20, null=True, blank=True)
-    order_payment_method = models.CharField(max_length=20, null=True, blank=True)
+    order_payment_currency = models.CharField(max_length=20, default="NGN")
+    order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_status = models.CharField(
         max_length=20,
         default="pending",

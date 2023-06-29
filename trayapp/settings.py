@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL
     "users",
     "product",
+    "commands",
     "graphene_django",
     "graphql_auth",
     "django_filters",
