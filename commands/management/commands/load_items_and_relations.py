@@ -11,7 +11,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('file_path', type=str, help='Path to the JSON file')
 
-    # @superuser_and_admin_required(email_subject=help)
+    @superuser_and_admin_required(email_subject=help)
     def handle(self, *args, **options):
         file_path = options['file_path']
 
@@ -30,9 +30,9 @@ class Command(BaseCommand):
         # Bulk create objects
         Item.objects.bulk_create([Item(**item) for item in data['items']])
         ItemImage.objects.bulk_create([ItemImage(**image) for image in data['item_images']])
-        ItemAttribute.objects.bulk_create([ItemAttribute(**attribute) for attribute in data['item_attributes']])
-        Store.objects.bulk_create([Store(**store) for store in data['stores']])
         Vendor.objects.bulk_create([Vendor(**vendor) for vendor in data['vendors']])
+        Store.objects.bulk_create([Store(**store) for store in data['stores']])
+        ItemAttribute.objects.bulk_create([ItemAttribute(**attribute) for attribute in data['item_attributes']])
         Gender.objects.bulk_create([Gender(**gender) for gender in data['genders']])
 
         self.stdout.write(self.style.SUCCESS('Tables data loaded from JSON file'))

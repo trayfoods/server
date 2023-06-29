@@ -10,7 +10,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("file_path", type=str, help="Path to the JSON file")
 
-    # @superuser_and_admin_required(email_subject=help)
+    @superuser_and_admin_required(email_subject=help)
     def handle(self, *args, **options):
         file_path = options["file_path"]
 
