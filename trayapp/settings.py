@@ -67,7 +67,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL
     "users",
     "product",
-    "commands",
+    # "commands",
     "graphene_django",
     "graphql_auth",
     "django_filters",
@@ -110,7 +110,6 @@ AUTHENTICATION_BACKENDS = [
 
 GRAPHQL_JWT = {
     "JWT_ALLOW_ARGUMENT": True,
-    "JWT_VERIFY_EXPIRATION": False,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
     "JWT_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_ALLOW_ANY_CLASSES": [
