@@ -3,6 +3,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+from django_redis.cache import RedisCache
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -50,7 +51,7 @@ SECURE_PROXY_SSL_HEADER = (
     ("HTTP_X_FORWARDED_PROTO", "https") if (DEBUG == False) else None
 )
 
-CONN_MAX_AGE = 8600
+CONN_MAX_AGE = 3600
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
 
 # Application definition
@@ -67,7 +68,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",  # Required for GraphiQL
     "users",
     "product",
-    # "commands",
+    "commands",
     "graphene_django",
     "graphql_auth",
     "django_filters",
@@ -88,6 +89,15 @@ CHANNEL_LAYERS = {
             "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
         },
     },
+}
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
 }
 
 GRAPH_MODELS = {
