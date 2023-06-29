@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
         # Bulk create objects
         Item.objects.bulk_create([Item(**item) for item in data['items']])
-        ItemImage.objects.bulk_create([ItemImage(**image) for image in data['item_images']])
+        # ItemImage.objects.bulk_create([ItemImage(**image) for image in data['item_images']])
         Vendor.objects.bulk_create([Vendor(**vendor) for vendor in data['vendors']])
         Store.objects.bulk_create([Store(**store) for store in data['stores']])
         ItemAttribute.objects.bulk_create([ItemAttribute(**attribute) for attribute in data['item_attributes']])
