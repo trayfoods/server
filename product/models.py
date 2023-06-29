@@ -179,9 +179,9 @@ class Rating(models.Model):
 
 
 class ItemAttribute(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=50)
     urlParamName = models.SlugField(null=False, unique=True)
-    _type = models.CharField(max_length=20, choices=PRODUCT_TYPES)
+    _type = models.CharField(max_length=10, choices=PRODUCT_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
