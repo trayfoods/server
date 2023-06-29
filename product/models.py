@@ -201,8 +201,12 @@ class Order(models.Model):
         editable=False,
     )
     order_user = models.ForeignKey(User, on_delete=models.CASCADE)
+
     order_overall_price = models.FloatField(default=0.0)
-    order_items = models.JSONField(default=dict)
+    order_delivery_price = models.FloatField(default=0.0)
+    order_shipping_address = models.JSONField(default=dict)
+    order_stores_infos = models.JSONField(default=dict)
+
     order_details = models.JSONField(default=dict, null=True, blank=True)
     order_payment_id = models.CharField(max_length=20, null=True, blank=True)
     order_payment_currency = models.CharField(max_length=20, default="NGN")
