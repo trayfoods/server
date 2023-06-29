@@ -22,17 +22,17 @@ class Command(BaseCommand):
         # Clear existing data from tables
         Item.objects.all().delete()
         ItemImage.objects.all().delete()
-        Vendor.objects.all().delete()
-        Store.objects.all().delete()
+        # Vendor.objects.all().delete()
+        # Store.objects.all().delete()
         ItemAttribute.objects.all().delete()
-        Gender.objects.all().delete()
+        # Gender.objects.all().delete()
 
         # Bulk create objects
-        Item.objects.bulk_create([Item(**item) for item in data['items']])
+        # Item.objects.bulk_create([Item(**item) for item in data['items']])
         # ItemImage.objects.bulk_create([ItemImage(**image) for image in data['item_images']])
-        Vendor.objects.bulk_create([Vendor(**vendor) for vendor in data['vendors']])
-        Store.objects.bulk_create([Store(**store) for store in data['stores']])
-        ItemAttribute.objects.bulk_create([ItemAttribute(**attribute) for attribute in data['item_attributes']])
-        Gender.objects.bulk_create([Gender(**gender) for gender in data['genders']])
+        # Vendor.objects.bulk_create([Vendor(**vendor) for vendor in data['vendors']])
+        # Store.objects.bulk_create([Store(**store) for store in data['stores']])
+        # ItemAttribute.objects.bulk_create([ItemAttribute(**attribute) for attribute in data['item_attributes']])
+        # Gender.objects.bulk_create([Gender(**gender) for gender in data['genders']])
 
         self.stdout.write(self.style.SUCCESS('Tables data loaded from JSON file'))

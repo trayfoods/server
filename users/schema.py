@@ -69,6 +69,10 @@ class Query(BankListQuery, graphene.ObjectType):
             A paginated queryset of trending stores.
         """
         stores_list = Store.objects.all().order_by("-store_rank")
+        # check if each store products are up to 2
+        for store in stores_list:
+            if store.store_products.count() < 2:
+                stores_list = stores_list.exclude(pk=store.pk)
         if count is not None:
             if stores_list.count() >= count:
                 stores_list = stores_list[:count]
