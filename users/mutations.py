@@ -94,7 +94,6 @@ class CreateVendorMutation(Output, graphene.Mutation):
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
     class Arguments:
-        token = graphene.String(required=True)
         username = graphene.String(required=True)
         first_name = graphene.String()
         last_name = graphene.String()
@@ -108,51 +107,37 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, token, username, first_name, email, last_name, phone_number=None, profile_image=None):
+    def mutate(self, info, username, first_name, email, last_name, phone_number=None, profile_image=None):
         user = info.context.user
         send_email = False
-        if user.is_authenticated:
-            token = get_refresh_token(token, info.context)
-            if token:
-                if token.user.username == user.username:
-                    user = User.objects.filter(username=user.username).first()
-                    if token and not user is None:
-                        profile = Profile.objects.filter(user=user).first()
-                        if not profile is None:
-                            user.first_name = first_name
-                            user.last_name = last_name
-                            user.username = username
-                            if profile_image:
-                                profile.image = profile_image
-                            if phone_number:
-                                profile.phone_number = phone_number
+        profile = user.profile
+        user.first_name = first_name
+        user.last_name = last_name
+        user.username = username
+        if profile_image:
+            profile.image = profile_image
+        if phone_number:
+            profile.phone_number = phone_number
 
-                            profile.save()
-                            if user.email != email:
-                                send_email = True
-                                user.status.verified = True
+        profile.save()
+        if user.email != email:
+            send_email = True
+            user.status.verified = True
 
-                            if send_email == True:
-                                try:
-                                    UserStatus.clean_email(email)
-                                    # TODO CHECK FOR EMAIL ASYNC SETTING
-                                    if async_email_func:
-                                        async_email_func(
-                                            user.status.send_activation_email, (info,))
-                                    else:
-                                        user.status.send_activation_email(info)
-                                    user.email = email
-                                except Exception as e:
-                                    raise GraphQLError(
-                                        "Error trying to send confirmation mail to %s" % email)
-                            user.save()
+        if send_email == True:
+            try:
+                UserStatus.clean_email(email)
+                # TODO CHECK FOR EMAIL ASYNC SETTING
+                if async_email_func:
+                    async_email_func(
+                        user.status.send_activation_email, (info,))
                 else:
-                    user = None
-                    raise GraphQLError(
-                        "Authorized token required, Hope you know what you are doing...")
-        else:
-            user = None
-            raise GraphQLError("Login required.")
+                    user.status.send_activation_email(info)
+                user.email = email
+            except Exception as e:
+                raise GraphQLError(
+                    "Error trying to send confirmation mail to %s" % email)
+        user.save()
         # Notice we return an instance of this mutation
         return UpdateAccountMutation(user=user)
 

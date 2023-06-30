@@ -51,8 +51,8 @@ SECURE_PROXY_SSL_HEADER = (
     ("HTTP_X_FORWARDED_PROTO", "https") if (DEBUG == False) else None
 )
 
-CONN_MAX_AGE = 3600
-FILE_UPLOAD_MAX_MEMORY_SIZE = 10000000
+CONN_MAX_AGE = 8600
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10_000_000
 
 # Application definition
 
@@ -91,12 +91,12 @@ CHANNEL_LAYERS = {
     },
 }
 CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     }
 }
 
