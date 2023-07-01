@@ -3,9 +3,10 @@ import requests
 
 # Imaging and Filing
 from pathlib import Path
-from io import BytesIO
-from PIL import Image
-from django.core.files import File
+import io
+import sys
+
+from PIL import Image, ImageFilter
 
 # import blurhash
 from pathlib import Path
@@ -26,35 +27,36 @@ IMAGE_TYPES = {
     "tiff": "TIFF",
 }
 
-def image_resize(image, width, height):
-    """
-    Resize the image to the specified width and height.
-    Save the resized image to a buffer and return it as a File object.
-    """
-    try:
-        # Open the image using Pillow
-        img = Image.open(image)
-    except Exception as e:
-        raise e
-    
-    # check if either the width or height is greater than the max
-    if img.width > width or img.height > height:
-        output_size = (width, height)
-        # Create a new resized “thumbnail” version of the image with Pillow
-        img.thumbnail(output_size)
-        # Use the file extension to determine the file type from the IMAGE_TYPES dictionary
-        img_suffix = Path(image.file.name).suffix[1:]
-        img_format = IMAGE_TYPES[img_suffix]
-        # Save the resized image into the buffer, noting the correct file type
-        buffer = BytesIO()
-        img.save(buffer, format=img_format)
-        # Close the buffer after wrapping it in a File object
-        buffer.seek(0)
-        file_object = File(buffer)
-        buffer.close()
-        # if hash:
-        #     hash = blurhash.encode(image, x_components=4, y_components=3)
-        return file_object
+
+def image_resized(image, w, h, format=None):
+    name = image.name
+    _image = Image.open(image)
+
+    # Calculate the aspect ratio of the original image
+    aspect_ratio = _image.width / _image.height
+
+    # Calculate the new width and height while preserving the aspect ratio
+    if _image.width > _image.height:
+        h = int(w / aspect_ratio)
+    else:
+        w = int(h * aspect_ratio)
+
+    # Using BICUBIC interpolation for high-quality resizing
+    imageTemporaryResized = _image.resize((w, h), Image.BICUBIC)
+
+    file = io.BytesIO()
+    content_type = Image.MIME[_image.format]
+    imageTemporaryResized.save(file, _image.format)
+
+    if format:
+        # Using BICUBIC interpolation for high-quality resizing in the specified format
+        imageTemporaryResized = imageTemporaryResized.resize((w, h), Image.BICUBIC)
+        content_type = f"image/{format}"
+        imageTemporaryResized.save(file, format)
+
+    file.seek(0)
+    size = sys.getsizeof(file)
+    return file, name, content_type, size
 
 
 def delete_dir(empty_dir):
@@ -121,7 +123,9 @@ def get_dataframe_from_qs(queryset):
     df = pd.DataFrame.from_records(queryset.values())
     return df
 
+
 from django.core.paginator import Paginator
+
 
 def paginate_queryset(queryset, page_size, page):
     paginator = Paginator(queryset, page_size)
