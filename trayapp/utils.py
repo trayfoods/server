@@ -6,7 +6,7 @@ from pathlib import Path
 import io
 import sys
 
-from PIL import Image, ImageFilter
+from PIL import Image
 
 # import blurhash
 from pathlib import Path
