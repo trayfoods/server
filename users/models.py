@@ -6,7 +6,7 @@ from django.utils.translation import gettext_lazy as _
 # from django.contrib.gis.db import models
 
 from django.db.models.signals import post_save
-from trayapp.utils import image_resize
+from trayapp.utils import image_resized
 
 from product.models import Item
 
@@ -73,9 +73,14 @@ class Profile(models.Model):
         return self.user.username
 
     def save(self, *args, **kwargs):
+        # Resize the image before saving
         if self.image:
-            image_resize(self.image, 300, 300)
-        super(Profile, self).save(*args, **kwargs)
+            w, h = 300, 300  # Set the desired width and height for the resized image
+            img_file, _, _, _ = image_resized(self.image, w, h)
+            img_name = self.image.name
+            self.image.save(img_name, img_file, save=False)
+
+        super().save(*args, **kwargs)
 
 
 class Vendor(models.Model):
@@ -141,7 +146,9 @@ class Client(models.Model):
 class Deliverer(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    earnings = models.DecimalField(max_digits=7, decimal_places=2, default=0, editable=False)
+    earnings = models.DecimalField(
+        max_digits=7, decimal_places=2, default=0, editable=False
+    )
     product_details = models.JSONField(default=dict, editable=False)
 
 
