@@ -157,7 +157,7 @@ class Item(models.Model):
         return self.product_creator == self.request.user
 
 
-class Rating(UUIDModelMixin, models.Model):
+class Rating(UUIDModelMixin):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
     comment = models.TextField(max_length=300, null=True, blank=True)
