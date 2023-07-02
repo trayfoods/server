@@ -7,8 +7,6 @@ from django.utils.translation import gettext_lazy as _
 import datetime
 from django.conf import settings
 
-from core.models import UUIDModelMixin
-
 User = settings.AUTH_USER_MODEL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
@@ -157,7 +155,7 @@ class Item(models.Model):
         return self.product_creator == self.request.user
 
 
-class Rating(UUIDModelMixin):
+class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
     comment = models.TextField(max_length=300, null=True, blank=True)
