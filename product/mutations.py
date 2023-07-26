@@ -5,7 +5,7 @@ from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
 from graphene_file_upload.scalars import Upload
-from .types import OrderDetailsType, OrderType, RatingInputType
+from .types import ShippingInputType, StoreInfoInputType, OrderType, RatingInputType
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -215,8 +215,13 @@ class AddAvaliableProductMutation(graphene.Mutation):
         # Then add 0.5 to the store_rank
         if not product is None and user.profile.is_vendor:
             vendor = profile.vendor
-            if product.product_creator != vendor and product.product_share_visibility == "private": # then check if the user is a vendor
-                raise GraphQLError("You are not allowed to add this product to your store.")
+            if (
+                product.product_creator != vendor
+                and product.product_share_visibility == "private"
+            ):  # then check if the user is a vendor
+                raise GraphQLError(
+                    "You are not allowed to add this product to your store."
+                )
             try:
                 if not product.product_creator is None:
                     if product.product_creator != vendor:
@@ -299,22 +304,56 @@ class AddProductClickMutation(graphene.Mutation):
 
 class CreateOrderMutation(graphene.Mutation):
     class Arguments:
-        order_details = OrderDetailsType(required=True)
+        overall_price = graphene.Float(required=True)
+        delivery_price = graphene.Float(required=True)
+        shipping = ShippingInputType(required=True)
+        linked_items = graphene.List(graphene.String, required=True)
+        stores_infos = graphene.JSONString(required=True)
 
     order = graphene.Field(OrderType)
-    success = graphene.Boolean()
+    success = graphene.Boolean(default_value=False)
+    unavailable_items = graphene.List(graphene.String)
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, order_details, **kwargs):
-        order_user = info.context.user
-        order_payment_status = "pending"
-        order_details = json.dumps(order_details)
-        print("order_details", order_details)
+    def mutate(self, info, **kwargs):
+        overall_price = kwargs.get("overall_price")
+        delivery_price = kwargs.get("delivery_price")
+        shipping = kwargs.get("shipping")
+        linked_items = kwargs.get("linked_items")
+        stores_infos = kwargs.get("stores_infos")
+
+        shipping = json.dumps(shipping)
+        stores_infos = json.dumps(stores_infos)
+
+        # check if all the items are avaliable
+        unavailable_items = []
+        available_items = []
+        for item in linked_items:
+            item = Item.objects.filter(product_slug=item).first()
+            if item is None:
+                raise GraphQLError("Invalid Items")
+            if item.product_avaliable_in.count() <= 0:
+                unavailable_items.append(item.product_slug)
+
+            available_items.append(item)
+
+        if len(unavailable_items) > 0:
+            return CreateOrderMutation(
+                order=None, success=False, unavailable_items=unavailable_items
+            )
+
+        current_user = info.context.user
+        order_payment_status = None
+
         create_order = Order.objects.create(
-            order_user=order_user,
+            user=current_user,
+            overall_price=overall_price,
+            delivery_price=delivery_price,
+            shipping=shipping,
+            stores_infos=stores_infos,
             order_payment_status=order_payment_status,
-            order_details=order_details,
         )
+        create_order.linked_items.set(available_items)
         create_order.save()
 
         return CreateOrderMutation(order=create_order, success=True)

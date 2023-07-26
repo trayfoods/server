@@ -5,6 +5,7 @@ from graphql_auth.schema import UserNode
 
 from .models import (
     UserAccount,
+    School,
     Client,
     Vendor,
     Store,
@@ -14,6 +15,10 @@ from .models import (
     Transaction,
 )
 
+class SchoolType(DjangoObjectType):
+    class Meta:
+        model = School
+        fields = "__all__"
 
 class ProfileType(DjangoObjectType):
     class Meta:
