@@ -194,46 +194,52 @@ class ItemAttribute(models.Model):
 
 
 class Order(models.Model):
-    order_id = models.CharField(
+    order_track_id = models.CharField(
         max_length=17,
         unique=True,
-        primary_key=True,
         editable=False,
     )
-    order_user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    order_overall_price = models.FloatField(default=0.0)
-    order_delivery_price = models.FloatField(default=0.0)
-    order_shipping_address = models.JSONField(default=dict)
-    order_stores_infos = models.JSONField(default=dict)
+    overall_price = models.FloatField(default=0.0, editable=False)
+    delivery_price = models.FloatField(default=0.0, editable=False)
+    shipping = models.JSONField(default=dict)
+    stores_infos = models.JSONField(default=dict)
+    linked_items = models.ManyToManyField(Item, editable=False)
 
-    order_details = models.JSONField(default=dict, null=True, blank=True)
-    order_payment_id = models.CharField(max_length=20, null=True, blank=True)
     order_payment_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_status = models.CharField(
         max_length=20,
-        default="pending",
+        editable=False,
+        blank=True,
+        null=True,
         choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
     )
-    order_created_on = models.DateTimeField(auto_now_add=True)
+    created_on = models.DateTimeField(auto_now_add=True)
+    updated_on = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        if not self.order_id:
+        if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
-            self.order_id = self.generate_order_id()
+            # Get the current date
+            current_date = datetime.date.today()
+            year = current_date.year
+            # Implement order ID generation logic here
+            # For example, you can use a combination of static value and random number
+            self.order_track_id = f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
         super().save(*args, **kwargs)
 
-    def generate_order_id(self):
-        # Get the current date
-        current_date = datetime.date.today()
-        year = current_date.year
-        # Implement order ID generation logic here
-        # For example, you can use a combination of static value and random number
-        return f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
+    # def generate_order_id(self):
+    #     # Get the current date
+    #     current_date = datetime.date.today()
+    #     year = current_date.year
+    #     # Implement order ID generation logic here
+    #     # For example, you can use a combination of static value and random number
+    #     return f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
 
     def __str__(self):
-        return "Order #" + str(self.order_id)
+        return "Order #" + str(self.order_track_id)
 
 
 # Signals

@@ -1,3 +1,5 @@
+import json
+
 import graphene
 from graphene_django.types import DjangoObjectType
 from graphql import GraphQLError
@@ -47,6 +49,7 @@ class RatingInputType(graphene.InputObjectType):
 class ReviewsType(DjangoObjectType):
     did_user_like = graphene.Boolean()
     helpful_count = graphene.Int()
+
     class Meta:
         model = Rating
         fields = "__all__"
@@ -56,7 +59,7 @@ class ReviewsType(DjangoObjectType):
         if user.is_authenticated:
             return self.users_liked.filter(id=user.id).exists()
         return False
-    
+
     def resolve_helpful_count(self, info, *args, **kwargs):
         return self.users_liked.count()
 
@@ -116,7 +119,7 @@ class ItemType(DjangoObjectType):
     def resolve_reviews(self, info):
         item_ratings = Rating.objects.filter(item=self)
         return item_ratings
-    
+
     def resolve_reviews_count(self, info):
         return Rating.objects.filter(item=self).count()
 
@@ -237,58 +240,96 @@ class ItemType(DjangoObjectType):
         return store
 
 
-class TotalOrderType(graphene.InputObjectType):
+class ShippingType(graphene.ObjectType):
+    sch = graphene.String()
+    address = graphene.String()
+    batch = graphene.String()
+
+
+class ShippingInputType(graphene.InputObjectType):
+    sch = graphene.String()
+    address = graphene.String()
+    batch = graphene.String()
+
+
+class TotalOrder:
     price = graphene.Int()
     plate_price = graphene.Int()
 
 
-class CountOrderType(graphene.InputObjectType):
+class CountOrder:
     items = graphene.Int()
     plate = graphene.Int()
 
 
-class StoreOrderInfoType(graphene.InputObjectType):
+class TotalOrderType(TotalOrder, graphene.ObjectType):
+    pass
+
+
+class TotalOrderInputType(TotalOrder, graphene.InputObjectType):
+    pass
+
+
+class CountOrderType(CountOrder, graphene.ObjectType):
+    pass
+
+
+class CountOrderInputType(CountOrder, graphene.InputObjectType):
+    pass
+
+
+class StoreInfoType(graphene.ObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
-    total = TotalOrderType(required=True)
-    count = CountOrderType(required=True)
+    total = TotalOrderType()
+    count = CountOrderType()
     items = graphene.List(JSONField, required=True)
 
 
-class OrderDetailsType(graphene.InputObjectType):
-    overall_price = graphene.Int(required=True)
-    stores_infos = graphene.List(StoreOrderInfoType, required=True)
+class StoreInfoInputType(graphene.InputObjectType):
+    id = graphene.ID(required=True)
+    storeId = graphene.String(required=True)
+    total = TotalOrderInputType(required=True)
+    count = CountOrderInputType(required=True)
+    items = graphene.List(JSONField, required=True)
 
 
 class OrderType(DjangoObjectType):
-    id = graphene.ID()
+    shipping = graphene.Field(ShippingType, default_value=None)
+    stores_infos = graphene.List(StoreInfoType, default_value=None)
 
     class Meta:
         model = Order
         fields = [
             "id",
-            "order_id",
-            "order_user",
-            "order_details",
-            "order_payment_id",
+            "overall_price",
+            "delivery_price",
+            "shipping",
+            "stores_infos",
+            "linked_items",
             "order_payment_currency",
             "order_payment_method",
             "order_payment_status",
-            "order_created_on",
+            "created_on",
+            "updated_on",
         ]
 
-    def resolve_id(self):
-        return self.order_id
+    def resolve_id(self, info):
+        return self.order_track_id
 
-    def resolve_order_details(self, info, **kwargs):
-        order_details = kwargs.pop("order_details", None)
-        if order_details is not None:
-            try:
-                order_details["stores_infos"] = [
-                    StoreOrderInfoType(**store_info)
-                    for store_info in order_details.get("stores_infos", [])
-                ]
-            except Exception as e:
-                raise GraphQLError(f"Invalid 'order_details': {str(e)}")
+    def resolve_shipping(self, info):
+        shipping = json.loads(self.shipping)
+        print(shipping)
+        return ShippingType(
+            sch=shipping["sch"], address=shipping["address"], batch=shipping["batch"]
+        )
 
-        return OrderDetailsType(**order_details)
+    def resolve_stores_infos(self, info):
+        stores_infos = json.loads(self.stores_infos)
+        return StoreInfoType(
+            id=stores_infos["id"],
+            storeId=stores_infos["storeId"],
+            total=TotalOrderType(**stores_infos["total"]),
+            count=CountOrderType(**stores_infos["count"]),
+            items=stores_infos["items"],
+        )

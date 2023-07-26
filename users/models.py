@@ -27,6 +27,22 @@ class UserAccount(AbstractUser, models.Model):
         ),
     )
 
+class School(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=50)
+    short_name = models.CharField(max_length=10, null=True, blank=True)
+    slug = models.SlugField(max_length=50, null=True, blank=True)
+    location = models.CharField(max_length=50, null=True, blank=True)
+    phone_number = models.CharField(max_length=16, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    website = models.URLField(null=True, blank=True)
+    portal = models.URLField(null=True, blank=True)
+    logo = models.ImageField(upload_to="images/school-logo/", null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class Gender(models.Model):
     name = models.CharField(max_length=20, help_text="SHOULD BE IN UPPERCASE!")
