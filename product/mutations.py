@@ -382,15 +382,17 @@ class RateItemMutation(graphene.Mutation):
                 rating_qs.stars = rating.stars
                 rating_qs.comment = filter_comment(rating.comment)
                 rating_qs.save()
+                return RateItemMutation(success=True, review_id=rating_qs.id)
             except Rating.DoesNotExist:
-                rating_qs = Rating.objects.create(
+                new_rating = Rating.objects.create(
                     user=user, item=item, stars=rating.stars, comment=rating.comment
                 )
-                rating_qs.save()
+                new_rating.save()
+                return RateItemMutation(success=True, review_id=new_rating.id)
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
+        
 
-        return RateItemMutation(success=True, review_id=rating_qs.id)
 
 
 class DeleteRatingMutation(graphene.Mutation):

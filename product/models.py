@@ -199,6 +199,17 @@ class Order(models.Model):
         unique=True,
         editable=False,
     )
+    order_status = models.CharField(
+        max_length=20,
+        choices=(
+            ("not-started", "not-started"),
+            ("processing", "processing"),
+            ("shipped", "shipped"),
+            ("delivered", "delivered"),
+            ("cancelled", "cancelled"),
+        ),
+        default="not-started",
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     overall_price = models.FloatField(default=0.0, editable=False)
@@ -223,21 +234,8 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
-            # Get the current date
-            current_date = datetime.date.today()
-            year = current_date.year
-            # Implement order ID generation logic here
-            # For example, you can use a combination of static value and random number
             self.order_track_id = str(uuid.uuid4().hex)[:10]
         super().save(*args, **kwargs)
-
-    # def generate_order_id(self):
-    #     # Get the current date
-    #     current_date = datetime.date.today()
-    #     year = current_date.year
-    #     # Implement order ID generation logic here
-    #     # For example, you can use a combination of static value and random number
-    #     return f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)

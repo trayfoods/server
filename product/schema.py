@@ -128,13 +128,13 @@ class Query(graphene.ObjectType):
             count = count + 1
             items = Item.objects.all().distinct()
             items = items[: count if items.count() >= count else items.count()]
-            try:
-                if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                    return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
-                else:
-                    return items
-            except:
+            # try:
+            if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
+                return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
+            else:
                 return items
+            # except:
+            #     return items
         else:
             GraphQLError("There should be a count param in the items query")
 

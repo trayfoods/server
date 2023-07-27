@@ -11,10 +11,10 @@ SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 @csrf_exempt
 def paystack_webhook_handler(request):
+    print(request.META)
     if request.method == "POST" and "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META:
         # Get the Paystack signature from the headers
         paystack_signature = request.META["HTTP_X_PAYSTACK_SIGNATURE_HEADER"]
-        print(paystack_signature)
         # Get the request body as bytes
         raw_body = request.body
 
