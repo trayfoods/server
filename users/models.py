@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save
 from trayapp.utils import image_resized
 
-from product.models import Item
+from product.models import Item, Order
 
 from django.conf import settings
 
@@ -26,6 +26,12 @@ class UserAccount(AbstractUser, models.Model):
             ("student", "student"),
         ),
     )
+
+    # get user's orders
+    @property
+    def orders(self):
+        return Order.objects.filter(user=self)
+
 
 class School(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
