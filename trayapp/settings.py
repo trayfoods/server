@@ -17,6 +17,11 @@ DEBUG = "True" in os.getenv("DEBUG")
 USE_S3 = "True" in os.getenv("USE_S3")
 USE_DB = "True" in os.getenv("USE_DB")
 
+PAYSTACK_SECRET_KEY = os.environ.get(
+    "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
+)
+PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY")
+
 # EMAIL_INFOS
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"

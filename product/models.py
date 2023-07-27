@@ -209,6 +209,7 @@ class Order(models.Model):
 
     order_payment_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
+    order_payment_url = models.CharField(max_length=200, editable=False, blank=True)
     order_payment_status = models.CharField(
         max_length=20,
         editable=False,
@@ -227,7 +228,7 @@ class Order(models.Model):
             year = current_date.year
             # Implement order ID generation logic here
             # For example, you can use a combination of static value and random number
-            self.order_track_id = f"{str(year)}-" + str(uuid.uuid4().hex)[:10]
+            self.order_track_id = str(uuid.uuid4().hex)[:10]
         super().save(*args, **kwargs)
 
     # def generate_order_id(self):

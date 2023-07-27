@@ -1,15 +1,19 @@
 from django.utils import timezone
+from django.conf import settings
 import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
 from users.models import UserActivity, Vendor, Store
 from graphene_file_upload.scalars import Upload
-from .types import ShippingInputType, StoreInfoInputType, OrderType, RatingInputType
+from .types import ShippingInputType, OrderType, RatingInputType
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
 import json
+import requests
+
+PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 
 class AddProductMutation(graphene.Mutation):
@@ -435,3 +439,64 @@ class HelpfulReviewMutation(graphene.Mutation):
             raise ValueError("Invalid Rating Id")
 
         return HelpfulReviewMutation(success=True)
+
+
+class InitializeTransactionMutation(graphene.Mutation):
+    class Arguments:
+        order_id = graphene.ID(required=True)
+
+    success = graphene.Boolean(default_value=False)
+    transaction_id = graphene.String()
+    payment_url = graphene.String()
+
+    @staticmethod
+    def mutate(root, info, order_id):
+        order = Order.objects.filter(order_track_id=order_id).first()
+
+        # check if order exists
+        if order is None:
+            raise ValueError("Invalid Order Id")
+
+        # check if order has been initialized before
+        if order.order_payment_status == "pending":
+            return InitializeTransactionMutation(
+                success=True,
+                transaction_id=order.order_track_id,
+                payment_url=order.order_payment_url,
+            )
+
+        try:
+            url = "https://api.paystack.co/transaction/initialize"
+
+            amount = order.overall_price + 10
+            amount = amount * 100
+
+            data = {
+                "email": order.user.email,
+                "currency": order.order_payment_currency,
+                "amount": float(amount),
+                "reference": f"order_{order.order_track_id}",
+            }
+            print(amount)
+            headers = {
+                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+            }
+
+            response = requests.post(url, data=data, headers=headers)
+            response = response.json()
+
+            if response["status"]:
+                transaction_id = response["data"]["reference"]
+                payment_url = response["data"]["authorization_url"]
+                order.order_payment_status = "pending"
+                order.order_payment_url = payment_url
+                order.save()
+
+                return InitializeTransactionMutation(
+                    success=True, transaction_id=transaction_id, payment_url=payment_url
+                )
+            else:
+                raise GraphQLError(response["message"])
+        except Exception as e:
+            print(e)
+            raise GraphQLError("An error occured while initializing transaction")

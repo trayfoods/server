@@ -4,7 +4,7 @@ import graphene
 from graphene_django.types import DjangoObjectType
 from graphql import GraphQLError
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
-from users.models import Vendor
+from users.models import Vendor, Store
 from users.types import StoreType
 
 from trayapp.custom_model import JSONField
@@ -254,7 +254,7 @@ class ShippingInputType(graphene.InputObjectType):
 
 class TotalOrder:
     price = graphene.Int()
-    plate_price = graphene.Int()
+    platePrice = graphene.Int()
 
 
 class CountOrder:
@@ -281,9 +281,14 @@ class CountOrderInputType(CountOrder, graphene.InputObjectType):
 class StoreInfoType(graphene.ObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
-    total = TotalOrderType()
-    count = CountOrderType()
+    total = graphene.Field(TotalOrderType, required=True)
+    count = graphene.Field(CountOrderType, required=True)
     items = graphene.List(JSONField, required=True)
+
+    store = graphene.Field(StoreType)
+
+    def resolve_store(self, info):
+        return Store.objects.filter(store_nickname=self.get("storeId")).first()
 
 
 class StoreInfoInputType(graphene.InputObjectType):
@@ -308,7 +313,6 @@ class OrderType(DjangoObjectType):
             "stores_infos",
             "linked_items",
             "order_payment_currency",
-            "order_payment_method",
             "order_payment_status",
             "created_on",
             "updated_on",
@@ -319,17 +323,11 @@ class OrderType(DjangoObjectType):
 
     def resolve_shipping(self, info):
         shipping = json.loads(self.shipping)
-        print(shipping)
         return ShippingType(
             sch=shipping["sch"], address=shipping["address"], batch=shipping["batch"]
         )
 
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
-        return StoreInfoType(
-            id=stores_infos["id"],
-            storeId=stores_infos["storeId"],
-            total=TotalOrderType(**stores_infos["total"]),
-            count=CountOrderType(**stores_infos["count"]),
-            items=stores_infos["items"],
-        )
+
+        return stores_infos
