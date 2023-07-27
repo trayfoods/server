@@ -8,23 +8,26 @@ from django.conf import settings
 
 SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
+
 @csrf_exempt
-def order_payment_webhook(request):
-    if request.method == "POST" and 'HTTP_X_PAYSTACK_SIGNATURE' in request.META:
+def paystack_webhook_handler(request):
+    if request.method == "POST" and "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META:
         # Get the Paystack signature from the headers
-        paystack_signature = request.META['HTTP_X_PAYSTACK_SIGNATURE']
+        paystack_signature = request.META["HTTP_X_PAYSTACK_SIGNATURE_HEADER"]
 
         # Get the request body as bytes
         raw_body = request.body
 
         # Calculate the HMAC using the secret key
-        calculated_signature = hashlib.sha512(raw_body + SECRET_KEY.encode()).hexdigest()
+        calculated_signature = hmac.new(
+            SECRET_KEY.encode("utf-8"), raw_body, hashlib.sha512
+        ).hexdigest()
 
         # Compare the calculated signature with the provided signature
         if hmac.compare_digest(calculated_signature, paystack_signature):
             # Signature is valid, proceed with processing the event
             try:
-                event = raw_body.decode('utf-8')
+                event = raw_body.decode("utf-8")
                 # Do something with the event here
                 # e.g., process_payment(event)
                 print(event)

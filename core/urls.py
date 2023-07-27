@@ -1,6 +1,6 @@
 from django.urls import path
-from core.views import order_payment_webhook
+from core.views import paystack_webhook_handler
 
 urlpatterns = [
-    path("order-payment-webhook", order_payment_webhook, name="rest-api"),
+    path("paystack-webhook", paystack_webhook_handler, name="paystack-webhook"),
 ]
