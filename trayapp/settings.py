@@ -112,7 +112,7 @@ GRAPH_MODELS = {
 }
 
 GRAPHENE = {
-    'SCHEMA_CACHE_TIMEOUT': 3600,  # Cache timeout for the GraphQL schema in seconds
+    "SCHEMA_CACHE_TIMEOUT": 3600,  # Cache timeout for the GraphQL schema in seconds
     "SCHEMA": "trayapp.schema.schema",
     "MIDDLEWARE": [
         "graphql_jwt.middleware.JSONWebTokenMiddleware",
