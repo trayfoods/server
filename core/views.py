@@ -10,33 +10,26 @@ SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 @csrf_exempt
 def order_payment_webhook(request):
-    if request.method == "POST":
-        # Get the request headers and body
-        raw_body = request.body
-        print("I don enter", raw_body)
-        headers = request.headers
-
+    if request.method == "POST" and 'HTTP_X_PAYSTACK_SIGNATURE' in request.META:
         # Get the Paystack signature from the headers
-        paystack_signature = headers.get('HTTP_X_PAYSTACK_SIGNATURE', '')
+        paystack_signature = request.META['HTTP_X_PAYSTACK_SIGNATURE']
+
+        # Get the request body as bytes
+        raw_body = request.body
 
         # Calculate the HMAC using the secret key
-        calculated_signature = hmac.new(
-            key=bytes(SECRET_KEY, 'utf-8'),
-            msg=raw_body,
-            digestmod=hashlib.sha512
-        ).hexdigest()
+        calculated_signature = hashlib.sha512(raw_body + SECRET_KEY.encode()).hexdigest()
 
         # Compare the calculated signature with the provided signature
         if hmac.compare_digest(calculated_signature, paystack_signature):
             # Signature is valid, proceed with processing the event
             try:
-                event = json.loads(raw_body)
+                event = raw_body.decode('utf-8')
                 # Do something with the event here
                 # e.g., process_payment(event)
                 print(event)
-                pass
-            except json.JSONDecodeError:
-                return HttpResponse("Invalid JSON payload", status=400)
+            except UnicodeDecodeError:
+                return HttpResponse("Invalid request body encoding", status=400)
 
             return HttpResponse("Success", status=200)
 
