@@ -13,6 +13,7 @@ def order_payment_webhook(request):
     if request.method == "POST":
         # Get the request headers and body
         raw_body = request.body
+        print("I don enter", raw_body)
         headers = request.headers
 
         # Get the Paystack signature from the headers
