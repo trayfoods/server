@@ -32,6 +32,7 @@ def order_payment_webhook(request):
                 event = json.loads(raw_body)
                 # Do something with the event here
                 # e.g., process_payment(event)
+                print(event)
                 pass
             except json.JSONDecodeError:
                 return HttpResponse("Invalid JSON payload", status=400)
