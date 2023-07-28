@@ -199,6 +199,10 @@ class Query(graphene.ObjectType):
             "Middle Eastern Cuisine",
             "Beverages",
         ]
+        item_types = [
+            "Dish",
+            "Not Dish",
+        ]
         item_attributes = ItemAttribute.objects.all()
         if item_attributes.count() > 0:
             item_attributes = item_attributes
@@ -211,6 +215,14 @@ class Query(graphene.ObjectType):
                 )
                 new_item_attribute.save()
             item_attributes = ItemAttribute.objects.all()
+
+            for item_type in item_types:
+                new_item_attribute = ItemAttribute.objects.create(
+                    name=item_type,
+                    _type="TYPE",
+                    urlParamName=item_type.replace(" ", "-").lower(),
+                )
+                new_item_attribute.save()
 
         # save cache for 24 hours
         item_attribute_categories = item_attributes.filter(_type="CATEGORY")
