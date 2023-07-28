@@ -4,7 +4,6 @@ from django.db import models
 from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
-import datetime
 from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
