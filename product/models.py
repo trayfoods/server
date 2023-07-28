@@ -90,18 +90,6 @@ class Item(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    #     food_categories = [
-    #     "Fast Food",
-    #     "Asian Cuisine",
-    #     "Italian Cuisine",
-    #     "American Cuisine",
-    #     "Mexican Cuisine",
-    #     "Healthy and Salad Options",
-    #     "Desserts and Sweets",
-    #     "Breakfast and Brunch",
-    #     "Middle Eastern Cuisine",
-    #     "Beverages"
-    # ]
 
     product_type = models.ForeignKey(
         "ItemAttribute",
