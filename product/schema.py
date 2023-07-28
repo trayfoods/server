@@ -9,7 +9,7 @@ from product.mutations import (
     CreateOrderMutation,
     RateItemMutation,
     HelpfulReviewMutation,
-    InitializeTransactionMutation
+    InitializeTransactionMutation,
 )
 from product.models import Item, ItemAttribute
 
@@ -20,6 +20,9 @@ from django.utils import timezone
 
 # basic searching
 from django.db.models import Q
+
+# django cache
+from django.core.cache import cache
 
 # from io import BytesIO
 # from PIL import Image
@@ -128,13 +131,22 @@ class Query(graphene.ObjectType):
             count = count + 1
             items = Item.objects.all().distinct()
             items = items[: count if items.count() >= count else items.count()]
-            # try:
-            if info.context.user.is_authenticated and UserActivity.objects.filter(user_id=info.context.user.id).count() > 2:
-                return recommend_items(info.context.user.id, n=count if (items.count() >= count) else items.count())
-            else:
+            try:
+                if (
+                    info.context.user.is_authenticated
+                    and UserActivity.objects.filter(
+                        user_id=info.context.user.id
+                    ).count()
+                    > 2
+                ):
+                    return recommend_items(
+                        info.context.user.id,
+                        n=count if (items.count() >= count) else items.count(),
+                    )
+                else:
+                    return items
+            except:
                 return items
-            # except:
-            #     return items
         else:
             GraphQLError("There should be a count param in the items query")
 
@@ -157,7 +169,47 @@ class Query(graphene.ObjectType):
         return item
 
     def resolve_all_item_attributes(self, info, **kwargs):
-        return ItemAttribute.objects.all()
+        item_attributes = cache.get(
+            "all_item_attributes"
+        )  # check cache for item attributes
+        if item_attributes:
+            return item_attributes
+        # check if item_attribute exists in the database
+        food_categories = [
+            "Fast Food",
+            "Asian Cuisine",
+            "Italian Cuisine",
+            "American Cuisine",
+            "Mexican Cuisine",
+            "Healthy and Salad Options",
+            "Desserts and Sweets",
+            "Breakfast and Brunch",
+            "Middle Eastern Cuisine",
+            "Beverages",
+        ]
+        item_attributes = ItemAttribute.objects.all()
+        if item_attributes.count() > 0:
+            item_attributes = item_attributes
+        else:  # create item attributes
+            for food_category in food_categories:
+                new_item_attribute = ItemAttribute.objects.create(
+                    name=food_category,
+                    _type="CATEGORY",
+                    urlParamName=food_category.replace(" ", "-").lower(),
+                )
+                new_item_attribute.save()
+            item_attributes = ItemAttribute.objects.all()
+
+        # save cache for 24 hours
+        item_attribute_categories = item_attributes.filter(_type="CATEGORY")
+        cache.set(
+            "item_attribute_category", item_attribute_categories, timeout=60 * 60 * 24
+        )
+        item_attribute_types = item_attributes.filter(_type="TYPE")
+        cache.set("item_attribute_type", item_attribute_types, timeout=60 * 60 * 24)
+        cache.set("all_item_attributes", item_attributes, timeout=60 * 60 * 24)
+
+        return item_attributes
 
     def resolve_item_attributes(self, info, _type):
         if _type == 0:
@@ -168,7 +220,17 @@ class Query(graphene.ObjectType):
             raise GraphQLError(
                 "Please enter either 0 or 1 for types and categories respectively"
             )
+        # check cache for item attributes by type
+        item_attributes = cache.get(f"item_attribute_{_type.lower()}")
+        if item_attributes:
+            return item_attributes
         item_attributes = ItemAttribute.objects.filter(_type=_type)
+        # save cache for 24 hours
+        cache.set(
+            f"item_attribute_{_type.lower()}",
+            item_attributes,
+            timeout=60 * 60 * 24,
+        )
         return item_attributes
 
     def resolve_item_attribute(self, info, urlParamName):
