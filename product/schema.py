@@ -42,6 +42,7 @@ class Query(graphene.ObjectType):
     items = graphene.List(ItemType, count=graphene.Int(required=True))
     item = graphene.Field(ItemType, item_slug=graphene.String())
 
+    all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, urlParamName=graphene.String())
 
