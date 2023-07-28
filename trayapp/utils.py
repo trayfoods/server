@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY")
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
 
 IMAGE_TYPES = {
