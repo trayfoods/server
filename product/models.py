@@ -228,13 +228,21 @@ class Order(models.Model):
         null=True,
         choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
     )
+    delivery_person = models.ForeignKey(
+        "users.DeliveryPerson",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        editable=False,
+    )
+    order_message = models.TextField(blank=True, null=True)
     created_on = models.DateTimeField(auto_now_add=True)
     updated_on = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
-            self.order_track_id = str(uuid.uuid4().hex)[:10]
+            self.order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -15,10 +15,12 @@ from .models import (
     Transaction,
 )
 
+
 class SchoolType(DjangoObjectType):
     class Meta:
         model = School
         fields = "__all__"
+
 
 class ProfileType(DjangoObjectType):
     class Meta:
@@ -118,7 +120,6 @@ class VendorType(DjangoObjectType):
 
 
 class StoreType(DjangoObjectType):
-    vendor = graphene.Field(VendorType)
     store_image = graphene.String()
 
     class Meta:
@@ -133,12 +134,9 @@ class StoreType(DjangoObjectType):
             "store_products",
         ]
 
-    def resolve_vendor(self, info):
-        vendor = Vendor.objects.filter(store=self).first()
-        return vendor
-    
     def resolve_store_image(self, info):
-        vendor = Vendor.objects.filter(store=self).first()
+        store = Store.objects.filter(vendor=self.vendor).first()
+        vendor  = store.vendor
         if vendor is None:
             return None
         profile = vendor.user

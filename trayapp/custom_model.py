@@ -5,7 +5,7 @@ from graphql import GraphQLError
 from trayapp.utils import get_banks_list, get_bank_account_details
 from users.types import StoreType, TransactionType
 
-from users.models import Vendor, Transaction
+from users.models import Wallet, Transaction
 
 from graphene.types import Scalar
 import json
@@ -124,12 +124,12 @@ class BankListQuery(graphene.ObjectType):
             'transactions': None
         }
         if user and user.is_authenticated:
-            vendor = Vendor.objects.get(user=user.profile)
+            wallet = Wallet.objects.filter(user=user.profile).first()
             transactions = Transaction.objects.filter(user=user.profile)
             data = {
                 'msg': "ok",
                 'success': True,
-                'balance': vendor.balance,
+                'balance': wallet.balance if(wallet) else None,
                 'transactions': transactions
              }
         return data

@@ -4,8 +4,6 @@ from graphene_file_upload.scalars import Upload
 
 from django.utils.module_loading import import_string
 
-from graphql_jwt.refresh_token.shortcuts import get_refresh_token
-
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.settings import graphql_auth_settings as app_settings
@@ -13,7 +11,7 @@ from graphql_auth.decorators import verification_required
 from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import VendorType, UserNodeType  # , BankNode
-from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount
+from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount, Wallet
 
 User = UserAccount
 
@@ -29,7 +27,7 @@ class Output:
     padronize the output
     """
 
-    success = graphene.Boolean(default_value=True)
+    success = graphene.Boolean(default_value=False)
 
 
 class CreateVendorMutation(Output, graphene.Mutation):
@@ -49,37 +47,50 @@ class CreateVendorMutation(Output, graphene.Mutation):
         success = False
         user = info.context.user
         if user.is_authenticated:
-            vendor = Vendor.objects.filter(
-                user=user.profile).first()  # get the vendor
+            user = User.objects.get(username=user.username)
+            profile = user.profile
+            vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
             if vendor is None:
                 store_check = Store.objects.filter(
-                    store_nickname=store_nickname.strip()).first()  # check if the store nickname is already taken
+                    store_nickname=store_nickname.strip()
+                ).first()  # check if the store nickname is already taken
                 if store_check is None:  # if not taken
+                    vendor = Vendor.objects.create(user=profile)
                     store = Store.objects.create(
                         store_name=store_name,
                         store_nickname=store_nickname,
-                        store_category=store_category
+                        store_category=store_category,
+                        vendor=vendor,
                     )  # create the store
                     store.save()
-                    vendor = Vendor.objects.create(
-                        user=user.profile,
-                        store=store)
+                    vendor.store = store
+
+                    # check if the store has a wallet or if the user has a wallet
+                    # wallet = Wallet.objects.filter(user=profile).first()
+                    # wallet = wallet if wallet else Wallet.objects.create(user=profile)
+                    # wallet.save()
+                    # store.wallet = wallet
+
                     vendor.save()
-                    userqs = User.objects.filter(username=user.username).first()
-                    if not userqs is None:
-                        userqs.role = "vendor" # do not touch
-                        userqs.save()
+                    user.role = "vendor"  # do not touch
+                    user.save()
+
                     success = True
+
+                    # return the vendor and user
+                    return CreateVendorMutation(
+                        success=success, user=user, vendor=vendor
+                    )
                 else:  # if taken
                     raise GraphQLError(
-                        "Store Nickname Already Exists, Please use a unique name")  # raise error
+                        "Store Nickname Already Exists, Please use a unique name"
+                    )  # raise error
             else:  # if vendor already exists
                 success = False
-                raise GraphQLError('You Already A Vendor')  # raise error
+                raise GraphQLError("You Already A Vendor")  # raise error
         else:  # if user is not authenticated
             raise GraphQLError("Login required.")  # raise error
         # Notice we return an instance of this mutation
-        return CreateVendorMutation(user=info.context.user, vendor=vendor, success=success)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
@@ -87,8 +98,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
         if user.profile and user.vendor:
             return cls(success=True, user=user, vendor=user.vendor)
         else:
-            vendor = Vendor.objects.filter(
-                user=user.profile).first()
+            vendor = Vendor.objects.filter(user=user.profile).first()
             return cls(success=False, user=user, vendor=vendor)
 
 
@@ -107,7 +117,16 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, username, first_name, email, last_name, phone_number=None, profile_image=None):
+    def mutate(
+        self,
+        info,
+        username,
+        first_name,
+        email,
+        last_name,
+        phone_number=None,
+        profile_image=None,
+    ):
         user = info.context.user
         send_email = False
         profile = user.profile
@@ -129,14 +148,14 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
                 UserStatus.clean_email(email)
                 # TODO CHECK FOR EMAIL ASYNC SETTING
                 if async_email_func:
-                    async_email_func(
-                        user.status.send_activation_email, (info,))
+                    async_email_func(user.status.send_activation_email, (info,))
                 else:
                     user.status.send_activation_email(info)
                 user.email = email
             except Exception as e:
                 raise GraphQLError(
-                    "Error trying to send confirmation mail to %s" % email)
+                    "Error trying to send confirmation mail to %s" % email
+                )
         user.save()
         # Notice we return an instance of this mutation
         return UpdateAccountMutation(user=user)
@@ -186,30 +205,31 @@ class CreateClientMutation(Output, graphene.Mutation):
         user = info.context.user
         profile = info.context.user.profile
         if user.is_authenticated:
-            vendor = Vendor.objects.filter(
-                user=profile).first()  # get the vendor
+            vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
             if vendor is None:
-                client = Client.objects.filter(
-                    user=profile).first()  # get the client
+                client = Client.objects.filter(user=profile).first()  # get the client
                 if client is None:  # if client does not exist
                     hostel = Hostel.objects.filter(
-                        short_name=hostel_shortname).first()  # get the hostel
+                        short_name=hostel_shortname
+                    ).first()  # get the hostel
                     gender = gender.upper()
                     gender = Gender.objects.filter(name=gender).first()
                     if not gender is None:
                         gender.rank += 1  # increment the rank
                         gender.save()
                         new_client = Client.objects.create(
-                            user=profile, hostel=hostel, room=room)  # create the client
+                            user=profile, hostel=hostel, room=room
+                        )  # create the client
                         new_client_profile = Profile.objects.filter(
-                            user=user).first()  # get the profile
+                            user=user
+                        ).first()  # get the profile
                         if not new_client_profile is None:  # if profile exists
                             new_client_profile.gender = gender
                             new_client_profile.save()  # save the profile
                         new_client.save()
                         user = User.objects.filter(username=user.username).first()
                         if not user is None:
-                            user.role = "student" # do not touch
+                            user.role = "student"  # do not touch
                             user.save()
                     else:
                         # raise error if gender does not exist
@@ -242,7 +262,8 @@ class EmailVerifiedCheckerMutation(graphene.Mutation):
         user = User.objects.filter(email=email).first()  # get the user
         if not user is None:
             user_status = UserStatus.objects.filter(
-                user=user).first()  # get the user status
+                user=user
+            ).first()  # get the user status
             if user_status.verified == True:  # check if the user email is verified
                 is_verified = True  # the user email is verified
             else:
@@ -268,11 +289,9 @@ class UpdateVendorBankAccount(Output, graphene.Mutation):
         error = None
         user = info.context.user
         if user.is_authenticated:  # check if the user is authenticated
-            profile = Profile.objects.filter(
-                user=user).first()  # get the profile
+            profile = Profile.objects.filter(user=user).first()  # get the profile
             if not profile is None:  # check if the profile exists
-                vendor = Vendor.objects.filter(
-                    user=profile).first()  # get the vendor
+                vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
                 if not vendor is None:
                     vendor.account_number = account_number
                     vendor.account_name = account_name
