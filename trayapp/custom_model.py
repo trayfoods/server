@@ -10,6 +10,9 @@ from users.models import Wallet, Transaction
 from graphene.types import Scalar
 import json
 
+# django cache
+from django.core.cache import cache
+
 
 class JSONField(Scalar):
     """
@@ -143,8 +146,14 @@ class BankListQuery(graphene.ObjectType):
                 'page': page,
                 'currency': currency
             }
+            # Check if the bank list is cached
+            if cache.get('banklist'):
+                banklist = cache.get('banklist')
+                return banklist
             try:
                 banklist = get_banks_list(data)  # Get the bank list
+                # cache the bank list for 2 minutes
+                cache.set('banklist', banklist, 120)
                 if banklist:
                     if banklist['status'] == True:
                         bank_list = {
@@ -175,6 +184,7 @@ class BankListQuery(graphene.ObjectType):
                 accountDetails = get_bank_account_details(
                     data)  # Get the bank account details
                 if accountDetails:  # Check if the account details is not empty
+                    print(accountDetails)
                     if accountDetails['status'] == True:  # Check if the status is true
                         data = accountDetails['data']
                         account_details = {
