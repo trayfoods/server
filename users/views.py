@@ -17,4 +17,3 @@ def get_bank_list(request) -> JsonResponse:
         return JsonResponse(response.json()['data'], safe=False)
     else:
         return JsonResponse({'error': 'Not logged in'}, safe=False)
-    # return render(request, 'bank_list.html', {'banks': response.json()['data']})

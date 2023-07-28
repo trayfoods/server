@@ -477,7 +477,7 @@ class InitializeTransactionMutation(graphene.Mutation):
                 "email": order.user.email,
                 "currency": order.order_payment_currency,
                 "amount": float(amount),
-                "reference": f"order_{order.order_track_id}",
+                "reference": f"{order.order_track_id}",
             }
             print(amount)
             headers = {

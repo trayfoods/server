@@ -18,6 +18,7 @@ User = settings.AUTH_USER_MODEL
 class UserAccount(AbstractUser, models.Model):
     password = models.CharField(_("password"), max_length=128, editable=False)
     role = models.CharField(
+        _("role"),
         max_length=20,
         default="client",
         choices=(
@@ -34,7 +35,7 @@ class UserAccount(AbstractUser, models.Model):
 
 
 class School(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField("Profile", on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
     slug = models.SlugField(max_length=50, null=True, blank=True)
@@ -56,23 +57,6 @@ class Gender(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
-
-class Store(models.Model):
-    store_name = models.CharField(max_length=20)
-    store_nickname = models.CharField(max_length=20, null=True, blank=True)
-    store_category = models.CharField(max_length=15)
-    store_rank = models.FloatField(default=0)
-    store_products = models.ManyToManyField(
-        "product.Item", related_name="store_items", blank=True
-    )
-    # store_location = models.PointField(null=True) # Spatial Field Types
-
-    def __str__(self):
-        return f"{self.store_nickname}"
-
-    class Meta:
-        ordering = ["-store_rank"]
 
 
 class Profile(models.Model):
@@ -105,27 +89,6 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
 
 
-class Vendor(models.Model):
-    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
-    store = models.ForeignKey(Store, on_delete=models.CASCADE)
-    account_number = models.CharField(max_length=20, null=True, blank=True)
-    account_name = models.CharField(max_length=60, null=True, blank=True)
-    bank_code = models.CharField(max_length=20, null=True, blank=True)
-    country_code = models.CharField(max_length=6, null=True, blank=True)
-    balance = models.DecimalField(
-        max_digits=100,
-        null=True,
-        default=00.00,
-        decimal_places=2,
-        blank=True,
-        editable=False,
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return self.user.user.username
-
-
 class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
         ("reversed", "reversed"),
@@ -148,6 +111,116 @@ class Transaction(models.Model):
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
 
+class Wallet(models.Model):
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    currency = models.CharField(max_length=4, default="NGN")
+    balance = models.DecimalField(
+        max_digits=100,
+        null=True,
+        default=00.00,
+        decimal_places=2,
+        blank=True,
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return self.user.user.username
+
+    # get user's transactions
+    @property
+    def transactions(self):
+        return Transaction.objects.filter(user=self)
+
+    @property
+    def add_balance(self, amount, desc=None):
+        self.balance += amount
+        self.save()
+        desc = desc if desc else f"Added {self.currency} {amount} to wallet"
+        # create a transaction
+        transaction = Transaction.objects.create(
+            user=self.user,
+            title="Wallet Funding",
+            desc=desc,
+            amount=amount,
+            _type="credit",
+        )
+        transaction.save()
+        return transaction
+
+    @property
+    def deduct_balance(self, amount, desc=None):
+        self.balance -= amount
+        self.save()
+        desc = desc if desc else f"Deducted {self.currency} {amount} from wallet"
+        # create a transaction
+        transaction = Transaction.objects.create(
+            user=self.user,
+            title="Wallet Debit",
+            desc=desc,
+            amount=amount,
+            _type="debit",
+        )
+        transaction.save()
+        return transaction
+
+    @property
+    def reverse_transaction(self, amount, desc=None):
+        self.balance += amount
+        self.save()
+        desc = desc if desc else f"Reversed {self.currency} {amount} to wallet"
+        # create a transaction
+        transaction = Transaction.objects.create(
+            user=self.user,
+            title="Wallet Reversal",
+            desc=desc,
+            amount=amount,
+            _type="reversed",
+        )
+        transaction.save()
+        return transaction
+
+
+class Store(models.Model):
+    wallet = models.OneToOneField(
+        Wallet, on_delete=models.CASCADE, null=True, blank=True
+    )
+    vendor = models.OneToOneField("Vendor", on_delete=models.CASCADE)
+    store_name = models.CharField(max_length=20)
+    store_nickname = models.CharField(max_length=20, null=True, blank=True)
+    store_category = models.CharField(max_length=15)
+    store_rank = models.FloatField(default=0)
+    store_products = models.ManyToManyField(
+        "product.Item", related_name="store_items", blank=True
+    )
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
+    # store_location = models.PointField(null=True) # Spatial Field Types
+
+    def __str__(self):
+        return f"{self.store_nickname}"
+
+    class Meta:
+        ordering = ["-store_rank"]
+
+
+class Vendor(models.Model):
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    account_number = models.CharField(max_length=20, null=True, blank=True)
+    account_name = models.CharField(max_length=60, null=True, blank=True)
+    bank_code = models.CharField(max_length=20, null=True, blank=True)
+    country_code = models.CharField(max_length=6, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.user.user.username
+
+    # get vendor's store
+    @property
+    def store(self):
+        return Store.objects.get(vendor=self)
+
+
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
@@ -165,13 +238,23 @@ class Client(models.Model):
     room = models.JSONField(default=dict, null=True, blank=True)
 
 
-class Deliverer(models.Model):
-    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
-    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    earnings = models.DecimalField(
-        max_digits=7, decimal_places=2, default=0, editable=False
+class DeliveryPerson(models.Model):
+    user = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
+    wallet = models.OneToOneField(
+        Wallet, on_delete=models.CASCADE, null=True, blank=True, unique=True
     )
-    product_details = models.JSONField(default=dict, editable=False)
+    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
+    is_verified = models.BooleanField(default=False)
+    is_available = models.BooleanField(default=False)
+    is_on_delivery = models.BooleanField(default=False)
+    orders = models.ManyToManyField("product.Order", blank=True)
+
+    def __str__(self) -> str:
+        return self.user.user.username
+
+    class Meta:
+        ordering = ["-is_available"]
+        verbose_name_plural = "Delivery People"
 
 
 ACTIVITY_TYPES = (
@@ -195,6 +278,10 @@ class UserActivity(models.Model):
     def __str__(self):
         return f"{self.user_id} - {self.item.product_slug} - {self.timestamp}"
 
+    class Meta:
+        ordering = ["-timestamp"]
+        verbose_name_plural = "User Activities"
+
     @property
     def item_idx(self):
         return self.item.id
@@ -208,8 +295,43 @@ class UserActivity(models.Model):
         return self.item.product_type__name
 
 
+# Signals
 @receiver(post_save, sender=User)
 def update_profile_signal(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
     instance.profile.save()
+
+
+# create a wallet for delivery person and store
+@receiver(post_save, sender=DeliveryPerson)
+def update_delivery_person_wallet_signal(sender, instance, created, **kwargs):
+    if created:
+        # check if wallet exists
+        if not instance.wallet:
+            # check if user has a wallet
+            wallet = Wallet.objects.filter(user=instance.user).first()
+            if not wallet:
+                wallet = Wallet.objects.create(user=instance.user)
+                wallet.save()
+            instance.wallet = wallet
+            instance.wallet.save()
+
+
+@receiver(post_save, sender=Store)
+def update_store_wallet_signal(sender, instance, created, **kwargs):
+    if created:
+        # check if wallet exists
+        if not instance.wallet:
+            # check if user has a wallet
+            wallet = Wallet.objects.filter(user=instance.vendor.user).first()
+            if not wallet:
+                wallet = Wallet.objects.create(user=instance.vendor.user)
+                wallet.save()
+            instance.wallet = wallet
+            instance.wallet.save()
+
+
+@receiver(models.signals.post_delete, sender=Profile)
+def remove_file_from_s3(sender, instance, using, **kwargs):
+    instance.item_image.delete(save=False)
