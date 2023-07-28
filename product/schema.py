@@ -101,6 +101,10 @@ class Query(graphene.ObjectType):
         return list_of_items
 
     def resolve_search_items(self, info, query, count=None):
+        # check if the query is in the cache
+        if cache.get(query + str(count + 1) if count else query):
+            return cache.get(query + str(count))
+
         filtered_items = Item.objects.filter(
             Q(product_name__icontains=query)
             | Q(product_desc__icontains=query)
@@ -112,6 +116,8 @@ class Query(graphene.ObjectType):
                 filtered_items = filtered_items[:count]
         else:
             filtered_items = filtered_items[:20]
+        # cache the query for 5 minutes
+        cache.set(query + str(count + 1) if count else query, filtered_items, 300)
         return filtered_items
 
     def resolve_hero_data(self, info, count=None):
