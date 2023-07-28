@@ -1,10 +1,12 @@
+import os
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
 # from django.contrib.gis.db import models
-
+from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from trayapp.utils import image_resized
 
@@ -14,6 +16,21 @@ from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
+def profile_image_directory_path(instance, filename):
+    """
+    Create a directory path to upload the Profile Image.
+    :param object instance:
+        The instance where the current file is being attached.
+    :param str filename:
+        The filename that was originally given to the file.
+        This may not be taken into account when determining
+        the final destination path.
+    :result str: Directory path.file_extension.
+    """
+    item_name = slugify(instance.product.product_name)
+    item_slug = slugify(instance.product.product_slug)
+    _, extension = os.path.splitext(filename)
+    return f"images/items/{item_slug}/{item_name}{extension}"
 
 class UserAccount(AbstractUser, models.Model):
     password = models.CharField(_("password"), max_length=128, editable=False)
@@ -61,7 +78,7 @@ class Gender(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="images/profile-images/", null=True)
+    image = models.ImageField(upload_to=profile_image_directory_path, null=True)
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
     )
