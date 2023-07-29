@@ -77,10 +77,13 @@ def save_image(sender, instance, **kwargs):
 
 @receiver(pre_delete, sender=ItemImage, dispatch_uid="ItemImage.delete_image")
 def delete_image(sender, instance, **kwargs):
-    s = sender.objects.get(pk=instance.pk)
+    try:
+        s = sender.objects.get(pk=instance.pk)
 
-    if (not s.item_image or s.item_image is not None) and (
-        not s.item_image_webp or s.item_image_webp is not None
-    ):
-        s.item_image.delete(False)
-        s.item_image_webp.delete(False)
+        if (not s.item_image or s.item_image is not None) and (
+            not s.item_image_webp or s.item_image_webp is not None
+        ):
+            s.item_image.delete(False)
+            s.item_image_webp.delete(False)
+    except sender.DoesNotExist:
+        pass
