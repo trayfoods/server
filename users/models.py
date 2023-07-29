@@ -16,6 +16,7 @@ from django.conf import settings
 
 User = settings.AUTH_USER_MODEL
 
+
 def profile_image_directory_path(instance, filename):
     """
     Create a directory path to upload the Profile Image.
@@ -31,6 +32,7 @@ def profile_image_directory_path(instance, filename):
     item_slug = slugify(instance.product.product_slug)
     _, extension = os.path.splitext(filename)
     return f"images/items/{item_slug}/{item_name}{extension}"
+
 
 class UserAccount(AbstractUser, models.Model):
     password = models.CharField(_("password"), max_length=128, editable=False)
@@ -351,4 +353,7 @@ def update_store_wallet_signal(sender, instance, created, **kwargs):
 
 @receiver(models.signals.post_delete, sender=Profile)
 def remove_file_from_s3(sender, instance, using, **kwargs):
-    instance.item_image.delete(save=False)
+    try:
+        instance.image.delete(save=False)
+    except:
+        pass

@@ -9,32 +9,46 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-#)2!^38c7a772a9b3716")
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "True" in os.getenv("DEBUG")
-USE_S3 = "True" in os.getenv("USE_S3")
-USE_DB = "True" in os.getenv("USE_DB")
+DEBUG = "True" in os.environ.get("DEBUG", "True")
+
+USE_S3 = "True" in os.environ.get("USE_S3", "False")
+USE_DB = "True" in os.environ.get("USE_DB", "False")
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
 )
-PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY")
+PAYSTACK_PUBLIC_KEY = os.environ.get(
+    "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
+)
 
-# EMAIL_INFOS
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = "smtp.gmail.com"
+USE_SES = "True" in os.environ.get("USE_SES", "False")
+
 EMAIL_USE_TLS = True
-EMAIL_PORT = 587
+EMAIL_PORT = 465
 DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 
-if DEBUG == True:
-    FRONTEND_URL = "http://localhost:3000"
+# Amazon SES settings
+if USE_SES:
+    EMAIL_BACKEND = "anymail.backends.amazon_ses.EmailBackend"
+    # EMAIL_BACKEND = "django_ses.SESBackend"
+    AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+    AWS_SES_REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
+    AWS_SES_REGION_ENDPOINT = "email.{}.amazonaws.com".format(AWS_SES_REGION_NAME)
 else:
-    FRONTEND_URL = "https://%s" % os.getenv("REACT_SITE")
+    # EMAIL_INFOS
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+    EMAIL_HOST = "smtp.gmail.com"
+
+FRONTEND_URL = os.environ.get("REACT_SITE", "http://localhost:3000")
+
+if "localhost" in FRONTEND_URL:
+    FRONTEND_URL = "http://%s" % os.getenv("REACT_SITE")
 
 if DEBUG == True:
     ALLOWED_HOSTS = ["*"]
@@ -43,7 +57,7 @@ else:
         "127.0.0.1",
         "192.168.137.1",
         "localhost",
-        "%s" % os.getenv("SITE_ORIGIN_URL"),
+        "%s" % os.environ.get("SITE_ORIGIN_URL", "api.trayfoods.com"),
     ]
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
@@ -83,6 +97,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "django_extensions",
     "rest_framework",
+    "anymail",
 ]
 
 AUTH_USER_MODEL = "users.UserAccount"
@@ -232,11 +247,9 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.0/howto/static-files/
-
+# Amazon S3 settings
 if USE_S3:
-    # aws settings
+    # Static files (CSS, JavaScript, Images)
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
