@@ -222,6 +222,11 @@ class Store(models.Model):
     class Meta:
         ordering = ["-store_rank"]
 
+    # credit store wallet
+    @property
+    def credit_wallet(self, amount, desc=None):
+        self.wallet.add_balance(amount, desc)
+
 
 class Vendor(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
@@ -274,6 +279,11 @@ class DeliveryPerson(models.Model):
     class Meta:
         ordering = ["-is_available"]
         verbose_name_plural = "Delivery People"
+
+    # credit delivery person wallet
+    @property
+    def credit_wallet(self, amount, desc=None):
+        self.wallet.add_balance(amount, desc)
 
 
 ACTIVITY_TYPES = (

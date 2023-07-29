@@ -2,6 +2,7 @@ import json
 
 from django.http import HttpResponse
 from product.models import Order
+from users.models import Store, Wallet
 
 
 class ProcessPayment:
@@ -59,24 +60,27 @@ class ProcessPayment:
         try:
             # get the order from the database
             order = Order.objects.get(order_track_id=order_id)
-            # update the order payment status
-            order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
-            # order.save()
 
             # get all the needed data to verify the payment
             stores = order.stores_infos
             stores = json.loads(stores)
+
             delivery_price = float(order.delivery_price)
             overall_price = float(order.overall_price) - delivery_price
 
             # calculate the total price of the stores
             # and compare it with the overall price
             stores_total_price = 0
+            stores__ids__with_credits = []
             for store in stores:
+                store_id = store["storeId"]
                 price = store["total"]["price"]
                 plate_price = store["total"]["platePrice"]
                 total_price = price + plate_price
+                stores__ids__with_credits.append(
+                    {"id": store_id, "credit": total_price}
+                )
                 stores_total_price += total_price
 
             # if the stores_total_price is greater than the overall_price
@@ -97,6 +101,31 @@ class ProcessPayment:
 
             # remove 40% of the delivery_price
             delivery_price = delivery_price - (delivery_price * 0.4)
+
+            if "success" in order_payment_status:
+                stores_with_issues = []
+                # update the balance of the stores
+                for store in stores__ids__with_credits:
+                    store_nickname = store["id"]
+                    # get the store from the database
+                    # and update its credit
+                    store = Store.objects.filter(
+                        store_nickname=store_nickname.strip()
+                    ).filter()
+                    if store.exists():
+                        store.credit_wallet(
+                            amount=float(store["credit"]),
+                            description=f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
+                        )
+                        store.save()
+                    else:
+                        stores_with_issues.append(store_id)
+                print("stores_with_issues: ", stores_with_issues)
+                # update the order payment status
+                order.order_payment_status = order_payment_status
+                order.order_payment_method = order_payment_method
+                order.delivery_price = delivery_price
+                order.save()
 
             return HttpResponse("Payment successful", status=200)
         except Order.DoesNotExist:
