@@ -38,7 +38,7 @@ def save_image(sender, instance, **kwargs):
     # add Itemimage (original | webp_version)
     if instance._state.adding:
         #  item_image
-        file, name, content_type, size = image_resized(instance.item_image, 1200, 700)
+        file, name, content_type, size = image_resized(instance.item_image, 1024, 1024)
         new_item_image = InMemoryUploadedFile(
             file, "ImageField", name, content_type, size, None
         )
@@ -65,7 +65,7 @@ def save_image(sender, instance, **kwargs):
                 old.url.replace(old.name, "").replace(old.format, "").replace(".", "")
             )
             file, name, content_type, size = image_resized(
-                instance.item_image, 1200, 700
+                instance.item_image, 1024, 1024
             )
             new_item_image = InMemoryUploadedFile(
                 file, "ImageField", name, content_type, size, None
