@@ -391,8 +391,6 @@ class RateItemMutation(graphene.Mutation):
                 return RateItemMutation(success=True, review_id=new_rating.id)
         except Item.DoesNotExist:
             raise ValueError("Invalid Item Slug")
-        
-
 
 
 class DeleteRatingMutation(graphene.Mutation):
@@ -459,13 +457,11 @@ class InitializeTransactionMutation(graphene.Mutation):
         if order is None:
             raise ValueError("Invalid Order Id")
 
+        order_track_id = order.order_track_id
+
         # check if order has been initialized before
         if order.order_payment_status == "pending":
-            return InitializeTransactionMutation(
-                success=True,
-                transaction_id=order.order_track_id,
-                payment_url=order.order_payment_url,
-            )
+            order_track_id = order.regenerate_order_track_id()
 
         try:
             url = "https://api.paystack.co/transaction/initialize"
@@ -477,7 +473,7 @@ class InitializeTransactionMutation(graphene.Mutation):
                 "email": order.user.email,
                 "currency": order.order_payment_currency,
                 "amount": float(amount),
-                "reference": f"{order.order_track_id}",
+                "reference": f"{order_track_id}",
             }
             print(amount)
             headers = {

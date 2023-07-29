@@ -12,9 +12,9 @@ from .utils import ProcessPayment
 PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 PAYSTACK_WHITELISTED_IPS = [
-    "52.31.139.75",
-    "52.49.173.169",
-    "52.214.14.220",
+    "58.41.122.95",
+    "95.204.44.21",
+    "127.88.222.24",
 ]
 
 if settings.DEBUG:
