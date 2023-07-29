@@ -152,7 +152,7 @@ class Query(graphene.ObjectType):
         items = items[: count if items.count() >= count else items.count()]
 
         def save_items_to_cache(returned_items):
-            if returned_items.count() > 1:
+            if returned_items and returned_items.count() > 1:
                 cache.set(
                     cache_key + str(user.id) if user.is_authenticated else cache_key,
                     returned_items,

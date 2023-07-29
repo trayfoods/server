@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpResponse
 from product.models import Order
-from users.models import Store, Wallet
+from users.models import Store
 
 
 class ProcessPayment:

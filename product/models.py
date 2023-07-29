@@ -234,6 +234,13 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
+    
+    # re-generate a order_track_id for the order and update the order_track_id of the order
+    @property
+    def regenerate_order_track_id(self):
+        self.order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
+        self.save()
+        return self.order_track_id
 
 
 # Signals
