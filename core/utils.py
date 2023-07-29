@@ -16,6 +16,7 @@ class ProcessPayment:
         self.response_data = {}
 
     def process_payment(self):
+        print("event_type", self.event_type)
         if self.event_type == "charge.success":
             return self.charge_success()
         elif self.event_type == "transfer.success":
