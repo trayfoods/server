@@ -474,8 +474,8 @@ class InitializeTransactionMutation(graphene.Mutation):
                 "currency": order.order_payment_currency,
                 "amount": float(amount),
                 "reference": f"{order_track_id}",
+                "callback_url": "{}/checkout/{}".format(settings.FRONTEND_URL, order_track_id),
             }
-            print(amount)
             headers = {
                 "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
             }

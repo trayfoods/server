@@ -234,7 +234,7 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
-    
+
     # re-generate a order_track_id for the order and update the order_track_id of the order
     @property
     def regenerate_order_track_id(self):
@@ -246,4 +246,7 @@ class Order(models.Model):
 # Signals
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
-    instance.item_image.delete(save=False)
+    try:
+        instance.item_image.delete(save=False)
+    except:
+        pass
