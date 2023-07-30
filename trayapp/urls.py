@@ -7,6 +7,7 @@ from graphene_file_upload.django import FileUploadGraphQLView
 # from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from .views import index_view
+from core.views import order_redirect_share_view
 
 # from users.views import get_bank_list
 
@@ -19,6 +20,7 @@ urlpatterns = [
         csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)),
         name="graph-api",
     ),
+    path("pay/<str:order_id>", order_redirect_share_view, name="share-order"),
     # path("bank_list/", get_bank_list, name="bank_list"),
 ]
 
