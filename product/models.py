@@ -9,6 +9,7 @@ from django.conf import settings
 import requests
 
 User = settings.AUTH_USER_MODEL
+FRONTEND_URL = settings.FRONTEND_URL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
@@ -258,15 +259,17 @@ class Order(models.Model):
         amount = self.overall_price + 10
         amount = amount * 100
 
+        callback_url = f"{FRONTEND_URL}/checkout/{order_track_id}"
         data = {
             "email": self.user.email,
             "currency": self.order_payment_currency,
             "amount": float(amount),
             "reference": f"{order_track_id}",
-            "callback_url": "{}/checkout/{}".format(
-                settings.FRONTEND_URL, order_track_id
-            ),
         }
+
+        if "://" in FRONTEND_URL:
+            data["callback_url"] = callback_url
+
         headers = {
             "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         }
