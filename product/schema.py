@@ -142,12 +142,15 @@ class Query(graphene.ObjectType):
         user = info.context.user
 
         count = count + 1
-        cache_key = "items" + str(count)
-        items = cache.get(
-            cache_key + str(user.id) if user.is_authenticated else cache_key
-        )
-        if items:
-            return items
+        try:
+            cache_key = "items" + str(count)
+            items = cache.get(
+                cache_key + str(user.id) if user.is_authenticated else cache_key
+            )
+            if items:
+                return items
+        except:
+            pass
         items = Item.objects.all().distinct()
         items = items[: count if items.count() >= count else items.count()]
 
