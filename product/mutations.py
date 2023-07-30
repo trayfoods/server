@@ -450,6 +450,7 @@ class InitializeTransactionMutation(graphene.Mutation):
     payment_url = graphene.String()
 
     @staticmethod
+    @permission_checker([IsAuthenticated])
     def mutate(root, info, order_id):
         order = Order.objects.filter(order_track_id=order_id).first()
 
@@ -457,44 +458,18 @@ class InitializeTransactionMutation(graphene.Mutation):
         if order is None:
             raise ValueError("Invalid Order Id")
 
-        order_track_id = order.order_track_id
+        # try:
+        response = order.create_payment_link
 
-        # check if order has been initialized before
-        if order.order_payment_status == "pending":
-            order_track_id = order.regenerate_order_track_id()
+        if response["status"] and response["status"] == True:
+            transaction_id = response["data"]["reference"]
+            payment_url = response["data"]["authorization_url"]
 
-        try:
-            url = "https://api.paystack.co/transaction/initialize"
-
-            amount = order.overall_price + 10
-            amount = amount * 100
-
-            data = {
-                "email": order.user.email,
-                "currency": order.order_payment_currency,
-                "amount": float(amount),
-                "reference": f"{order_track_id}",
-                "callback_url": "{}/checkout/{}".format(settings.FRONTEND_URL, order_track_id),
-            }
-            headers = {
-                "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
-            }
-
-            response = requests.post(url, data=data, headers=headers)
-            response = response.json()
-
-            if response["status"]:
-                transaction_id = response["data"]["reference"]
-                payment_url = response["data"]["authorization_url"]
-                order.order_payment_status = "pending"
-                order.order_payment_url = payment_url
-                order.save()
-
-                return InitializeTransactionMutation(
-                    success=True, transaction_id=transaction_id, payment_url=payment_url
-                )
-            else:
-                raise GraphQLError(response["message"])
-        except Exception as e:
-            print(e)
-            raise GraphQLError("An error occured while initializing transaction")
+            return InitializeTransactionMutation(
+                success=True, transaction_id=transaction_id, payment_url=payment_url
+            )
+        else:
+            raise GraphQLError(response["message"])
+        # except Exception as e:
+        #     print(e)
+        #     raise GraphQLError("An error occured while initializing transaction")

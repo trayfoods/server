@@ -3,9 +3,12 @@ import json
 import hmac
 import hashlib
 from django.http import HttpResponse, JsonResponse
+from django.shortcuts import redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.encoding import force_bytes
 from django.conf import settings
+
+from product.models import Order
 
 from .utils import ProcessPayment
 
@@ -79,3 +82,16 @@ def paystack_webhook_handler(request):
             return HttpResponse("NOT ALLOWED", status=403)
 
     return HttpResponse("Invalid request", status=400)
+
+
+def order_redirect_share_view(request, order_id):
+    order = Order.objects.filter(order_track_id=order_id).first()
+    if order:
+        if not order.order_payment_url:
+            order.create_payment_link
+            order = Order.objects.filter(order_track_id=order.order_track_id).first()
+        return redirect(order.order_payment_url)
+    return JsonResponse(
+        {"message": "Order not found, you were shared the wrong order payment link"},
+        status=404,
+    )

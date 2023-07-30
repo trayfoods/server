@@ -28,22 +28,23 @@ PAYSTACK_PUBLIC_KEY = os.environ.get(
 USE_SES = "True" in os.environ.get("USE_SES", "False")
 
 EMAIL_USE_TLS = True
-EMAIL_PORT = 465
 DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
 
 # Amazon SES settings
 if USE_SES:
     EMAIL_BACKEND = "anymail.backends.amazon_ses.EmailBackend"
     # EMAIL_BACKEND = "django_ses.SESBackend"
+    EMAIL_PORT = 465
     AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
     AWS_SES_REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
     AWS_SES_REGION_ENDPOINT = "email.{}.amazonaws.com".format(AWS_SES_REGION_NAME)
 else:
     # EMAIL_INFOS
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_PORT = 587
 
 FRONTEND_URL = os.environ.get("REACT_SITE", "http://localhost:3000")
 

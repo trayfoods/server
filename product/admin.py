@@ -68,7 +68,7 @@ get_item_webp_image.allow_tags = True
 
 
 class ItemImageAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "item_image")
+    list_display = ("__str__", "item_image", "is_primary")
     search_fields = ["product__product_name", "item_image", "product__product_slug"]
     fields = (
         "product",

@@ -6,6 +6,8 @@ from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
+import requests
+
 User = settings.AUTH_USER_MODEL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
@@ -62,7 +64,7 @@ class ItemImage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-id"]
+        ordering = ["-id", "-timestamp"]
 
     def __str__(self) -> str:
         return self.product.product_slug
@@ -242,11 +244,53 @@ class Order(models.Model):
         self.save()
         return self.order_track_id
 
+    @property
+    def create_payment_link(self):
+        PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
+
+        url = "https://api.paystack.co/transaction/initialize"
+
+        # check if order has been initialized before
+        if self.order_payment_status == "pending":
+            order_track_id = self.regenerate_order_track_id
+        else:
+            order_track_id = self.order_track_id
+        amount = self.overall_price + 10
+        amount = amount * 100
+
+        data = {
+            "email": self.user.email,
+            "currency": self.order_payment_currency,
+            "amount": float(amount),
+            "reference": f"{order_track_id}",
+            "callback_url": "{}/checkout/{}".format(
+                settings.FRONTEND_URL, order_track_id
+            ),
+        }
+        headers = {
+            "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        }
+
+        response = requests.post(url, data=data, headers=headers)
+        response = response.json()
+
+        if response["status"] == True:
+            transaction_id = response["data"]["reference"]
+            payment_url = response["data"]["authorization_url"]
+            self.order_payment_url = payment_url
+            self.order_track_id = transaction_id
+            self.order_payment_status = "pending"
+            self.save()
+
+        print(response)
+        return response
+
 
 # Signals
 @receiver(models.signals.post_delete, sender=ItemImage)
 def remove_file_from_s3(sender, instance, using, **kwargs):
     try:
         instance.item_image.delete(save=False)
+        instance.item_image_webp.delete(save=False)
     except:
         pass
