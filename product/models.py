@@ -65,7 +65,7 @@ class ItemImage(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["-id", "-timestamp"]
+        ordering = ["-is_primary", "-timestamp"]
 
     def __str__(self) -> str:
         return self.product.product_slug
