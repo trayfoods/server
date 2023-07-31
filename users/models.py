@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 # from django.contrib.gis.db import models
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
-from trayapp.utils import image_resized
+from trayapp.utils import image_resized, image_exists
 
 from product.models import Item, Order
 
@@ -100,9 +100,11 @@ class Profile(models.Model):
         # Resize the image before saving
         if self.image:
             w, h = 300, 300  # Set the desired width and height for the resized image
-            img_file, _, _, _ = image_resized(self.image, w, h)
-            img_name = self.image.name
-            self.image.save(img_name, img_file, save=False)
+            if image_exists(self.image.name):
+                img_file, _, _, _ = image_resized(self.image, w, h)
+                if img_file:
+                    img_name = self.image.name
+                    self.image.save(img_name, img_file, save=False)
 
         super().save(*args, **kwargs)
 

@@ -1,4 +1,7 @@
 import os
+import PIL
+import blurhash
+import numpy
 import requests
 
 # Imaging and Filing
@@ -12,11 +15,19 @@ from PIL import Image
 from pathlib import Path
 from dotenv import load_dotenv
 
+from django.conf import settings
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
+
+
+def image_exists(image_path):
+    # Construct full image path
+    full_image_path = os.path.join(settings.MEDIA_ROOT, image_path)
+    return os.path.isfile(full_image_path)
+
 
 IMAGE_TYPES = {
     "jpg": "JPEG",
@@ -46,13 +57,13 @@ def image_resized(image, w, h, format=None):
 
     file = io.BytesIO()
     content_type = Image.MIME[_image.format]
-    imageTemporaryResized.save(file, _image.format)
+    imageTemporaryResized.save(file, _image.format, optimize=True, quality=95)
 
     if format:
         # Using BICUBIC interpolation for high-quality resizing in the specified format
         imageTemporaryResized = imageTemporaryResized.resize((w, h), Image.BICUBIC)
         content_type = f"image/{format}"
-        imageTemporaryResized.save(file, format)
+        imageTemporaryResized.save(file, format, optimize=True, quality=95)
 
     file.seek(0)
     size = sys.getsizeof(file)

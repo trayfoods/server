@@ -1,7 +1,6 @@
 import os
 import uuid
 from django.db import models
-from django.dispatch import receiver
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
@@ -10,6 +9,7 @@ import requests
 
 User = settings.AUTH_USER_MODEL
 FRONTEND_URL = settings.FRONTEND_URL
+MEDIA_URL = settings.MEDIA_URL
 
 PRODUCT_TYPES = (("TYPE", "TYPE"), ("CATEGORY", "CATEGORY"))
 
@@ -69,9 +69,6 @@ class ItemImage(models.Model):
 
     def __str__(self) -> str:
         return self.product.product_slug
-
-    # def save(self, *args, **kwargs):
-    #     super(ItemImage, self).save(*args, **kwargs)
 
 
 class Item(models.Model):
@@ -285,15 +282,14 @@ class Order(models.Model):
             self.order_payment_status = "pending"
             self.save()
 
-        print(response)
         return response
 
 
 # Signals
-@receiver(models.signals.post_delete, sender=ItemImage)
-def remove_file_from_s3(sender, instance, using, **kwargs):
-    try:
-        instance.item_image.delete(save=False)
-        instance.item_image_webp.delete(save=False)
-    except:
-        pass
+# @receiver(models.signals.post_delete, sender=ItemImage)
+# def remove_file_from_s3(sender, instance, using, **kwargs):
+#     # try:
+#     instance.item_image.delete(save=False)
+#     instance.item_image_webp.delete(save=False)
+#     # except:
+#     #     pass
