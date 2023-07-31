@@ -14,15 +14,6 @@ from .utils import ProcessPayment
 
 PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
-PAYSTACK_WHITELISTED_IPS = [
-    "58.41.122.95",
-    "95.204.44.21",
-    "127.88.222.24",
-]
-
-if settings.DEBUG:
-    PAYSTACK_WHITELISTED_IPS += ["127.0.0.1", "localhost"]
-
 
 @csrf_exempt
 def paystack_webhook_handler(request):
@@ -30,10 +21,6 @@ def paystack_webhook_handler(request):
         "HTTP_X_PAYSTACK_SIGNATURE" in request.META
         or "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META
     )
-
-    # check if the request is from paystack
-    if request.META["REMOTE_ADDR"] not in PAYSTACK_WHITELISTED_IPS:
-        return HttpResponse("Invalid IP", status=403)
 
     # update HTTP_X_PAYSTACK_SIGNATURE_HEADER in request.META
     if "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META:
