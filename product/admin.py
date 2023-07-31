@@ -68,7 +68,7 @@ get_item_webp_image.allow_tags = True
 
 
 class ItemImageAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "item_image", "is_primary")
+    list_display = ("__str__", "item_image", "is_primary", "item_image_hash")
     search_fields = ["product__product_name", "item_image", "product__product_slug"]
     fields = (
         "product",
@@ -77,7 +77,7 @@ class ItemImageAdmin(admin.ModelAdmin):
         get_item_webp_image,
         "item_image",
     )
-    readonly_fields = (get_item_original_image, get_item_webp_image)
+    readonly_fields = ("item_image_hash", get_item_original_image, get_item_webp_image)
 
 
 class RatingAdmin(admin.ModelAdmin):

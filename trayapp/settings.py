@@ -35,7 +35,6 @@ if USE_SES:
     EMAIL_BACKEND = "anymail.backends.amazon_ses.EmailBackend"
     # EMAIL_BACKEND = "django_ses.SESBackend"
     EMAIL_PORT = 465
-    AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
     AWS_SES_REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
     AWS_SES_REGION_ENDPOINT = "email.{}.amazonaws.com".format(AWS_SES_REGION_NAME)
 else:
@@ -89,6 +88,7 @@ INSTALLED_APPS = [
     "users",
     "product",
     "core",
+    "storages",
     "graphene_django",
     "graphql_auth",
     "django_filters",
@@ -249,6 +249,8 @@ USE_TZ = True
 
 
 # Amazon S3 settings
+AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
+
 if USE_S3:
     # Static files (CSS, JavaScript, Images)
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
@@ -257,7 +259,9 @@ if USE_S3:
     AWS_DEFAULT_ACL = os.getenv("AWS_DEFAULT_ACL")
     if AWS_DEFAULT_ACL == "None":
         AWS_DEFAULT_ACL = None
-    AWS_S3_CUSTOM_DOMAIN = f"{AWS_STORAGE_BUCKET_NAME}.s3.eu-west-2.amazonaws.com"
+    AWS_S3_CUSTOM_DOMAIN = (
+        f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_DEFAULT_REGION}.amazonaws.com"
+    )
     AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
     AWS_S3_SECURE_URLS = True
 
