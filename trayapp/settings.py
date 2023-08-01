@@ -45,10 +45,12 @@ else:
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
     EMAIL_PORT = 587
 
-FRONTEND_URL = os.environ.get("REACT_SITE", "http://localhost:3000")
+FRONTEND_URL = os.environ.get("REACT_SITE_DOMAIN", "localhost:3000")
 
 if "localhost" in FRONTEND_URL:
-    FRONTEND_URL = "http://%s" % os.getenv("REACT_SITE")
+    FRONTEND_URL = "http://%s" % FRONTEND_URL
+else:
+    FRONTEND_URL = "https://%s" % FRONTEND_URL
 
 if DEBUG == True:
     ALLOWED_HOSTS = ["*"]
@@ -305,7 +307,7 @@ else:
         "http://127.0.0.1:3000",
         "http://192.168.137.1:3000",
         "https://trayfoods.com",
-        f"https://{FRONTEND_URL}",
+        f"{FRONTEND_URL}",
     )
 
 CORS_ALLOW_METHODS = (

@@ -483,18 +483,18 @@ class InitializeTransactionMutation(graphene.Mutation):
         if order is None:
             raise ValueError("Invalid Order Id")
 
-        # try:
-        response = order.create_payment_link
+        try:
+            response = order.create_payment_link
 
-        if response["status"] and response["status"] == True:
-            transaction_id = response["data"]["reference"]
-            payment_url = response["data"]["authorization_url"]
+            if response["status"] and response["status"] == True:
+                transaction_id = response["data"]["reference"]
+                payment_url = response["data"]["authorization_url"]
 
-            return InitializeTransactionMutation(
-                success=True, transaction_id=transaction_id, payment_url=payment_url
-            )
-        else:
-            raise GraphQLError(response["message"])
-        # except Exception as e:
-        #     print(e)
-        #     raise GraphQLError("An error occured while initializing transaction")
+                return InitializeTransactionMutation(
+                    success=True, transaction_id=transaction_id, payment_url=payment_url
+                )
+            else:
+                raise GraphQLError(response["message"])
+        except Exception as e:
+            print(e)
+            raise GraphQLError("An error occured while initializing transaction")
