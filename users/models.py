@@ -33,6 +33,22 @@ def profile_image_directory_path(instance, filename):
     return f"images/users/{username}/{username}{extension}"
 
 
+def school_logo_directory_path(instance, filename):
+    """
+    Create a directory path to upload the School Logo.
+    :param object instance:
+        The instance where the current file is being attached.
+    :param str filename:
+        The filename that was originally given to the file.
+        This may not be taken into account when determining
+        the final destination path.
+    :result str: Directory path.file_extension.
+    """
+    school_name = slugify(instance.name)
+    _, extension = os.path.splitext(filename)
+    return f"images/school-logo/{school_name}/{school_name}{extension}"
+
+
 class UserAccount(AbstractUser, models.Model):
     password = models.CharField(_("password"), max_length=128, editable=False)
     role = models.CharField(
@@ -43,6 +59,8 @@ class UserAccount(AbstractUser, models.Model):
             ("client", "client"),
             ("vendor", "vendor"),
             ("student", "student"),
+            ("school", "school"),
+            ("delivery", "delivery"),
         ),
     )
 
@@ -52,17 +70,30 @@ class UserAccount(AbstractUser, models.Model):
         return Order.objects.filter(user=self)
 
 
+class Country(models.Model):
+    name = models.CharField(max_length=50)
+    code = models.CharField(max_length=5, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class School(models.Model):
-    user = models.OneToOneField("Profile", on_delete=models.CASCADE)
+    user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
     slug = models.SlugField(max_length=50, null=True, blank=True)
-    location = models.CharField(max_length=50, null=True, blank=True)
+    address = models.CharField(max_length=50, null=True, blank=True)
+    country = models.ForeignKey(
+        Country, on_delete=models.SET_NULL, null=True, blank=True
+    )
     phone_number = models.CharField(max_length=16, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
     portal = models.URLField(null=True, blank=True)
-    logo = models.ImageField(upload_to="images/school-logo/", null=True, blank=True)
+    logo = models.ImageField(
+        upload_to=school_logo_directory_path, null=True, blank=True
+    )
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -82,6 +113,12 @@ class Profile(models.Model):
     image = models.ImageField(upload_to=profile_image_directory_path, null=True)
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
+    )
+    school = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True, blank=True, editable=False
+    )
+    country = models.ForeignKey(
+        Country, on_delete=models.SET_NULL, null=True, blank=True
     )
     phone_number = models.CharField(max_length=16)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
@@ -118,6 +155,9 @@ class Transaction(models.Model):
         ("unknown", "unknown"),
     )
     user = models.OneToOneField(Profile, on_delete=models.CASCADE, editable=False)
+    order = models.OneToOneField(
+        Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
+    )
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=200, null=True, blank=True)
     amount = models.DecimalField(
@@ -130,11 +170,24 @@ class Transaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
+    # check if the transaction is for a order
+    @property
+    def is_order(self):
+        return hasattr(self, "order")
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     currency = models.CharField(max_length=4, default="NGN")
     balance = models.DecimalField(
+        max_digits=100,
+        null=True,
+        default=00.00,
+        decimal_places=2,
+        blank=True,
+        editable=False,
+    )
+    uncleared_balance = models.DecimalField(
         max_digits=100,
         null=True,
         default=00.00,
@@ -154,19 +207,24 @@ class Wallet(models.Model):
         return Transaction.objects.filter(user=self)
 
     @property
-    def add_balance(self, amount, desc=None):
-        self.balance += amount
-        self.save()
-        desc = desc if desc else f"Added {self.currency} {amount} to wallet"
-        # create a transaction
-        transaction = Transaction.objects.create(
-            user=self.user,
-            title="Wallet Funding",
-            desc=desc,
-            amount=amount,
-            _type="credit",
-        )
-        transaction.save()
+    def add_balance(self, amount, title=None, desc=None, unclear=False, order=None):
+        transaction = None
+        if unclear:
+            self.uncleared_balance += amount
+            self.save()
+        else:
+            self.balance += amount
+            self.save()
+            # create a transaction
+            transaction = Transaction.objects.create(
+                user=self.user,
+                title="Wallet Funding" if not title else title,
+                desc=f"Added {self.currency} {amount} to wallet" if not desc else desc,
+                amount=amount,
+                order=order,
+                _type="credit",
+            )
+            transaction.save()
         return transaction
 
     @property
@@ -225,8 +283,8 @@ class Store(models.Model):
 
     # credit store wallet
     @property
-    def credit_wallet(self, amount, desc=None):
-        self.wallet.add_balance(amount, desc)
+    def credit_wallet(self, amount, desc=None, unclear=True, order=None):
+        self.wallet.add_balance(amount, desc, unclear=unclear, order=order)
 
     @property
     def orders(self):

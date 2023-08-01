@@ -113,10 +113,12 @@ class ProcessPayment:
                 store = Store.objects.filter(
                     store_nickname=store_nickname.strip()
                 ).first()
-                if store.exists():
+                if store:
                     store.credit_wallet(
                         amount=float(store["credit"]),
                         description=f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
+                        unclear=False,
+                        order=order,
                     )
                     store.save()
                 else:
