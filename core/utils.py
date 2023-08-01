@@ -112,7 +112,7 @@ class ProcessPayment:
                 # and update its credit
                 store = Store.objects.filter(
                     store_nickname=store_nickname.strip()
-                ).filter()
+                ).first()
                 if store.exists():
                     store.credit_wallet(
                         amount=float(store["credit"]),
