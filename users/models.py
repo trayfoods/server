@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 
 from django.db import models
@@ -156,8 +157,8 @@ class Transaction(models.Model):
         ("failed", "failed"),
         ("unknown", "unknown"),
     )
-    user = models.OneToOneField(Profile, on_delete=models.CASCADE, editable=False)
-    order = models.OneToOneField(
+    wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
+    order = models.ForeignKey(
         Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
     )
     title = models.CharField(max_length=50)
@@ -170,6 +171,7 @@ class Transaction(models.Model):
         editable=False,
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
     # check if the transaction is for a order
@@ -208,8 +210,9 @@ class Wallet(models.Model):
     def transactions(self):
         return Transaction.objects.filter(user=self)
 
-    @property
-    def add_balance(self, *args, **kwargs):
+    # add balance to user's wallet
+    def add_balance(self, **kwargs):
+        print(kwargs)
         amount = kwargs.get("amount")
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
@@ -220,11 +223,13 @@ class Wallet(models.Model):
             self.uncleared_balance += amount
             self.save()
         else:
+            # convert the amount to decimal
+            amount = Decimal(amount)
             self.balance += amount
             self.save()
             # create a transaction
             transaction = Transaction.objects.create(
-                user=self.user,
+                wallet=self,
                 title="Wallet Funding" if not title else title,
                 desc=f"Added {self.currency} {amount} to wallet" if not desc else desc,
                 amount=amount,
@@ -234,14 +239,13 @@ class Wallet(models.Model):
             transaction.save()
         return transaction
 
-    @property
     def deduct_balance(self, amount, desc=None):
         self.balance -= amount
         self.save()
         desc = desc if desc else f"Deducted {self.currency} {amount} from wallet"
         # create a transaction
         transaction = Transaction.objects.create(
-            user=self.user,
+            wallet=self,
             title="Wallet Debit",
             desc=desc,
             amount=amount,
@@ -250,14 +254,13 @@ class Wallet(models.Model):
         transaction.save()
         return transaction
 
-    @property
     def reverse_transaction(self, amount, desc=None):
         self.balance += amount
         self.save()
         desc = desc if desc else f"Reversed {self.currency} {amount} to wallet"
         # create a transaction
         transaction = Transaction.objects.create(
-            user=self.user,
+            wallet=self,
             title="Wallet Reversal",
             desc=desc,
             amount=amount,
@@ -289,9 +292,9 @@ class Store(models.Model):
         ordering = ["-store_rank"]
 
     # credit store wallet
-    @property
-    def credit_wallet(self, *args, **kwargs):
-        return self.wallet.add_balance(*args, **kwargs)
+    def credit_wallet(self, **kwargs):
+        print(kwargs)
+        return self.wallet.add_balance(**kwargs)
 
     @property
     def orders(self):
@@ -352,9 +355,8 @@ class DeliveryPerson(models.Model):
         verbose_name_plural = "Delivery People"
 
     # credit delivery person wallet
-    @property
-    def credit_wallet(self, amount, desc=None):
-        self.wallet.add_balance(amount, desc)
+    def credit_wallet(self, **kwargs):
+        self.wallet.add_balance(**kwargs)
 
 
 ACTIVITY_TYPES = (

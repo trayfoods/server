@@ -54,7 +54,7 @@ class ProcessPayment:
         order_payment_status = self.event_data["status"]
         order_payment_method = self.event_data["authorization"]["channel"]
         order_price = self.event_data["amount"] / 100
-        order_price = float(order_price)
+        order_price = float(order_price) - 10
 
         # try to get the order from the database
         # if the order does not exist, return 404
@@ -68,7 +68,7 @@ class ProcessPayment:
         stores = json.loads(stores)
 
         delivery_price = float(order.delivery_price)
-        overall_price = float(order.overall_price) - delivery_price
+        overall_price = float(order.overall_price) - delivery_price - 10
 
         # calculate the total price of the stores
         # and compare it with the overall price
@@ -79,14 +79,15 @@ class ProcessPayment:
             price = store["total"]["price"]
             plate_price = store["total"]["platePrice"]
             total_price = price + plate_price
-            stores__ids__with_credits.append(
-                {"id": store_id, "credit": total_price}
-            )
+            stores__ids__with_credits.append({"id": store_id, "credit": total_price})
             stores_total_price += total_price
 
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
-        order_price = order_price - delivery_price - 10
+        order_price = order_price - delivery_price
+        print("stores_total_price: ", stores_total_price)
+        print("order_price: ", order_price)
+        print("overall_price: ", overall_price - delivery_price)
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
@@ -95,10 +96,6 @@ class ProcessPayment:
             )
             order.save()
             return HttpResponse("Payment failed, Processing Refund", status=400)
-
-        print("stores_total_price: ", stores_total_price)
-        print("order_price: ", order_price)
-        print("overall_price: ", overall_price - delivery_price)
 
         # remove 40% of the delivery_price
         delivery_price = delivery_price - (delivery_price * 0.4)
@@ -110,17 +107,18 @@ class ProcessPayment:
                 store_nickname = store["id"]
                 # get the store from the database
                 # and update its credit
-                store = Store.objects.filter(
+                store_qs = Store.objects.filter(
                     store_nickname=store_nickname.strip()
                 ).first()
-                if store:
-                    store.credit_wallet(
-                        amount=float(store["credit"]),
-                        description=f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
-                        unclear=False,
-                        order=order,
-                    )
-                    store.save()
+                if store_qs:
+                    kwargs = {
+                        "amount": float(store["credit"]),
+                        "description": f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
+                        "unclear": False,
+                        "order": order,
+                    }
+                    store_qs.credit_wallet(**kwargs)
+                    store_qs.save()
                 else:
                     stores_with_issues.append(store_id)
             print("stores_with_issues: ", stores_with_issues)
@@ -128,6 +126,10 @@ class ProcessPayment:
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
             order.delivery_price = delivery_price
+            order.order_status = "processing"
+            order.order_message = (
+                "Your Order Was Successful, Please Wait For The Store To Accept It"
+            )
             order.save()
 
         return HttpResponse("Payment successful", status=200)
