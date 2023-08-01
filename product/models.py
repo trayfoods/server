@@ -235,6 +235,11 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
+    
+    # check if a store is linked in any order, if yes, return the orders
+    @classmethod
+    def get_orders_by_store(cls, store):
+        return cls.objects.filter(linked_stores=store)
 
     # re-generate a order_track_id for the order and update the order_track_id of the order
     @property

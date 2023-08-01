@@ -11,7 +11,7 @@ from product.mutations import (
     HelpfulReviewMutation,
     InitializeTransactionMutation,
 )
-from product.models import Item, ItemAttribute, Order
+from product.models import Item, ItemAttribute
 
 from product.utils import recommend_items
 from users.models import UserActivity
@@ -20,9 +20,6 @@ from django.utils import timezone
 
 # basic searching
 from django.db.models import Q
-
-# django cache
-from django.core.cache import cache
 
 # from io import BytesIO
 # from PIL import Image
@@ -42,8 +39,16 @@ class Query(graphene.ObjectType):
     items = graphene.List(ItemType, count=graphene.Int(required=True))
     item = graphene.Field(ItemType, item_slug=graphene.String())
 
-    user_orders = graphene.List(OrderType, page=graphene.Int(required=True))
-    vendor_orders = graphene.List(OrderType, page=graphene.Int(required=True))
+    user_orders = graphene.List(
+        OrderType,
+        page=graphene.Int(required=True),
+        per_page=graphene.Int(required=False),
+    )
+    vendor_orders = graphene.List(
+        OrderType,
+        page=graphene.Int(required=True),
+        per_page=graphene.Int(required=False),
+    )
 
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
@@ -61,10 +66,26 @@ class Query(graphene.ObjectType):
 
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
 
-    def resolve_user_orders(self, info, page):
+    def resolve_user_orders(self, info, page, per_page=20):
         user = info.context.user
         if user.is_authenticated:
             orders = user.orders.all()
+            # pagination
+            if page:
+                return orders[(page - 1) * 20 : per_page * per_page]
+            return orders
+        else:
+            raise GraphQLError("You are not authenticated")
+
+    def resolve_vendor_orders(self, info, page, per_page=20):
+        user = info.context.user
+        if user.is_authenticated and user.profile.is_vendor:
+            user_store = user.profile.vendor.store
+            # get all orders for the store
+            orders = user_store.orders.all()
+            # pagination
+            if page:
+                return orders[(page - 1) * per_page : page * per_page]
             return orders
         else:
             raise GraphQLError("You are not authenticated")
@@ -113,10 +134,6 @@ class Query(graphene.ObjectType):
         return list_of_items
 
     def resolve_search_items(self, info, query, count=None):
-        # check if the query is in the cache
-        if cache.get(query + str(count + 1) if count else query):
-            return cache.get(query + str(count))
-
         filtered_items = Item.objects.filter(
             Q(product_name__icontains=query)
             | Q(product_desc__icontains=query)
@@ -128,14 +145,9 @@ class Query(graphene.ObjectType):
                 filtered_items = filtered_items[:count]
         else:
             filtered_items = filtered_items[:20]
-        # cache the query for 5 minutes
-        cache.set(query + str(count + 1) if count else query, filtered_items, 300)
         return filtered_items
 
     def resolve_hero_data(self, info, count=None):
-        # check if the query is in the cache
-        if cache.get("hero_data" + str(count + 1) if count else "hero_data"):
-            return cache.get("hero_data" + str(count) if count else "hero_data")
         items = (
             Item.objects.filter(product_type__urlParamName__icontains="dish")
             .exclude(product_type__urlParamName__icontains="not")
@@ -145,33 +157,14 @@ class Query(graphene.ObjectType):
             count = count + 1
             if items.count() >= count:
                 items = items[:count]
-        # cache the query for 5 minutes
-        cache.set("hero_data" + str(count + 1) if count else "hero_data", items, 300)
         return items
 
     def resolve_items(self, info, count):
         user = info.context.user
 
         count = count + 1
-        try:
-            cache_key = "items" + str(count)
-            items = cache.get(
-                cache_key + str(user.id) if user.is_authenticated else cache_key
-            )
-            if items:
-                return items
-        except:
-            pass
         items = Item.objects.all().distinct()
         items = items[: count if items.count() >= count else items.count()]
-
-        def save_items_to_cache(returned_items):
-            if returned_items and returned_items.count() > 1:
-                cache.set(
-                    cache_key + str(user.id) if user.is_authenticated else cache_key,
-                    returned_items,
-                    60,
-                )
 
         try:
             if (
@@ -183,13 +176,10 @@ class Query(graphene.ObjectType):
                     info.context.user.id,
                     n=count if (items.count() >= count) else items.count(),
                 )
-                save_items_to_cache(items)
                 return items
             else:
-                save_items_to_cache(items)
                 return items
         except:
-            save_items_to_cache(items)
             return items
 
     def resolve_item(self, info, item_slug):
@@ -211,9 +201,6 @@ class Query(graphene.ObjectType):
         return item
 
     def resolve_all_item_attributes(self, info, **kwargs):
-        item_attributes = cache.get(
-            "all_item_attributes"
-        )  # check cache for item attributes
         if item_attributes:
             print("item attributes found in cache")
             return item_attributes
@@ -255,18 +242,6 @@ class Query(graphene.ObjectType):
                 )
                 new_item_attribute.save()
 
-        # save cache for 12 hours
-        if item_attributes.count() > 10:
-            item_attribute_categories = item_attributes.filter(_type="CATEGORY")
-            cache.set(
-                "item_attribute_category",
-                item_attribute_categories,
-                timeout=60 * 60 * 12,
-            )
-            item_attribute_types = item_attributes.filter(_type="TYPE")
-            cache.set("item_attribute_type", item_attribute_types, timeout=60 * 60 * 12)
-            cache.set("all_item_attributes", item_attributes, timeout=60 * 60 * 12)
-
         return item_attributes
 
     def resolve_item_attributes(self, info, _type):
@@ -278,19 +253,7 @@ class Query(graphene.ObjectType):
             raise GraphQLError(
                 "Please enter either 0 or 1 for types and categories respectively"
             )
-        # check cache for item attributes by type
-        item_attributes = cache.get(f"item_attribute_{_type.lower()}")
-        if item_attributes:
-            return item_attributes
         item_attributes = ItemAttribute.objects.filter(_type=_type)
-
-        if item_attributes.count() > 10:
-            # save cache for 24 hours
-            cache.set(
-                f"item_attribute_{_type.lower()}",
-                item_attributes,
-                timeout=60 * 60 * 12,
-            )
         return item_attributes
 
     def resolve_item_attribute(self, info, urlParamName):
