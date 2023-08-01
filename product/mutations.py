@@ -341,6 +341,14 @@ class CreateOrderMutation(graphene.Mutation):
 
             available_items.append(item)
 
+        available_stores = []
+        for store in stores_infos:
+            storeId = store["storeId"]
+            store = Store.objects.filter(store_nickname=storeId).first()
+            if store is None:
+                raise GraphQLError("Invalid Stores")
+            available_stores.append(store)
+
         if len(unavailable_items) > 0:
             return CreateOrderMutation(
                 order=None, success=False, unavailable_items=unavailable_items
@@ -357,6 +365,7 @@ class CreateOrderMutation(graphene.Mutation):
             stores_infos=stores_infos,
             order_payment_status=order_payment_status,
         )
+        create_order.linked_stores.set(available_stores)
         create_order.linked_items.set(available_items)
         create_order.save()
 
