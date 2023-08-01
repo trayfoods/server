@@ -87,6 +87,9 @@ class ProcessPayment:
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
         order_price = order_price - delivery_price
+        print("stores_total_price: ", stores_total_price)
+        print("order_price: ", order_price)
+        print("overall_price: ", overall_price - delivery_price)
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
@@ -96,9 +99,6 @@ class ProcessPayment:
             order.save()
             return HttpResponse("Payment failed", status=400)
 
-        print("stores_total_price: ", stores_total_price)
-        print("order_price: ", order_price)
-        print("overall_price: ", overall_price - delivery_price)
 
         # remove 40% of the delivery_price
         delivery_price = delivery_price - (delivery_price * 0.4)
