@@ -128,7 +128,7 @@ class BankListQuery(graphene.ObjectType):
         }
         if user and user.is_authenticated:
             wallet = Wallet.objects.filter(user=user.profile).first()
-            transactions = Transaction.objects.filter(user=user.profile)
+            transactions = Transaction.objects.filter(wallet=wallet).order_by('-created_at')
             data = {
                 'msg': "ok",
                 'success': True,

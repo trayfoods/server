@@ -171,7 +171,6 @@ class Transaction(models.Model):
         editable=False,
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
     # check if the transaction is for a order
