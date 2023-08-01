@@ -94,7 +94,7 @@ class ProcessPayment:
                 "This Order Was Not Valid, Please Contact The Support Team"
             )
             order.save()
-            return HttpResponse("Payment failed", status=400)
+            return HttpResponse("Payment failed, Processing Refund", status=400)
 
         print("stores_total_price: ", stores_total_price)
         print("order_price: ", order_price)
