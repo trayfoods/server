@@ -150,7 +150,7 @@ class AddProductMutation(graphene.Mutation):
                 and not product.product_images.all().count() <= 0
             ):
                 success = True
-            else: # if not delete the product
+            else:  # if not delete the product
                 success = False
                 product.delete()
                 raise GraphQLError("Product Not Created")
@@ -350,18 +350,20 @@ class CreateOrderMutation(graphene.Mutation):
         for item in linked_items:
             item = Item.objects.filter(product_slug=item).first()
             if item is None:
-                raise GraphQLError("Invalid Items")
+                raise GraphQLError("Order contains invalid items, clear cart and retry.")
             if item.product_avaliable_in.count() <= 0:
                 unavailable_items.append(item.product_slug)
 
             available_items.append(item)
 
         available_stores = []
-        for store in stores_infos:
+        stores_infos_json = json.loads(stores_infos)
+        for store in stores_infos_json:
             storeId = store["storeId"]
+            print(storeId)
             store = Store.objects.filter(store_nickname=storeId).first()
             if store is None:
-                raise GraphQLError("Invalid Stores")
+                raise GraphQLError("Order contains invalid stores, clear cart and retry.")
             available_stores.append(store)
 
         if len(unavailable_items) > 0:
