@@ -11,6 +11,7 @@ from users.models import (
     Wallet,
     School,
     Country,
+    Transaction,
 )
 
 
@@ -32,7 +33,14 @@ class VendorAdmin(admin.ModelAdmin):
     list_filter = ("created_at",)
 
 
+class TransactionInline(admin.TabularInline):
+    model = Transaction
+    extra = 0
+    readonly_fields = ("wallet", "amount", "_type", "created_at", "updated_at")
+
+
 class WalletAdmin(admin.ModelAdmin):
+    # inlines = [TransactionInline]
     list_display = ("user", "currency", "balance", "created_at", "updated_at")
     search_fields = ("user__user__username", "currency", "user__user__email")
     list_filter = ("created_at", "updated_at", "currency")
@@ -58,3 +66,4 @@ admin.site.register(Wallet, WalletAdmin)
 admin.site.register(Vendor, VendorAdmin)
 admin.site.register(School)
 admin.site.register(Country)
+admin.site.register(Transaction)
