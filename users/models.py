@@ -77,6 +77,9 @@ class Country(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    class Meta:
+        verbose_name_plural = "Countries"
+
 
 class School(models.Model):
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
