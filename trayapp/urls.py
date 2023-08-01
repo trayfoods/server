@@ -24,6 +24,6 @@ urlpatterns = [
     # path("bank_list/", get_bank_list, name="bank_list"),
 ]
 
-if settings.USE_S3 or settings.DEBUG:
+if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

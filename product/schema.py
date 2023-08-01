@@ -11,7 +11,7 @@ from product.mutations import (
     HelpfulReviewMutation,
     InitializeTransactionMutation,
 )
-from product.models import Item, ItemAttribute
+from product.models import Item, ItemAttribute, Order
 
 from product.utils import recommend_items
 from users.models import UserActivity
@@ -42,6 +42,9 @@ class Query(graphene.ObjectType):
     items = graphene.List(ItemType, count=graphene.Int(required=True))
     item = graphene.Field(ItemType, item_slug=graphene.String())
 
+    user_orders = graphene.List(OrderType, page=graphene.Int(required=True))
+    vendor_orders = graphene.List(OrderType, page=graphene.Int(required=True))
+
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, urlParamName=graphene.String())
@@ -57,6 +60,14 @@ class Query(graphene.ObjectType):
     )
 
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
+
+    def resolve_user_orders(self, info, page):
+        user = info.context.user
+        if user.is_authenticated:
+            orders = user.orders.all()
+            return orders
+        else:
+            raise GraphQLError("You are not authenticated")
 
     def resolve_get_order(self, info, order_id):
         user = info.context.user
