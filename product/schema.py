@@ -44,7 +44,7 @@ class Query(graphene.ObjectType):
         page=graphene.Int(required=True),
         per_page=graphene.Int(required=False),
     )
-    vendor_orders = graphene.List(
+    store_orders = graphene.List(
         OrderType,
         page=graphene.Int(required=True),
         per_page=graphene.Int(required=False),
@@ -77,7 +77,7 @@ class Query(graphene.ObjectType):
         else:
             raise GraphQLError("You are not authenticated")
 
-    def resolve_vendor_orders(self, info, page, per_page=20):
+    def resolve_store_orders(self, info, page, per_page=20):
         user = info.context.user
         if user.is_authenticated and user.profile.is_vendor:
             user_store = user.profile.vendor.store
