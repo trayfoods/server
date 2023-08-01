@@ -204,6 +204,7 @@ class Order(models.Model):
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=dict)
     linked_items = models.ManyToManyField(Item, editable=False)
+    linked_stores = models.ManyToManyField("users.Store", editable=False)
 
     order_payment_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
@@ -284,12 +285,3 @@ class Order(models.Model):
 
         return response
 
-
-# Signals
-# @receiver(models.signals.post_delete, sender=ItemImage)
-# def remove_file_from_s3(sender, instance, using, **kwargs):
-#     # try:
-#     instance.item_image.delete(save=False)
-#     instance.item_image_webp.delete(save=False)
-#     # except:
-#     #     pass
