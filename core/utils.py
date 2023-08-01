@@ -54,7 +54,7 @@ class ProcessPayment:
         order_payment_status = self.event_data["status"]
         order_payment_method = self.event_data["authorization"]["channel"]
         order_price = self.event_data["amount"] / 100
-        order_price = float(order_price) - 10
+        order_price = float(order_price)
 
         # try to get the order from the database
         # if the order does not exist, return 404
@@ -84,7 +84,7 @@ class ProcessPayment:
 
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
-        order_price = order_price - delivery_price
+        order_price = order_price - delivery_price - 10
         print("stores_total_price: ", stores_total_price)
         print("order_price: ", order_price)
         print("overall_price: ", overall_price - delivery_price)
