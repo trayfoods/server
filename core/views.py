@@ -3,7 +3,7 @@ import json
 import hmac
 import hashlib
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.encoding import force_bytes
 from django.conf import settings
@@ -43,7 +43,8 @@ def paystack_webhook_handler(request):
         ).hexdigest()
 
         # Compare the calculated signature with the provided signature
-        if hmac.compare_digest(calculated_signature, paystack_signature):
+        # byepass signature verification for local development
+        if hmac.compare_digest(calculated_signature, paystack_signature) or settings.DEBUG:
             # Signature is valid, proceed with processing the event
             try:
                 # get the event from request.body

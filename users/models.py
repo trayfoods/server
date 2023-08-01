@@ -124,7 +124,6 @@ class Profile(models.Model):
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_student = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
-    # location = models.PointField(null=True) # Spatial Field Types
 
     @property
     def is_vendor(self):
@@ -207,7 +206,12 @@ class Wallet(models.Model):
         return Transaction.objects.filter(user=self)
 
     @property
-    def add_balance(self, amount, title=None, desc=None, unclear=False, order=None):
+    def add_balance(self, *args, **kwargs):
+        amount = kwargs.get("amount")
+        title = kwargs.get("title", None)
+        desc = kwargs.get("desc", None)
+        order = kwargs.get("order", None)
+        unclear = kwargs.get("unclear", False)
         transaction = None
         if unclear:
             self.uncleared_balance += amount
@@ -283,8 +287,8 @@ class Store(models.Model):
 
     # credit store wallet
     @property
-    def credit_wallet(self, amount, desc=None, unclear=True, order=None):
-        self.wallet.add_balance(amount, desc, unclear=unclear, order=order)
+    def credit_wallet(self, *args, **kwargs):
+        return self.wallet.add_balance(*args, **kwargs)
 
     @property
     def orders(self):
@@ -311,6 +315,7 @@ class Vendor(models.Model):
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_floor = models.BooleanField(default=False)
     floor_count = models.IntegerField(default=0)
