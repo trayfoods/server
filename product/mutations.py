@@ -32,7 +32,7 @@ class AddProductMutation(graphene.Mutation):
 
     # The class attributes define the response of the mutation
     product = graphene.Field(ItemType)
-    success = graphene.Boolean()
+    success = graphene.Boolean(default_value=False)
 
     @permission_checker([IsAuthenticated])
     def mutate(
@@ -138,7 +138,22 @@ class AddProductMutation(graphene.Mutation):
                             product.product_images.add(productImage)
                             product.save()
             store.store_products.add(product)
-            success = True
+            # check if product have all the required fields
+            if (
+                not product.product_name is None
+                and not product.product_price is None
+                and not product.product_category is None
+                and not product.product_type is None
+                and not product.product_share_visibility is None
+                and not product.product_creator is None
+                # check if the product have at least one image
+                and not product.product_images.all().count() <= 0
+            ):
+                success = True
+            else: # if not delete the product
+                success = False
+                product.delete()
+                raise GraphQLError("Product Not Created")
         else:
             raise GraphQLError("Login required.")
         # Notice we return an instance of this mutation
