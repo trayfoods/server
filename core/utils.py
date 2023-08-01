@@ -68,7 +68,7 @@ class ProcessPayment:
         stores = json.loads(stores)
 
         delivery_price = float(order.delivery_price)
-        overall_price = float(order.overall_price) - delivery_price - 10
+        overall_price = float(order.overall_price) - delivery_price
 
         # calculate the total price of the stores
         # and compare it with the overall price
@@ -86,7 +86,7 @@ class ProcessPayment:
 
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
-        order_price = order_price - delivery_price
+        order_price = order_price - delivery_price - 10
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
