@@ -9,6 +9,8 @@ from users.models import (
     UserAccount,
     DeliveryPerson,
     Wallet,
+    School,
+    Country,
 )
 
 
@@ -32,9 +34,16 @@ class VendorAdmin(admin.ModelAdmin):
 
 class WalletAdmin(admin.ModelAdmin):
     list_display = ("user", "currency", "balance", "created_at", "updated_at")
-    search_fields = ("user__user__username", "balance")
-    list_filter = ("created_at", "updated_at")
-    readonly_fields = ("user", "balance", "currency", "created_at", "updated_at")
+    search_fields = ("user__user__username", "currency", "user__user__email")
+    list_filter = ("created_at", "updated_at", "currency")
+    readonly_fields = (
+        "user",
+        "balance",
+        "currency",
+        "uncleared_balance",
+        "created_at",
+        "updated_at",
+    )
 
 
 admin.site.register(Gender)
@@ -47,3 +56,5 @@ admin.site.register(DeliveryPerson)
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(Vendor, VendorAdmin)
+admin.site.register(School)
+admin.site.register(Country)
