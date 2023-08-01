@@ -228,6 +228,10 @@ class Store(models.Model):
     def credit_wallet(self, amount, desc=None):
         self.wallet.add_balance(amount, desc)
 
+    @property
+    def orders(self):
+        return Order.get_orders_by_store(store=self)
+
 
 class Vendor(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)

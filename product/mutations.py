@@ -360,7 +360,6 @@ class CreateOrderMutation(graphene.Mutation):
         stores_infos_json = json.loads(stores_infos)
         for store in stores_infos_json:
             storeId = store["storeId"]
-            print(storeId)
             store = Store.objects.filter(store_nickname=storeId).first()
             if store is None:
                 raise GraphQLError("Order contains invalid stores, clear cart and retry.")
