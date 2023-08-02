@@ -56,6 +56,9 @@ class ProcessPayment:
         order_price = self.event_data["amount"] / 100
         order_price = float(order_price)
 
+        # minus transaction_fee (10) from order_price
+        order_price = order_price - 10
+
         # try to get the order from the database
         # if the order does not exist, return 404
         # try:
@@ -68,7 +71,10 @@ class ProcessPayment:
         stores = json.loads(stores)
 
         delivery_price = float(order.delivery_price)
-        overall_price = float(order.overall_price) - delivery_price - 10
+        overall_price = float(order.overall_price) - delivery_price
+
+        # minus transaction_fee (10) from overall_price
+        overall_price = overall_price - 10
 
         # calculate the total price of the stores
         # and compare it with the overall price
@@ -84,10 +90,10 @@ class ProcessPayment:
 
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
-        order_price = order_price - delivery_price - 10
+        order_price = order_price - delivery_price
         print("stores_total_price: ", stores_total_price)
         print("order_price: ", order_price)
-        print("overall_price: ", overall_price - delivery_price)
+        print("overall_price: ", overall_price)
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
