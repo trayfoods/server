@@ -19,11 +19,11 @@ jobs:
         run: npm i -g @railway/cli
 
       - name: Install Python packages
-        run: railway run --service {{SERVICE_ID}} pip install -r requirements.txt
+        run: railway run --service 59781172-8254-46cf-8df4-ca786808ad2a pip install -r requirements.txt
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Run Django Command
-        run: railway run --service {{SERVICE_ID}} python manage.py delivery_people_monthly_payouts
+        run: railway run --service 59781172-8254-46cf-8df4-ca786808ad2a python manage.py delivery_people_monthly_payouts
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
