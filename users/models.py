@@ -218,19 +218,21 @@ class Wallet(models.Model):
         order = kwargs.get("order", None)
         unclear = kwargs.get("unclear", False)
         transaction = None
+        amount = Decimal(amount)
         if unclear:
             self.uncleared_balance += amount
             self.save()
         else:
             # convert the amount to decimal
-            amount = Decimal(amount)
             self.balance += amount
             self.save()
             # create a transaction
             transaction = Transaction.objects.create(
                 wallet=self,
-                title="Wallet Funding" if not title else title,
-                desc=f"Added {self.currency} {amount} to wallet" if not desc else desc,
+                title="Wallet Credited" if not title else title,
+                desc=f"{self.currency} {amount} was added to wallet"
+                if not desc
+                else desc,
                 amount=amount,
                 order=order,
                 _type="credit",
@@ -239,13 +241,14 @@ class Wallet(models.Model):
         return transaction
 
     def deduct_balance(self, amount, desc=None):
+        amount = Decimal(amount)
         self.balance -= amount
         self.save()
         desc = desc if desc else f"Deducted {self.currency} {amount} from wallet"
         # create a transaction
         transaction = Transaction.objects.create(
             wallet=self,
-            title="Wallet Debit",
+            title="Wallet Debited",
             desc=desc,
             amount=amount,
             _type="debit",
@@ -254,13 +257,14 @@ class Wallet(models.Model):
         return transaction
 
     def reverse_transaction(self, amount, desc=None):
+        amount = Decimal(amount)
         self.balance += amount
         self.save()
         desc = desc if desc else f"Reversed {self.currency} {amount} to wallet"
         # create a transaction
         transaction = Transaction.objects.create(
             wallet=self,
-            title="Wallet Reversal",
+            title="Funds Reversal",
             desc=desc,
             amount=amount,
             _type="reversed",
