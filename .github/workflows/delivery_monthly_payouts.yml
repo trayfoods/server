@@ -1,4 +1,4 @@
-name: Run Command to Perfrom Delivery People Monthly Payouts
+name: Perfrom Delivery People Monthly Payouts
 
 on:
   schedule:
@@ -23,7 +23,7 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      - name: My Command
+      - name: Run Django Command
         run: railway run --service {{SERVICE_ID}} python manage.py delivery_people_monthly_payouts
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
