@@ -258,7 +258,7 @@ class Order(models.Model):
             order_track_id = self.regenerate_order_track_id
         else:
             order_track_id = self.order_track_id
-        amount = self.overall_price + 10
+        amount = self.overall_price
         amount = amount * 100
 
         callback_url = f"{FRONTEND_URL}/checkout/{order_track_id}"

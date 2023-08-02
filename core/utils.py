@@ -90,7 +90,7 @@ class ProcessPayment:
 
         # if the stores_total_price is greater than the overall_price
         # then the order is not valid
-        order_price = order_price - delivery_price
+        order_price = order_price - delivery_price - 10
         print("stores_total_price: ", stores_total_price)
         print("order_price: ", order_price)
         print("overall_price: ", overall_price)
