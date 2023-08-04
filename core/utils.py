@@ -23,6 +23,8 @@ class ProcessPayment:
             return self.transfer_success()
         elif self.event_type == "transfer.failed":
             return self.transfer_failed()
+        elif self.event_type == "transfer.reversed":
+            return self.transfer_reversed()
         elif self.event_type == "invoice.create":
             return self.invoice_create()
         elif self.event_type == "invoice.update":
@@ -43,8 +45,6 @@ class ProcessPayment:
             return self.subscription_success()
         elif self.event_type == "subscription.update":
             return self.subscription_update()
-        elif self.event_type == "transfer.reversed":
-            return self.transfer_reversed()
         else:
             return HttpResponse("Invalid event type", status=400)
 
