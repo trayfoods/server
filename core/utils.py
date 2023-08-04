@@ -53,19 +53,9 @@ class ProcessPayment:
         order_id = self.event_data["reference"]
         order_payment_status = self.event_data["status"]
         order_payment_method = self.event_data["authorization"]["channel"]
-        order_price = self.event_data["amount"] / 100
-        order_price = float(order_price)
+        order_price = self.event_data["amount"]
+        order_price = float(order_price) / 100
 
-        # minus transaction_fee (10) from order_price
-        order_price = order_price - 10
-        order_price = order_price - delivery_price
-
-        # minus transaction_fee (10) from overall_price
-        overall_price = overall_price - 10
-
-        # try to get the order from the database
-        # if the order does not exist, return 404
-        # try:
         # get the order from the database
         order = Order.objects.get(order_track_id=order_id)
         order.order_payment_method = order_payment_method
@@ -75,8 +65,14 @@ class ProcessPayment:
         stores = json.loads(stores)
 
         delivery_price = float(order.delivery_price)
-        overall_price = float(order.overall_price) - delivery_price
 
+        # minus delivery_price from overall_price and order_price
+        overall_price = float(order.overall_price) - delivery_price
+        order_price = order_price - delivery_price
+
+        # minus transaction_fee (10) from overall_price and order_price
+        order_price = order_price - 10
+        overall_price = overall_price - 10
 
         # calculate the total price of the stores
         # and compare it with the overall price
@@ -90,11 +86,12 @@ class ProcessPayment:
             stores__ids__with_credits.append({"id": store_id, "credit": total_price})
             stores_total_price += total_price
 
-        # if the stores_total_price is greater than the overall_price
-        # then the order is not valid
         print("stores_total_price: ", stores_total_price)
         print("order_price: ", order_price)
         print("overall_price: ", overall_price)
+        # if the stores_total_price is greater than the overall_price or
+        # if the order_price is not equal to the overall_price
+        # then the order is not valid
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
@@ -103,9 +100,6 @@ class ProcessPayment:
             )
             order.save()
             return HttpResponse("Payment failed, Processing Refund", status=400)
-
-        # remove 40% of the delivery_price
-        delivery_price = delivery_price - (delivery_price * 0.4)
 
         if "success" in order_payment_status:
             stores_with_issues = []
@@ -134,9 +128,7 @@ class ProcessPayment:
             order.order_payment_method = order_payment_method
             order.delivery_price = delivery_price
             order.order_status = "processing"
-            order.order_message = (
-                "Your Order Was Successful, Please Wait For The Store To Accept It"
-            )
+            order.order_message = "Your Order Payment Was Successful"
             order.save()
 
         return HttpResponse("Payment successful", status=200)
