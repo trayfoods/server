@@ -373,6 +373,8 @@ class CreateOrderMutation(graphene.Mutation):
         current_user = info.context.user
         order_payment_status = None
 
+        overall_price = float(overall_price) + 10.0
+
         create_order = Order.objects.create(
             user=current_user,
             overall_price=overall_price,

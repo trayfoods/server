@@ -151,7 +151,7 @@ class Profile(models.Model):
 
 class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
-        ("reversed", "reversed"),
+        ("refund", "refund"),
         ("credit", "credit"),
         ("debit", "debit"),
         ("failed", "failed"),
@@ -198,6 +198,14 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
+    cleared_balance = models.DecimalField(
+        max_digits=100,
+        null=True,
+        default=00.00,
+        decimal_places=2,
+        blank=True,
+        editable=False,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -211,15 +219,18 @@ class Wallet(models.Model):
 
     # add balance to user's wallet
     def add_balance(self, **kwargs):
-        print(kwargs)
         amount = kwargs.get("amount")
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
         order = kwargs.get("order", None)
         unclear = kwargs.get("unclear", False)
+        cleared = kwargs.get("cleared", False)
         transaction = None
         amount = Decimal(amount)
-        if unclear:
+        if cleared:
+            self.cleared_balance += amount
+            self.save()
+        elif unclear:
             self.uncleared_balance += amount
             self.save()
         else:
@@ -230,7 +241,7 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title="Wallet Credited" if not title else title,
-                desc=f"{self.currency} {amount} was added to wallet"
+                desc=f"{amount} {self.currency} was added to wallet"
                 if not desc
                 else desc,
                 amount=amount,
@@ -240,36 +251,75 @@ class Wallet(models.Model):
             transaction.save()
         return transaction
 
-    def deduct_balance(self, amount, desc=None):
+    def clear_balance(self, type):
+        list_of_actions = ["cleared", "uncleared"]
+        if type in list_of_actions:
+            if type == "cleared":
+                self.cleared_balance = Decimal(0.00)
+            else:
+                self.uncleared_balance = Decimal(0.00)
+            self.save()
+
+    def deduct_balance(self, **kwargs):
+        amount = kwargs.get("amount")
+        title = kwargs.get("title", None)
+        desc = kwargs.get("desc", None)
+        order = kwargs.get("order", None)
+        unclear = kwargs.get("unclear", False)
+        cleared = kwargs.get("cleared", False)
+        transaction = None
         amount = Decimal(amount)
-        self.balance -= amount
-        self.save()
-        desc = desc if desc else f"Deducted {self.currency} {amount} from wallet"
-        # create a transaction
-        transaction = Transaction.objects.create(
-            wallet=self,
-            title="Wallet Debited",
-            desc=desc,
-            amount=amount,
-            _type="debit",
-        )
-        transaction.save()
+        if cleared:
+            self.cleared_balance -= amount
+            self.save()
+        elif unclear:
+            self.uncleared_balance -= amount
+            self.save()
+        else:
+            self.balance -= amount
+            self.save()
+            # create a transaction
+            transaction = Transaction.objects.create(
+                wallet=self,
+                title="Wallet Debited" if not title else title,
+                desc=f"Deducted {self.currency} {amount} from wallet" if not desc else desc,
+                order=order,
+                amount=amount,
+                _type="debit",
+            )
+            transaction.save()
         return transaction
 
-    def reverse_transaction(self, amount, desc=None):
+    def refund_transaction(self, **kwargs):
+        amount = kwargs.get("amount")
+        title = kwargs.get("title", None)
+        desc = kwargs.get("desc", None)
+        order = kwargs.get("order", None)
+        unclear = kwargs.get("unclear", False)
+        cleared = kwargs.get("cleared", False)
+        transaction = None
         amount = Decimal(amount)
-        self.balance += amount
-        self.save()
-        desc = desc if desc else f"Reversed {self.currency} {amount} to wallet"
-        # create a transaction
-        transaction = Transaction.objects.create(
-            wallet=self,
-            title="Funds Reversal",
-            desc=desc,
-            amount=amount,
-            _type="reversed",
-        )
-        transaction.save()
+        if cleared:
+            self.cleared_balance += amount
+            self.save()
+        elif unclear:
+            self.uncleared_balance += amount
+            self.save()
+        else:
+            self.balance += amount
+            self.save()
+            # create a transaction
+            transaction = Transaction.objects.create(
+                wallet=self,
+                title="Wallet Credited" if not title else title,
+                desc=f"{amount} {self.currency} was refunded to your wallet"
+                if not desc
+                else desc,
+                amount=amount,
+                order=order,
+                _type="refund",
+            )
+            transaction.save()
         return transaction
 
 
