@@ -17,6 +17,7 @@ PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 @csrf_exempt
 def paystack_webhook_handler(request):
+    print("request", request)
     HTTP_X_PAYSTACK_SIGNATURE_EXIST = (
         "HTTP_X_PAYSTACK_SIGNATURE" in request.META
         or "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META
