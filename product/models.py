@@ -234,7 +234,7 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
-    
+
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_store(cls, store):
@@ -288,4 +288,3 @@ class Order(models.Model):
             self.save()
 
         return response
-

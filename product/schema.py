@@ -37,7 +37,11 @@ class Query(graphene.ObjectType):
     # )
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
     items = graphene.List(ItemType, count=graphene.Int(required=True))
-    item = graphene.Field(ItemType, item_slug=graphene.String())
+    item = graphene.Field(
+        ItemType,
+        item_slug=graphene.String(required=True),
+        store_nickname=graphene.String(required=False),
+    )
 
     user_orders = graphene.List(
         OrderType,
@@ -182,9 +186,19 @@ class Query(graphene.ObjectType):
         except:
             return items
 
-    def resolve_item(self, info, item_slug):
+    def resolve_item(self, info, item_slug, store_nickname=None):
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
+            # check if item is avaliable in the store if store_nickname is provided
+            if (
+                not store_nickname is None
+                and not item.product_avaliable_in.filter(
+                    store_nickname=store_nickname
+                ).count()
+                > 0
+            ):
+                raise GraphQLError("404: Item Not Found")
+            
             item.product_views += 1
             item.save()
             if info.context.user.is_authenticated:
