@@ -1,3 +1,4 @@
+import json
 import graphene
 from graphql import GraphQLError
 from product.types import ItemType, ItemAttributeType, OrderType
@@ -14,7 +15,7 @@ from product.mutations import (
 from product.models import Item, ItemAttribute
 
 from product.utils import recommend_items
-from users.models import UserActivity
+from users.models import UserActivity, Store
 from trayapp.custom_model import ItemsAvalibilityNode
 from django.utils import timezone
 
@@ -198,7 +199,7 @@ class Query(graphene.ObjectType):
                 > 0
             ):
                 raise GraphQLError("404: Item Not Found")
-            
+
             item.product_views += 1
             item.save()
             if info.context.user.is_authenticated:
@@ -212,6 +213,7 @@ class Query(graphene.ObjectType):
                 new_activity.save()
         else:
             raise GraphQLError("404: Item Not Found")
+
         return item
 
     def resolve_all_item_attributes(self, info, **kwargs):

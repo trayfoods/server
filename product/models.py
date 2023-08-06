@@ -121,6 +121,10 @@ class Item(models.Model):
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
 
+    # @property
+    # def avaliable_store(self):
+    #     return self.product_avaliable_in.first()
+
     @property
     def total_ratings(self):
         return self.ratings.count()
