@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --theme-color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --theme-color: #1c1c2d;
+  }
+}
+
+/* Header and Top Navigation Bar */
+#header {
+  background-color: var(--theme-color);
+
+  a {
+    color: var(--header-link-color);
+    &:link {
+      &:visited {
+        color: #cce390 !important;
+      }
+    }
+  }
+}
+.related-widget-wrapper {
+  display: flex;
+  align-items: center;
+  @media (max-width: 768px) {
+    align-items: start;
+  }
+}
+
+/* Sidebar Navigation */
+#nav-sidebar {
+  background-color: var(--theme-color);
+}
+
+/* Active Menu Item */
+#nav-sidebar .selected a {
+  background-color: var(--theme-color);
+}
+
+#site-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 16px;
+}

@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpResponse
 from product.models import Order
-from users.models import Store
+from users.models import Store, UserActivity
 
 
 class ProcessPayment:
@@ -130,6 +130,15 @@ class ProcessPayment:
             order.order_status = "processing"
             order.order_message = "Your Order Payment Was Successful"
             order.save()
+
+            # # send the order to the store
+            # order.send_order_to(who="store")
+
+            # # send the order to the user
+            # order.send_order_to(who="user")
+
+            # # send the order to the delivery guy
+            # order.send_order_to(who="delivery_personnel")
 
         return HttpResponse("Payment successful", status=200)
         # except Order.DoesNotExist:
