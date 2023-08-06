@@ -101,6 +101,7 @@ INSTALLED_APPS = [
     "django_extensions",
     "rest_framework",
     "anymail",
+    "theme",
 ]
 
 AUTH_USER_MODEL = "users.UserAccount"

@@ -70,6 +70,32 @@ class UserAccount(AbstractUser, models.Model):
     def orders(self):
         return Order.objects.filter(user=self)
 
+    # get user's devices
+    @property
+    def devices(self):
+        return UserDevice.objects.filter(user=self)
+
+    def add_device(self, **kwargs):
+        # check if user is in kwargs
+        if "user" in kwargs:
+            raise Exception("User is not required in kwargs")
+        # check if device already exists
+        if UserDevice.objects.filter(user=self, **kwargs).exists():
+            raise UserDevice.objects.filter(user=self, **kwargs).first()
+        return UserDevice.objects.create(user=self, **kwargs)
+
+
+class UserDevice(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    device_token = models.TextField()
+    device_type = models.CharField(max_length=100, null=True, blank=True)
+    device_name = models.CharField(max_length=100, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.user.username}'s {self.device_type}"
+
 
 class Country(models.Model):
     name = models.CharField(max_length=50)
@@ -282,7 +308,9 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title="Wallet Debited" if not title else title,
-                desc=f"Deducted {self.currency} {amount} from wallet" if not desc else desc,
+                desc=f"Deducted {self.currency} {amount} from wallet"
+                if not desc
+                else desc,
                 order=order,
                 amount=amount,
                 _type="debit",

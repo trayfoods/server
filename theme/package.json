@@ -1,0 +1,17 @@
+{
+  "name": "theme",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+   "theme:dev": "postcss styles.css -w -d ../workspace/static/theme/ --verbose",
+   "theme:build": "postcss styles.css -d ../workspace/static/theme/ --verbose NODE_ENV=production "
+},
+  "dependencies": {
+    "autoprefixer": "^10.4.14",
+    "cssnano": "^6.0.1",
+    "postcss": "^8.4.27",
+    "postcss-cli": "^10.1.0",
+    "tailwindcss": "^3.3.3"
+  }
+}

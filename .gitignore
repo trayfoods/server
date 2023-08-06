@@ -140,3 +140,6 @@ public/
 # fly.toml
 
 settings/
+
+# javascript
+node_modules/

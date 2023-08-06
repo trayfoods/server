@@ -1,0 +1,27 @@
+{% extends "admin/base.html" %} 
+{% load static %} 
+{% block title %}
+{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{_('TrayFoods admin') }}{% endblock %} 
+
+{% block extrastyle %}
+<link rel="stylesheet" type="text/css" href="{% static 'theme/styles.css' %}" />
+{% endblock %} 
+
+{% block branding %}
+<figure id="site-name">
+  <a href="{% url 'admin:index' %}">{{_('TrayFoods administration') }}</a>
+  <figcaption class="sr-only">{{_('TrayFoods administration') }}</figcaption>
+</figure>
+{% endblock %} {% block extrahead %}
+<style>
+  #site-name a {
+    display: block;
+    background-image: url("{% static 'logo.png' %}");
+    background-size: contain;
+    background-repeat: no-repeat;
+    height: 40px; /* Adjust the height of your logo as needed */
+    width: 40px; /* Adjust the width of your logo as needed */
+    text-indent: -9999px; /* Hide the text and show the logo */
+  }
+</style>
+{% endblock %} {% block nav-global %}{% endblock %}

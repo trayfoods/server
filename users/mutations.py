@@ -305,3 +305,49 @@ class UpdateVendorBankAccount(Output, graphene.Mutation):
         else:  # the user is not authenticated
             error = "Login required"
         return UpdateVendorBankAccount(success=success, error=error)
+
+
+class UserDeviceMutation(Output, graphene.Mutation):
+    class Arguments:
+        device_token = graphene.String(required=True)
+        action = graphene.String(required=True)
+        device_type = graphene.String(required=False)
+        device_name = graphene.String(required=False)
+
+    # The class attributes define the response of the mutation
+    error = graphene.String()
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, device_token, action, device_type=None, device_name=None):
+        # check if action is in the list of actions
+        list_of_actions = ["add", "remove"]
+        if not action in list_of_actions:
+            raise GraphQLError("Invalid action")
+        success = False
+        error = None
+        user = info.context.user
+        user_devices = user.devices.all()
+        # check if the device token and device type exists in the user devices
+        device = user_devices.filter(
+            device_token=device_token, device_type=device_type, device_name=device_name
+        )
+        if not device.exists() and action == "add":
+            user.add_device(
+                **{
+                    "device_token": device_token,
+                    "device_type": device_type,
+                    "device_name": device_name,
+                }
+            )
+            success = True
+        elif action == "remove":
+            if device.exists():
+                device = device.first()
+                device.delete()
+                success = True
+            else:
+                error = "Device token does not exist"
+        else:
+            error = "Device token already exists"
+        return UserDeviceMutation(success=success, error=error)

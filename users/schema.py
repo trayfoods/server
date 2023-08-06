@@ -10,6 +10,7 @@ from .mutations import (
     UpdateVendorBankAccount,
     UpdateAccountMutation,
     CreateClientMutation,
+    UserDeviceMutation,
 )
 from .models import Client, Vendor, Store, Hostel
 from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
@@ -47,7 +48,9 @@ class Query(BankListQuery, graphene.ObjectType):
         StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
     )
 
-    get_universities = graphene.List(UniversityNode, query=graphene.String(required=True), country=graphene.String())
+    get_universities = graphene.List(
+        UniversityNode, query=graphene.String(required=True), country=graphene.String()
+    )
 
     def resolve_get_universities(self, info, query, country=None):
         uni = universities.API()
@@ -154,6 +157,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_client = CreateClientMutation.Field()
     update_vendor = EditVendorMutation.Field()
     update_vendor_bank_details = UpdateVendorBankAccount.Field()
+    user_device = UserDeviceMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
