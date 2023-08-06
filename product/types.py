@@ -65,7 +65,6 @@ class ReviewsType(DjangoObjectType):
 
 
 class ItemType(DjangoObjectType):
-    id = graphene.Int(storeNickname=graphene.String(required=False))
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
@@ -76,14 +75,14 @@ class ItemType(DjangoObjectType):
     current_user_review = graphene.Field(ReviewsType)
     is_avaliable_for_store = graphene.String()
     avaliable_store = graphene.Field(
-        StoreType, storeNickname=graphene.String(required=False)
+        StoreType, store_nickname=graphene.String(required=False)
     )
 
     class Meta:
         model = Item
         fields = [
-            "product_name",
             "id",
+            "product_name",
             "avaliable_store",
             "is_avaliable_for_store",
             "product_clicks",
@@ -138,17 +137,6 @@ class ItemType(DjangoObjectType):
 
     def resolve_average_rating(self, info):
         return self.average_rating
-
-    # This will add a unqiue id, if the store items are the same
-    def resolve_id(self, info, storeNickname=None):
-        item_id = self.id
-        if storeNickname:
-            storeName = self.product_avaliable_in.filter(
-                store_nickname=storeNickname
-            ).first()
-            if not storeName is None:
-                item_id = self.id + storeName.id + Item.objects.last().id
-        return item_id
 
     def resolve_product_share_visibility(self, info):
         user = info.context.user
@@ -214,11 +202,11 @@ class ItemType(DjangoObjectType):
             is_avaliable = False
         return is_avaliable
 
-    def resolve_avaliable_store(self, info, storeNickname=None):
+    def resolve_avaliable_store(self, info, store_nickname=None):
         store = None
-        if storeNickname:
+        if store_nickname:
             store = self.product_avaliable_in.filter(
-                store_nickname=storeNickname
+                store_nickname=store_nickname
             ).first()
         if store is None:
             is_avaliable = self.product_avaliable_in.count() > 0
