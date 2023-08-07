@@ -89,10 +89,15 @@ def recommend_items(user_id, n=10, min_interactions=5):
         item["item__id"]: item["avg_rating"]
         for item in Rating.objects.values("item__id").annotate(avg_rating=Avg("stars"))
     }
-
-    # Return the top n recommended items
-    return sorted(
+    # Sort the recommended items by popularity
+    recommended_items = sorted(
         recommended_items,
         key=lambda item: item_popularity.get(item.id, 0),
         reverse=True,
     )[:n]
+    # check if recommended items are greater than 0
+    if len(recommended_items) == 0:
+        print("No recommendations found.")
+        return []
+    # Return the top n recommended items
+    return recommended_items
