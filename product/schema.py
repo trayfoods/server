@@ -37,7 +37,9 @@ class Query(graphene.ObjectType):
     #     description="Remove the background from an image"
     # )
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
-    items = graphene.List(ItemType, count=graphene.Int(required=True))
+    items = graphene.List(
+        ItemType, count=graphene.Int(required=True), page=graphene.Int(required=False)
+    )
     item = graphene.Field(
         ItemType,
         item_slug=graphene.String(required=True),
@@ -164,28 +166,33 @@ class Query(graphene.ObjectType):
                 items = items[:count]
         return items
 
-    def resolve_items(self, info, count):
+    def resolve_items(self, info, count, page=None):
         user = info.context.user
 
         count = count + 1
         items = Item.objects.all().distinct()
         items = items[: count if items.count() >= count else items.count()]
 
+        if page:
+            items = items[(page - 1) * count : page * count]
+
         try:
             if (
                 user.is_authenticated
                 and UserActivity.objects.filter(user_id=info.context.user.id).count()
-                > 2
+                > 5
             ):
                 items = recommend_items(
                     info.context.user.id,
                     n=count if (items.count() >= count) else items.count(),
                 )
-                return items
-            else:
-                return items
         except:
-            return items
+            pass
+
+        if not items:
+            items = Item.objects.all().distinct()
+
+        return items
 
     def resolve_item(self, info, item_slug, store_nickname=None):
         item = Item.objects.filter(product_slug=item_slug).first()
