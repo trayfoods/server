@@ -78,15 +78,14 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10_000_000
 # Application definition
 
 INSTALLED_APPS = [
-    # "django.contrib.gis",
     "daphne",
-    # "channels",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",  # Required for GraphiQL
+    "channels",
     "users",
     "product",
     "core",
@@ -202,7 +201,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "trayapp.wsgi.application"
+# WSGI_APPLICATION = "trayapp.wsgi.application"
 ASGI_APPLICATION = "trayapp.asgi.application"
 
 
