@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 # from django.contrib.gis.db import models
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
+from users.signals import balance_updated
 from trayapp.utils import image_resized, image_exists
 
 from product.models import Item, Order
@@ -237,6 +238,13 @@ class Wallet(models.Model):
 
     def __str__(self) -> str:
         return self.user.user.username
+    
+    def save(self, *args, **kwargs):
+        # Emit the balance_updated signal
+        if "balance" in self.get_dirty_fields():  # You might need to implement get_dirty_fields() method
+            balance_updated.send(sender=self.__class__, balance=self.balance)
+
+        super().save(*args, **kwargs)
 
     # get user's transactions
     @property
