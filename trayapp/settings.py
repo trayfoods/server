@@ -25,26 +25,6 @@ PAYSTACK_PUBLIC_KEY = os.environ.get(
     "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
 )
 
-USE_SES = "True" in os.environ.get("USE_SES", "False")
-
-EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
-
-# Amazon SES settings
-if USE_SES:
-    EMAIL_BACKEND = "anymail.backends.amazon_ses.EmailBackend"
-    # EMAIL_BACKEND = "django_ses.SESBackend"
-    EMAIL_PORT = 465
-    AWS_SES_REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
-    AWS_SES_REGION_ENDPOINT = "email.{}.amazonaws.com".format(AWS_SES_REGION_NAME)
-else:
-    # EMAIL_INFOS
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-    EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
-    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
-    EMAIL_PORT = 587
-
 FRONTEND_URL = os.environ.get("REACT_SITE_DOMAIN", "localhost:3000")
 
 if "localhost" in FRONTEND_URL:
@@ -102,6 +82,29 @@ INSTALLED_APPS = [
     "anymail",
     "theme",
 ]
+
+USE_MAILERSEND = "True" in os.environ.get("USE_MAILERSEND", "False")
+
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
+
+# MailerSend settings
+if USE_MAILERSEND:
+    MAILERSEND_API_TOKEN = os.environ.get("MAILERSEND_API_TOKEN")
+    EMAIL_BACKEND = "anymail.backends.mailersend.EmailBackend"
+    ANYMAIL = {
+        "MAILERSEND_API_TOKEN": os.environ.get("MAILERSEND_API_TOKEN"),
+    }
+    EMAIL_PORT = 465
+    AWS_SES_REGION_NAME = os.getenv("AWS_DEFAULT_REGION")
+    AWS_SES_REGION_ENDPOINT = "email.{}.amazonaws.com".format(AWS_SES_REGION_NAME)
+else:
+    # EMAIL_INFOS
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.gmail.com"
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+    EMAIL_PORT = 587
 
 AUTH_USER_MODEL = "users.UserAccount"
 
