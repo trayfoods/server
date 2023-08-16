@@ -150,3 +150,8 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return image
+
+class IPInfoType(graphene.ObjectType):
+    ip_address = graphene.String(description="User's IP address")
+    is_vpn = graphene.Boolean(description="Whether the IP address is from a VPN")
+    country = graphene.String(description="User's country based on IP address")

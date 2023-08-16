@@ -2,6 +2,7 @@ import graphene
 from django.contrib.auth import get_user_model
 from graphql_auth import mutations
 from django.db.models import Q
+import requests
 
 from trayapp.utils import paginate_queryset
 from .mutations import (
@@ -13,7 +14,14 @@ from .mutations import (
     UserDeviceMutation,
 )
 from .models import Client, Vendor, Store, Hostel
-from .types import ClientType, VendorType, StoreType, HostelType, UserNodeType
+from .types import (
+    ClientType,
+    VendorType,
+    StoreType,
+    HostelType,
+    UserNodeType,
+    IPInfoType,
+)
 from graphql_auth.models import UserStatus
 
 from trayapp.custom_model import BankListQuery, EmailVerifiedNode, UniversityNode
@@ -24,7 +32,7 @@ User = get_user_model()
 
 
 class Query(BankListQuery, graphene.ObjectType):
-    # vendors = DjangoFilterConnectionField(VendorType)
+    ip_info = graphene.Field(IPInfoType)
     me = graphene.Field(UserNodeType)
     vendors = graphene.List(VendorType)
     # clients = graphene.List(ClientType)
@@ -51,6 +59,21 @@ class Query(BankListQuery, graphene.ObjectType):
     get_universities = graphene.List(
         UniversityNode, query=graphene.String(required=True), country=graphene.String()
     )
+
+    def resolve_ip_info(self, info):
+        from ipware import get_client_ip
+
+        ip, is_routable = get_client_ip(info.context)
+        is_vpn = not is_routable
+
+        # Get country information from ipinfo.io API
+        country = None
+        if ip:
+            response = requests.get(f"https://ipinfo.io/{ip}/country")
+            if response.status_code == 200:
+                country = response.text.strip()
+
+        return IPInfoType(ip_address=ip, is_vpn=is_vpn, country=country)
 
     def resolve_get_universities(self, info, query, country=None):
         uni = universities.API()
