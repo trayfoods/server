@@ -121,6 +121,7 @@ class VendorType(DjangoObjectType):
 
 class StoreType(DjangoObjectType):
     store_image = graphene.String()
+    store_products = graphene.List("product.schema.ItemType")
 
     class Meta:
         model = Store
@@ -133,6 +134,9 @@ class StoreType(DjangoObjectType):
             "store_nickname",
             "store_products",
         ]
+
+    def resolve_store_products(self, info):
+        return self.store_products.all()
 
     def resolve_store_image(self, info):
         store = Store.objects.filter(vendor=self.vendor).first()

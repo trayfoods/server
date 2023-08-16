@@ -261,10 +261,8 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     item=product,
                     timestamp=timezone.now(),
                 )
-                vendor.store.store_products.add(product)
                 product.product_avaliable_in.add(store)
                 product.save()
-                vendor.save()
                 new_activity.save()
             elif action == "remove":
                 new_activity = UserActivity.objects.create(
@@ -274,10 +272,8 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     item=product,
                     timestamp=timezone.now(),
                 )
-                vendor.store.store_products.remove(product)
                 product.product_avaliable_in.remove(store)
                 product.save()
-                vendor.save()
                 new_activity.save()
             else:
                 raise GraphQLError("Enter either `add/remove` for actions.")
@@ -350,7 +346,9 @@ class CreateOrderMutation(graphene.Mutation):
         for item in linked_items:
             item = Item.objects.filter(product_slug=item).first()
             if item is None:
-                raise GraphQLError("Order contains invalid items, clear cart and retry.")
+                raise GraphQLError(
+                    "Order contains invalid items, clear cart and retry."
+                )
             if item.product_avaliable_in.count() <= 0:
                 unavailable_items.append(item.product_slug)
 
@@ -362,7 +360,9 @@ class CreateOrderMutation(graphene.Mutation):
             storeId = store["storeId"]
             store = Store.objects.filter(store_nickname=storeId).first()
             if store is None:
-                raise GraphQLError("Order contains invalid stores, clear cart and retry.")
+                raise GraphQLError(
+                    "Order contains invalid stores, clear cart and retry."
+                )
             available_stores.append(store)
 
         if len(unavailable_items) > 0:

@@ -120,10 +120,14 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
-
-    # @property
-    # def avaliable_store(self):
-    #     return self.product_avaliable_in.first()
+    
+    # filter the product available in a store
+    @classmethod
+    def get_items_by_store(cls, store):
+        """
+        eg: Item.get_items_by_store(store)
+        """
+        return cls.objects.filter(product_avaliable_in=store)
 
     @property
     def total_ratings(self):
