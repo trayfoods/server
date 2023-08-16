@@ -2,6 +2,7 @@ from decimal import Decimal
 import os
 
 from django.db import models
+from django_countries.fields import CountryField
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
@@ -98,26 +99,13 @@ class UserDevice(models.Model):
         return f"{self.user.username}'s {self.device_type}"
 
 
-class Country(models.Model):
-    name = models.CharField(max_length=50)
-    code = models.CharField(max_length=5, null=True, blank=True)
-
-    def __str__(self) -> str:
-        return self.name
-
-    class Meta:
-        verbose_name_plural = "Countries"
-
-
 class School(models.Model):
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     short_name = models.CharField(max_length=10, null=True, blank=True)
     slug = models.SlugField(max_length=50, null=True, blank=True)
     address = models.CharField(max_length=50, null=True, blank=True)
-    country = models.ForeignKey(
-        Country, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    country = CountryField()
     phone_number = models.CharField(max_length=16, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     website = models.URLField(null=True, blank=True)
@@ -148,9 +136,7 @@ class Profile(models.Model):
     school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True, editable=False
     )
-    country = models.ForeignKey(
-        Country, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    country = CountryField(null=True, blank=True, default="NG")
     phone_number = models.CharField(max_length=16)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_student = models.BooleanField(default=False)
@@ -238,10 +224,12 @@ class Wallet(models.Model):
 
     def __str__(self) -> str:
         return self.user.user.username
-    
+
     def save(self, *args, **kwargs):
         # Emit the balance_updated signal
-        if "balance" in self.get_dirty_fields():  # You might need to implement get_dirty_fields() method
+        if (
+            "balance" in self.get_dirty_fields()
+        ):  # You might need to implement get_dirty_fields() method
             balance_updated.send(sender=self.__class__, balance=self.balance)
 
         super().save(*args, **kwargs)
@@ -365,20 +353,32 @@ class Store(models.Model):
     )
     vendor = models.OneToOneField("Vendor", on_delete=models.CASCADE)
     store_name = models.CharField(max_length=20)
-    store_nickname = models.CharField(max_length=20, null=True, blank=True)
+    store_country = CountryField(default="NG")
+    store_type = models.CharField(max_length=15, null=True, blank=True)
     store_category = models.CharField(max_length=15)
-    store_rank = models.FloatField(default=0)
-    store_products = models.ManyToManyField(
-        "product.Item", related_name="store_items", blank=True
+    store_phone_numbers = models.JSONField(default=dict, null=True, blank=True)
+    store_bio = models.CharField(null=True, blank=True, max_length=50)
+    store_nickname = models.CharField(max_length=20, null=True, blank=True)
+    store_school = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True, blank=True
     )
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
-    # store_location = models.PointField(null=True) # Spatial Field Types
+    store_rank = models.FloatField(default=0)
 
     def __str__(self):
         return f"{self.store_nickname}"
 
     class Meta:
         ordering = ["-store_rank"]
+
+    # is store a school store
+    @property
+    def is_school_store(self):
+        return True if self.store_school else False
+
+    # get store's products
+    @property
+    def store_products(self):
+        return Item.get_items_by_store(store=self)
 
     # credit store wallet
     def credit_wallet(self, **kwargs):

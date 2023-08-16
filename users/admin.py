@@ -10,7 +10,6 @@ from users.models import (
     DeliveryPerson,
     Wallet,
     School,
-    Country,
     Transaction,
 )
 
@@ -53,11 +52,13 @@ class WalletAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
+
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ("wallet", "amount", "_type", "created_at")
     search_fields = ("wallet__user__user__username", "wallet__user__user__email")
     list_filter = ("created_at", "_type")
     readonly_fields = ("wallet", "amount", "_type", "created_at")
+
 
 admin.site.register(Gender)
 admin.site.register(Profile)
@@ -70,5 +71,4 @@ admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(Vendor, VendorAdmin)
 admin.site.register(School)
-admin.site.register(Country)
 admin.site.register(Transaction, TransactionAdmin)
