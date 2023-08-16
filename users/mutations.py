@@ -34,8 +34,13 @@ class CreateVendorMutation(Output, graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
-        store_nickname = graphene.String(required=True)
+        store_country = graphene.String(required=True)
+        store_type = graphene.String(required=True)
         store_category = graphene.String(required=True)
+        store_phone_numbers = graphene.List(graphene.String, required=True)
+        store_bio = graphene.String(required=True)
+        store_nickname = graphene.String(required=True)
+        store_school = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
     vendor = graphene.Field(VendorType)
@@ -43,54 +48,65 @@ class CreateVendorMutation(Output, graphene.Mutation):
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, store_name, store_category, store_nickname):
+    def mutate(
+        self,
+        info,
+        store_name,
+        store_country,
+        store_type,
+        store_category,
+        store_phone_numbers,
+        store_bio,
+        store_nickname,
+        store_school,
+    ):
         success = False
         user = info.context.user
-        if user.is_authenticated:
-            user = User.objects.get(username=user.username)
-            profile = user.profile
-            vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
-            if vendor is None:
-                store_check = Store.objects.filter(
-                    store_nickname=store_nickname.strip()
-                ).first()  # check if the store nickname is already taken
-                if store_check is None:  # if not taken
-                    vendor = Vendor.objects.create(user=profile)
-                    store = Store.objects.create(
-                        store_name=store_name,
-                        store_nickname=store_nickname,
-                        store_category=store_category,
-                        vendor=vendor,
-                    )  # create the store
-                    store.save()
-                    vendor.store = store
 
-                    # check if the store has a wallet or if the user has a wallet
-                    # wallet = Wallet.objects.filter(user=profile).first()
-                    # wallet = wallet if wallet else Wallet.objects.create(user=profile)
-                    # wallet.save()
-                    # store.wallet = wallet
+        user = User.objects.get(username=user.username)
+        profile = user.profile
+        vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
+        if vendor is None:
+            store_check = Store.objects.filter(
+                store_nickname=store_nickname.strip()
+            ).first()  # check if the store nickname is already taken
+            if store_check is None:  # if not taken
+                vendor = Vendor.objects.create(user=profile)
+                store = Store.objects.create(
+                    store_name=store_name,
+                    store_country=store_country,
+                    store_type=store_type,
+                    store_category=store_category,
+                    store_phone_numbers=store_phone_numbers,
+                    store_bio=store_bio,
+                    store_nickname=store_nickname,
+                    store_school=store_school,
+                    vendor=vendor,
+                )  # create the store
+                store.save()
+                vendor.store = store
 
-                    vendor.save()
-                    user.role = "vendor"  # do not touch
-                    user.save()
+                # check if the store has a wallet or if the user has a wallet
+                # wallet = Wallet.objects.filter(user=profile).first()
+                # wallet = wallet if wallet else Wallet.objects.create(user=profile)
+                # wallet.save()
+                # store.wallet = wallet
 
-                    success = True
+                vendor.save()
+                user.role = "vendor"  # do not touch
+                user.save()
 
-                    # return the vendor and user
-                    return CreateVendorMutation(
-                        success=success, user=user, vendor=vendor
-                    )
-                else:  # if taken
-                    raise GraphQLError(
-                        "Store Nickname Already Exists, Please use a unique name"
-                    )  # raise error
-            else:  # if vendor already exists
-                success = False
-                raise GraphQLError("You Already A Vendor")  # raise error
-        else:  # if user is not authenticated
-            raise GraphQLError("Login required.")  # raise error
-        # Notice we return an instance of this mutation
+                success = True
+
+                # return the vendor and user
+                return CreateVendorMutation(success=success, user=user, vendor=vendor)
+            else:  # if taken
+                raise GraphQLError(
+                    "Store Nickname Already Exists, Please use a unique name"
+                )  # raise error
+        else:  # if vendor already exists
+            success = False
+            raise GraphQLError("You Already A Vendor")  # raise error
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):

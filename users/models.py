@@ -234,6 +234,23 @@ class Wallet(models.Model):
 
         super().save(*args, **kwargs)
 
+    def get_dirty_fields(self):
+        """
+        Returns a dictionary of field_name->(old_value, new_value) for each
+        field that has changed.
+        """
+        dirty_fields = {}
+        for field in self._meta.fields:
+            field_name = field.attname
+            if field_name == "id":
+                continue
+            old_value = getattr(self, field_name)
+            new_value = getattr(self, field_name)
+            if old_value != new_value:
+                dirty_fields[field_name] = (old_value, new_value)
+
+        return dirty_fields
+
     # get user's transactions
     @property
     def transactions(self):
@@ -356,7 +373,7 @@ class Store(models.Model):
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=15, null=True, blank=True)
     store_category = models.CharField(max_length=15)
-    store_phone_numbers = models.JSONField(default=dict, null=True, blank=True)
+    store_phone_numbers = models.JSONField(default=list, null=True, blank=True)
     store_bio = models.CharField(null=True, blank=True, max_length=50)
     store_nickname = models.CharField(max_length=20, null=True, blank=True)
     store_school = models.ForeignKey(
