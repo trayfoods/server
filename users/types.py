@@ -1,8 +1,9 @@
+import json
+
 from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
 from graphql_auth.schema import UserNode
-
 from .models import (
     UserAccount,
     School,
@@ -120,27 +121,45 @@ class VendorType(DjangoObjectType):
 
 
 class StoreType(DjangoObjectType):
+    store_country = graphene.String()
+    store_categories = graphene.List(graphene.String)
+    store_phone_numbers = graphene.List(graphene.String)
     store_image = graphene.String()
     store_products = graphene.List("product.schema.ItemType")
 
     class Meta:
         model = Store
         fields = [
-            "store_name",
-            "store_category",
             "vendor",
-            "store_image",
-            "store_rank",
+            "store_name",
+            "store_country",
+            "store_type",
+            "store_categories",
+            "store_phone_numbers",
+            "store_bio",
+            "store_address",
             "store_nickname",
+            "store_school",
+            "store_image",
             "store_products",
+            "store_rank",
         ]
+
+    def resolve_store_country(self, info):
+        return self.store_country.name
+
+    def resolve_store_categories(self, info):
+        return self.store_categories
+
+    def resolve_store_phone_numbers(self, info):
+        return self.store_phone_numbers
 
     def resolve_store_products(self, info):
         return self.store_products.all()
 
     def resolve_store_image(self, info):
         store = Store.objects.filter(vendor=self.vendor).first()
-        vendor  = store.vendor
+        vendor = store.vendor
         if vendor is None:
             return None
         profile = vendor.user
@@ -150,6 +169,7 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return image
+
 
 class IPInfoType(graphene.ObjectType):
     ip_address = graphene.String(description="User's IP address")

@@ -6,8 +6,8 @@ import requests
 
 from trayapp.utils import paginate_queryset
 from .mutations import (
-    CreateVendorMutation,
-    EditVendorMutation,
+    CreateStoreMutation,
+    UpdateStoreMutation,
     UpdateVendorBankAccount,
     UpdateAccountMutation,
     CreateClientMutation,
@@ -176,9 +176,9 @@ class AuthMutation(graphene.ObjectType):
 
 class Mutation(AuthMutation, graphene.ObjectType):
     update_account = UpdateAccountMutation.Field()
-    create_vendor = CreateVendorMutation.Field()
+    create_store = CreateStoreMutation.Field()
+    update_store = UpdateStoreMutation.Field()
     create_client = CreateClientMutation.Field()
-    update_vendor = EditVendorMutation.Field()
     update_vendor_bank_details = UpdateVendorBankAccount.Field()
     user_device = UserDeviceMutation.Field()
 
