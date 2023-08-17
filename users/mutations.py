@@ -10,7 +10,7 @@ from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import VendorType, UserNodeType  # , BankNode
+from .types import StoreType, VendorType, UserNodeType  # , BankNode
 from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount, Wallet
 
 User = UserAccount
@@ -30,13 +30,13 @@ class Output:
     success = graphene.Boolean(default_value=False)
 
 
-class CreateVendorMutation(Output, graphene.Mutation):
+class CreateStoreMutation(Output, graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
         store_country = graphene.String(required=True)
         store_type = graphene.String(required=True)
-        store_category = graphene.String(required=True)
+        store_categories = graphene.List(graphene.String, required=True)
         store_phone_numbers = graphene.List(graphene.String, required=True)
         store_bio = graphene.String(required=True)
         store_nickname = graphene.String(required=True)
@@ -54,7 +54,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
         store_name,
         store_country,
         store_type,
-        store_category,
+        store_categories,
         store_phone_numbers,
         store_bio,
         store_nickname,
@@ -76,7 +76,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
                     store_name=store_name,
                     store_country=store_country,
                     store_type=store_type,
-                    store_category=store_category,
+                    store_categories=store_categories,
                     store_phone_numbers=store_phone_numbers,
                     store_bio=store_bio,
                     store_nickname=store_nickname,
@@ -85,13 +85,6 @@ class CreateVendorMutation(Output, graphene.Mutation):
                 )  # create the store
                 store.save()
                 vendor.store = store
-
-                # check if the store has a wallet or if the user has a wallet
-                # wallet = Wallet.objects.filter(user=profile).first()
-                # wallet = wallet if wallet else Wallet.objects.create(user=profile)
-                # wallet.save()
-                # store.wallet = wallet
-
                 vendor.save()
                 user.role = "vendor"  # do not touch
                 user.save()
@@ -99,7 +92,7 @@ class CreateVendorMutation(Output, graphene.Mutation):
                 success = True
 
                 # return the vendor and user
-                return CreateVendorMutation(success=success, user=user, vendor=vendor)
+                return CreateStoreMutation(success=success, user=user, store=store)
             else:  # if taken
                 raise GraphQLError(
                     "Store Nickname Already Exists, Please use a unique name"
@@ -177,34 +170,59 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         return UpdateAccountMutation(user=user)
 
 
-class EditVendorMutation(graphene.Mutation):
+class UpdateStoreMutation(graphene.Mutation):
     class Arguments:
-        # The input arguments for this mutation
-        id = graphene.ID()
-        full_name = graphene.String()
-        gender = graphene.String()
-        phone_number = graphene.String()
-        email = graphene.String()
+        store_name = graphene.String(required=True)
+        store_country = graphene.String(required=True)
+        store_type = graphene.String(required=True)
+        store_categories = graphene.List(graphene.String, required=True)
+        store_phone_numbers = graphene.List(graphene.String, required=True)
+        store_bio = graphene.String(required=True)
+        store_nickname = graphene.String(required=True)
+        store_school = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
-    vendor = graphene.Field(VendorType)
     success = graphene.Boolean()
+    error = graphene.String()
+    store = graphene.Field(StoreType)
 
     @staticmethod
-    def mutate(self, info, id, full_name, gender, phone_number, email):
+    @permission_checker([IsAuthenticated])
+    def mutate(
+        self,
+        info,
+        store_name,
+        store_country,
+        store_type,
+        store_categories,
+        store_phone_numbers,
+        store_bio,
+        store_nickname,
+        store_school,
+    ):
         success = False
-        if info.context.user.is_authenticated:
-            vendor = Vendor.objects.get(pk=id)  # get the vendor
-            vendor.full_name = full_name
-            vendor.gender = gender
-            vendor.phone_number = phone_number
-            vendor.email = email
-            vendor.save()
-            success = True
+        error = None
+        user = info.context.user
+        profile = user.profile
+        vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
+        if vendor is None:
+            store = Store.objects.filter(vendor=vendor).first()
+            if not store is None:
+                store.store_name = store_name
+                store.store_country = store_country
+                store.store_type = store_type
+                store.store_categories = store_categories
+                store.store_phone_numbers = store_phone_numbers
+                store.store_bio = store_bio
+                store.store_nickname = store_nickname
+                store.store_school = store_school
+                store.save()
+                success = True
+            else:
+                error = "Store does not exist"
         else:
-            raise GraphQLError("Login required.")
-        # Notice we return an instance of this mutation
-        return EditVendorMutation(vendor=vendor, success=success)
+            error = "You are not a vendor"
+        return UpdateStoreMutation(success=success, error=error, store=store)
 
 
 class CreateClientMutation(Output, graphene.Mutation):

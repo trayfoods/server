@@ -372,9 +372,14 @@ class Store(models.Model):
     store_name = models.CharField(max_length=20)
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=15, null=True, blank=True)
-    store_category = models.CharField(max_length=15)
-    store_phone_numbers = models.JSONField(default=list, null=True, blank=True)
+    store_categories = models.JSONField(
+        default=list, null=True, blank=True, editable=True
+    )
+    store_phone_numbers = models.JSONField(
+        default=list, null=True, blank=True, editable=True
+    )
     store_bio = models.CharField(null=True, blank=True, max_length=50)
+    store_address = models.CharField(max_length=50, null=True, blank=True)
     store_nickname = models.CharField(max_length=20, null=True, blank=True)
     store_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True
