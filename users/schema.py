@@ -2,7 +2,6 @@ import graphene
 from django.contrib.auth import get_user_model
 from graphql_auth import mutations
 from django.db.models import Q
-import requests
 
 from trayapp.utils import paginate_queryset
 from .mutations import (
@@ -20,19 +19,16 @@ from .types import (
     StoreType,
     HostelType,
     UserNodeType,
-    IPInfoType,
+    SchoolType
 )
 from graphql_auth.models import UserStatus
 
-from trayapp.custom_model import BankListQuery, EmailVerifiedNode, UniversityNode
-
-import universities
+from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 
 User = get_user_model()
 
 
 class Query(BankListQuery, graphene.ObjectType):
-    ip_info = graphene.Field(IPInfoType)
     me = graphene.Field(UserNodeType)
     vendors = graphene.List(VendorType)
     # clients = graphene.List(ClientType)
@@ -56,30 +52,11 @@ class Query(BankListQuery, graphene.ObjectType):
         StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
     )
 
-    get_universities = graphene.List(
-        UniversityNode, query=graphene.String(required=True), country=graphene.String()
+    schools = graphene.List(
+        SchoolType,
+        search_query=graphene.String(required=True),
+        count=graphene.Int(required=False),
     )
-
-    def resolve_ip_info(self, info):
-        from ipware import get_client_ip
-
-        ip, is_routable = get_client_ip(info.context)
-        is_vpn = not is_routable
-
-        # Get country information from ipinfo.io API
-        country = None
-        if ip:
-            response = requests.get(f"https://ipinfo.io/{ip}/country")
-            if response.status_code == 200:
-                country = response.text.strip()
-
-        return IPInfoType(ip_address=ip, is_vpn=is_vpn, country=country)
-
-    def resolve_get_universities(self, info, query, country=None):
-        uni = universities.API()
-        if country:
-            return uni.search(country=country, name=query)
-        return uni.search(name=query)
 
     def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
         """

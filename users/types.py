@@ -125,6 +125,7 @@ class StoreType(DjangoObjectType):
     store_categories = graphene.List(graphene.String)
     store_phone_numbers = graphene.List(graphene.String)
     store_image = graphene.String()
+    store_cover_image = graphene.String()
     store_products = graphene.List("product.schema.ItemType")
 
     class Meta:
@@ -141,6 +142,7 @@ class StoreType(DjangoObjectType):
             "store_nickname",
             "store_school",
             "store_image",
+            "store_cover_image",
             "store_products",
             "store_rank",
         ]
@@ -170,8 +172,5 @@ class StoreType(DjangoObjectType):
             pass
         return image
 
-
-class IPInfoType(graphene.ObjectType):
-    ip_address = graphene.String(description="User's IP address")
-    is_vpn = graphene.Boolean(description="Whether the IP address is from a VPN")
-    country = graphene.String(description="User's country based on IP address")
+    def resolve_cover_store_image(self, info):
+        return info.context.build_absolute_uri(self.store_cover_image.url)

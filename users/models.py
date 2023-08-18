@@ -36,6 +36,22 @@ def profile_image_directory_path(instance, filename):
     return f"images/users/{username}/{username}{extension}"
 
 
+def store_cover_image_directory_path(instance, filename):
+    """
+    Create a directory path to upload the Profile Image.
+    :param object instance:
+        The instance where the current file is being attached.
+    :param str filename:
+        The filename that was originally given to the file.
+        This may not be taken into account when determining
+        the final destination path.
+    :result str: Directory path.file_extension.
+    """
+    username = slugify(instance.vendor.user.username)
+    _, extension = os.path.splitext(filename)
+    return f"images/vendors/{username}/{instance.store_nickname}/cover{extension}"
+
+
 def school_logo_directory_path(instance, filename):
     """
     Create a directory path to upload the School Logo.
@@ -102,17 +118,16 @@ class UserDevice(models.Model):
 class School(models.Model):
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
-    short_name = models.CharField(max_length=10, null=True, blank=True)
-    slug = models.SlugField(max_length=50, null=True, blank=True)
-    address = models.CharField(max_length=50, null=True, blank=True)
-    country = CountryField()
-    phone_number = models.CharField(max_length=16, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
-    website = models.URLField(null=True, blank=True)
-    portal = models.URLField(null=True, blank=True)
+    country = CountryField(default="NG")
+    addresses = models.JSONField(default=list, null=True, blank=True, editable=True)
+    slug = models.SlugField(max_length=50, null=True, blank=True)
+    phone_numbers = models.JSONField(default=list, null=True, blank=True, editable=True)
+    domains = models.JSONField(default=list, null=True, blank=True, editable=True)
     logo = models.ImageField(
         upload_to=school_logo_directory_path, null=True, blank=True
     )
+    is_verified = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -384,6 +399,9 @@ class Store(models.Model):
     store_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True
     )
+    store_cover_image = models.ImageField(
+        upload_to=store_cover_image_directory_path, null=True, blank=True
+    )
     store_rank = models.FloatField(default=0)
 
     def __str__(self):
@@ -404,7 +422,6 @@ class Store(models.Model):
 
     # credit store wallet
     def credit_wallet(self, **kwargs):
-        print(kwargs)
         return self.wallet.add_balance(**kwargs)
 
     @property
