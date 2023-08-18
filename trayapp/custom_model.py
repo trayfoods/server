@@ -98,14 +98,6 @@ class BankAccountNode(Output, graphene.ObjectType):
     account_name = graphene.String()
     account_number = graphene.String()
 
-class UniversityNode(graphene.ObjectType):
-    name = graphene.String()
-    country = graphene.String()
-    alpha_two_code = graphene.String()
-    state_province = graphene.String()
-    domains = graphene.List(graphene.String)
-    web_pages = graphene.List(graphene.String)
-
 # This is the class we will be using to query the bank list
 class BankListQuery(graphene.ObjectType):
 
