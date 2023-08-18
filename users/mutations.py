@@ -35,6 +35,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
         store_country = graphene.String(required=True)
+        store_address = graphene.String(required=True)
         store_type = graphene.String(required=True)
         store_categories = graphene.List(graphene.String, required=True)
         store_phone_numbers = graphene.List(graphene.String, required=True)
@@ -53,6 +54,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
         info,
         store_name,
         store_country,
+        store_address,
         store_type,
         store_categories,
         store_phone_numbers,
@@ -75,6 +77,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
                 store = Store.objects.create(
                     store_name=store_name,
                     store_country=store_country,
+                    store_address=store_address,
                     store_type=store_type,
                     store_categories=store_categories,
                     store_phone_numbers=store_phone_numbers,
@@ -174,6 +177,7 @@ class UpdateStoreMutation(graphene.Mutation):
     class Arguments:
         store_name = graphene.String(required=True)
         store_country = graphene.String(required=True)
+        store_address = graphene.String(required=True)
         store_type = graphene.String(required=True)
         store_categories = graphene.List(graphene.String, required=True)
         store_phone_numbers = graphene.List(graphene.String, required=True)
@@ -193,6 +197,7 @@ class UpdateStoreMutation(graphene.Mutation):
         info,
         store_name,
         store_country,
+        store_address,
         store_type,
         store_categories,
         store_phone_numbers,
@@ -210,6 +215,7 @@ class UpdateStoreMutation(graphene.Mutation):
             if not store is None:
                 store.store_name = store_name
                 store.store_country = store_country
+                store.store_address = store_address
                 store.store_type = store_type
                 store.store_categories = store_categories
                 store.store_phone_numbers = store_phone_numbers
