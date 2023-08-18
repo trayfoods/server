@@ -120,10 +120,10 @@ class School(models.Model):
     name = models.CharField(max_length=50)
     email = models.EmailField(null=True, blank=True)
     country = CountryField(default="NG")
-    addresses = models.JSONField(default=list, null=True, blank=True, editable=True)
-    slug = models.SlugField(max_length=50, null=True, blank=True)
-    phone_numbers = models.JSONField(default=list, null=True, blank=True, editable=True)
-    domains = models.JSONField(default=list, null=True, blank=True, editable=True)
+    campuses = models.JSONField(default=list, null=True, blank=True, editable=False)
+    slug = models.SlugField(max_length=50, null=True, blank=True, unique=True)
+    phone_numbers = models.JSONField(default=list, null=True, blank=True, editable=False)
+    domains = models.JSONField(default=list, null=True, blank=True, editable=False)
     logo = models.ImageField(
         upload_to=school_logo_directory_path, null=True, blank=True
     )
@@ -132,6 +132,12 @@ class School(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.slug:
+            self.slug = slugify(self.name)
+            self.save()
 
 
 class Gender(models.Model):
@@ -388,10 +394,10 @@ class Store(models.Model):
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=20, null=True, blank=True)
     store_categories = models.JSONField(
-        default=list, null=True, blank=True, editable=True
+        default=list, null=True, blank=True, editable=False
     )
     store_phone_numbers = models.JSONField(
-        default=list, null=True, blank=True, editable=True
+        default=list, null=True, blank=True, editable=False
     )
     store_bio = models.CharField(null=True, blank=True, max_length=150)
     store_address = models.CharField(max_length=60, null=True, blank=True)
