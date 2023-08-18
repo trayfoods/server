@@ -1,6 +1,6 @@
 import users.schema
+import core.schema
 import product.schema
-from core.schema import CoreMutations
 import graphene
 from django.conf import settings
 
@@ -9,6 +9,7 @@ APP_VERSION = settings.APP_VERSION
 
 class Query(
     users.schema.Query,
+    core.schema.CoreQueries,
     product.schema.Query,
     graphene.ObjectType,
 ):
@@ -21,7 +22,7 @@ class Query(
 class Mutation(
     users.schema.Mutation,
     product.schema.Mutation,
-    CoreMutations,
+    core.schema.CoreMutations,
     graphene.ObjectType,
 ):
     pass

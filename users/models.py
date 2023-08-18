@@ -369,18 +369,18 @@ class Store(models.Model):
         Wallet, on_delete=models.CASCADE, null=True, blank=True
     )
     vendor = models.OneToOneField("Vendor", on_delete=models.CASCADE)
-    store_name = models.CharField(max_length=20)
+    store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
-    store_type = models.CharField(max_length=15, null=True, blank=True)
+    store_type = models.CharField(max_length=20, null=True, blank=True)
     store_categories = models.JSONField(
         default=list, null=True, blank=True, editable=True
     )
     store_phone_numbers = models.JSONField(
         default=list, null=True, blank=True, editable=True
     )
-    store_bio = models.CharField(null=True, blank=True, max_length=50)
-    store_address = models.CharField(max_length=50, null=True, blank=True)
-    store_nickname = models.CharField(max_length=20, null=True, blank=True)
+    store_bio = models.CharField(null=True, blank=True, max_length=150)
+    store_address = models.CharField(max_length=60, null=True, blank=True)
+    store_nickname = models.CharField(max_length=50, null=True, blank=True)
     store_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True
     )

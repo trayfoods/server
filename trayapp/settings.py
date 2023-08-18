@@ -67,9 +67,11 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_countries",
     "channels",
+    
     "users",
     "product",
     "core",
+
     "storages",
     "graphene_django",
     "graphql_auth",
