@@ -179,5 +179,11 @@ class StoreType(DjangoObjectType):
             pass
         return image
 
-    def resolve_cover_store_image(self, info):
-        return info.context.build_absolute_uri(self.store_cover_image.url)
+    def resolve_store_cover_image(self, info):
+        cover_image = None
+        try:
+            # get the cover image full url
+            cover_image = info.context.build_absolute_uri(self.store_cover_image.url)
+        except:
+            pass
+        return cover_image
