@@ -47,9 +47,9 @@ def store_cover_image_directory_path(instance, filename):
         the final destination path.
     :result str: Directory path.file_extension.
     """
-    username = slugify(instance.vendor.user.username)
+    username = slugify(instance.vendor.user.user.username)
     _, extension = os.path.splitext(filename)
-    return f"images/vendors/{username}/{instance.store_nickname}/cover{extension}"
+    return f"images/vendors/{username}/{instance.store_nickname}-store-cover{extension}"
 
 
 def school_logo_directory_path(instance, filename):
@@ -420,6 +420,18 @@ class Store(models.Model):
 
     class Meta:
         ordering = ["-store_rank"]
+
+    def save(self, *args, **kwargs):
+        # Resize the image before saving
+        if self.store_cover_image:
+            w, h = 1024, 300  # Set the desired width and height for the resized image
+            if image_exists(self.store_cover_image.name):
+                img_file, _, _, _ = image_resized(self.store_cover_image, w, h)
+                if img_file:
+                    img_name = self.store_cover_image.name
+                    self.store_cover_image.save(img_name, img_file, save=False)
+
+        super().save(*args, **kwargs)
 
     # is store a school store
     @property

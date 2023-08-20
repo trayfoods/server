@@ -121,9 +121,13 @@ def superuser_and_admin_required(email_subject):
 
             try:
                 # Send email notification to the admin
-                admin_email = settings.ADMIN_EMAIL  # Replace with your admin email address
+                admin_email = (
+                    settings.ADMIN_EMAIL
+                )  # Replace with your admin email address
                 message = f"User '{user.username}' has logged in to the '{email_subject}' command."
-                send_mail(email_subject, message, settings.DEFAULT_FROM_EMAIL, [admin_email])
+                send_mail(
+                    email_subject, message, settings.DEFAULT_FROM_EMAIL, [admin_email]
+                )
             except:
                 pass
 

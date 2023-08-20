@@ -10,7 +10,7 @@ from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import StoreType, VendorType, UserNodeType  # , BankNode
+from .types import UserNodeType  # , BankNode
 from .models import (
     Vendor,
     Store,
@@ -37,6 +37,7 @@ class Output:
     """
 
     success = graphene.Boolean(default_value=False)
+    error = graphene.String(default_value=None)
 
 
 class CreateStoreMutation(Output, graphene.Mutation):
@@ -52,8 +53,6 @@ class CreateStoreMutation(Output, graphene.Mutation):
         store_nickname = graphene.String(required=True)
         store_school = graphene.String(required=True)
 
-    # The class attributes define the response of the mutation
-    store = graphene.Field(StoreType)
     user = graphene.Field(UserNodeType)
 
     @staticmethod
@@ -122,10 +121,86 @@ class CreateStoreMutation(Output, graphene.Mutation):
         if user.vendor and not user.vendor.store:
             user.vendor.delete()
         if user.profile and user.vendor:
-            return cls(success=True, user=user, store=user.vendor.store)
+            return cls(success=True, user=user)
         else:
-            store = Store.objects.filter(vendor=user.vendor).first()
-            return cls(success=False, user=user, store=store)
+            return cls(success=False, user=user)
+
+
+class UpdateStoreMutation(Output, graphene.Mutation):
+    class Arguments:
+        store_name = graphene.String()
+        store_country = graphene.String()
+        store_address = graphene.String()
+        store_type = graphene.String()
+        store_categories = graphene.List(graphene.String)
+        store_phone_numbers = graphene.List(graphene.String)
+        store_bio = graphene.String()
+        store_nickname = graphene.String()
+        store_school = graphene.String()
+        store_cover_image = Upload()
+
+    user = graphene.Field(UserNodeType)
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(
+        self,
+        info,
+        store_name=None,
+        store_country=None,
+        store_address=None,
+        store_type=None,
+        store_categories=None,
+        store_phone_numbers=None,
+        store_bio=None,
+        store_nickname=None,
+        store_school=None,
+        store_cover_image=None,
+    ):
+        success = False
+        user = info.context.user
+        profile = user.profile
+        vendor = Vendor.objects.filter(user=profile).first()
+        if vendor is None:
+            raise GraphQLError("You are not a vendor")
+        store = Store.objects.filter(vendor=vendor).first()
+        if store is None:
+            raise GraphQLError("You do not have a store")
+        if store_name:
+            store.store_name = store_name
+        if store_country:
+            store.store_country = store_country
+        if store_address:
+            store.store_address = store_address
+        if store_type:
+            store.store_type = store_type
+        if store_categories:
+            store.store_categories = store_categories
+        if store_phone_numbers:
+            store.store_phone_numbers = store_phone_numbers
+        if store_bio:
+            store.store_bio = store_bio
+        if store_nickname:
+            store.store_nickname = store_nickname
+        if store_school:
+            store_school_qs = School.objects.filter(slug=store_school.strip())
+            if not store_school_qs.exists():
+                raise GraphQLError("School does not exist, please try again")
+            store.store_school = store_school_qs.first()
+        if store_cover_image:
+            store.store_cover_image = store_cover_image
+        store.save()
+        success = True
+
+        return UpdateStoreMutation(success=success, user=user)
+
+    @verification_required
+    def resolve_mutation(cls, root, info, **kwargs):
+        user = info.context.user
+        if user.vendor and user.vendor.store:
+            return cls(success=True, user=user)
+        else:
+            return cls(success=False, user=user)
 
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
@@ -185,64 +260,6 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         user.save()
         # Notice we return an instance of this mutation
         return UpdateAccountMutation(user=user)
-
-
-class UpdateStoreMutation(graphene.Mutation):
-    class Arguments:
-        store_name = graphene.String(required=True)
-        store_country = graphene.String(required=True)
-        store_address = graphene.String(required=True)
-        store_type = graphene.String(required=True)
-        store_categories = graphene.List(graphene.String, required=True)
-        store_phone_numbers = graphene.List(graphene.String, required=True)
-        store_bio = graphene.String(required=True)
-        store_nickname = graphene.String(required=True)
-        store_school = graphene.String(required=True)
-
-    # The class attributes define the response of the mutation
-    success = graphene.Boolean()
-    error = graphene.String()
-    store = graphene.Field(StoreType)
-
-    @staticmethod
-    @permission_checker([IsAuthenticated])
-    def mutate(
-        self,
-        info,
-        store_name,
-        store_country,
-        store_address,
-        store_type,
-        store_categories,
-        store_phone_numbers,
-        store_bio,
-        store_nickname,
-        store_school,
-    ):
-        success = False
-        error = None
-        user = info.context.user
-        profile = user.profile
-        vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
-        if vendor is None:
-            store = Store.objects.filter(vendor=vendor).first()
-            if not store is None:
-                store.store_name = store_name
-                store.store_country = store_country
-                store.store_address = store_address
-                store.store_type = store_type
-                store.store_categories = store_categories
-                store.store_phone_numbers = store_phone_numbers
-                store.store_bio = store_bio
-                store.store_nickname = store_nickname
-                store.store_school = store_school
-                store.save()
-                success = True
-            else:
-                error = "Store does not exist"
-        else:
-            error = "You are not a vendor"
-        return UpdateStoreMutation(success=success, error=error, store=store)
 
 
 class CreateClientMutation(Output, graphene.Mutation):
@@ -332,9 +349,6 @@ class UpdateVendorBankAccount(Output, graphene.Mutation):
         account_number = graphene.String(required=True)
         account_name = graphene.String(required=True)
         bank_code = graphene.String(required=True)
-
-    # The class attributes define the response of the mutation
-    error = graphene.String()
 
     @staticmethod
     @permission_checker([IsAuthenticated])
