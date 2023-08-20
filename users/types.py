@@ -1,5 +1,3 @@
-import json
-
 from profile import Profile
 import graphene
 from graphene_django.types import DjangoObjectType
@@ -18,9 +16,14 @@ from .models import (
 
 
 class SchoolType(DjangoObjectType):
+    campuses = graphene.List(graphene.String)
+
     class Meta:
         model = School
         fields = "__all__"
+
+    def resolve_campuses(self, info):
+        return self.campuses
 
 
 class ProfileType(DjangoObjectType):
@@ -99,6 +102,7 @@ class TransactionType(DjangoObjectType):
 
 class VendorType(DjangoObjectType):
     profile = graphene.Field(ProfileType)
+    store = graphene.Field("users.schema.StoreType")
 
     class Meta:
         model = Vendor
@@ -116,8 +120,11 @@ class VendorType(DjangoObjectType):
         return self.pk
 
     def resolve_profile(self, info):
-        # user = Profile.objects.filter(user=).first()
         return self.user.user.profile
+
+    def resolve_store(self, info):
+        store = Store.objects.filter(vendor=self).first()
+        return store
 
 
 class StoreType(DjangoObjectType):

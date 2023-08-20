@@ -69,6 +69,7 @@ def school_logo_directory_path(instance, filename):
 
 
 class UserAccount(AbstractUser, models.Model):
+    email = models.EmailField(_("email address"), blank=True, unique=True)
     password = models.CharField(_("password"), max_length=128, editable=False)
     role = models.CharField(
         _("role"),
@@ -82,6 +83,8 @@ class UserAccount(AbstractUser, models.Model):
             ("delivery", "delivery"),
         ),
     )
+
+    REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
     # get user's orders
     @property
@@ -120,9 +123,11 @@ class School(models.Model):
     name = models.CharField(max_length=50)
     email = models.EmailField(null=True, blank=True)
     country = CountryField(default="NG")
-    campuses = models.JSONField(default=list, null=True, blank=True, editable=False)
+    campuses = models.JSONField(default=list, null=True, blank=True, editable=True)
     slug = models.SlugField(max_length=50, null=True, blank=True, unique=True)
-    phone_numbers = models.JSONField(default=list, null=True, blank=True, editable=False)
+    phone_numbers = models.JSONField(
+        default=list, null=True, blank=True, editable=False
+    )
     domains = models.JSONField(default=list, null=True, blank=True, editable=False)
     logo = models.ImageField(
         upload_to=school_logo_directory_path, null=True, blank=True
@@ -389,7 +394,7 @@ class Store(models.Model):
     wallet = models.OneToOneField(
         Wallet, on_delete=models.CASCADE, null=True, blank=True
     )
-    vendor = models.OneToOneField("Vendor", on_delete=models.CASCADE)
+    vendor = models.ForeignKey("Vendor", on_delete=models.CASCADE)
     store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=20, null=True, blank=True)
@@ -440,7 +445,6 @@ class Vendor(models.Model):
     account_number = models.CharField(max_length=20, null=True, blank=True)
     account_name = models.CharField(max_length=60, null=True, blank=True)
     bank_code = models.CharField(max_length=20, null=True, blank=True)
-    country_code = models.CharField(max_length=6, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -449,7 +453,8 @@ class Vendor(models.Model):
     # get vendor's store
     @property
     def store(self):
-        return Store.objects.get(vendor=self)
+        store = Store.objects.filter(vendor=self).first()
+        return store
 
 
 class Hostel(models.Model):

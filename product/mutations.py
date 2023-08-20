@@ -51,30 +51,15 @@ class AddProductMutation(graphene.Mutation):
         success = False
         product = None
         if info.context.user.is_authenticated:
-            store = Vendor.objects.filter(user=info.context.user.profile).first().store
             product = Item.objects.filter(product_name=product_name.strip()).first()
             vendor = Vendor.objects.filter(user=info.context.user.profile).first()
             if vendor is None:
                 success = False
                 raise GraphQLError("You Need To Become A Vendor To Add New Item")
+
             if not product is None:
                 success = False
-                is_vendor_in_product_ava = product.product_avaliable_in.filter(
-                    store_nickname=vendor.store.store_nickname
-                ).first()
-                if not is_vendor_in_product_ava is None:
-                    raise GraphQLError("Item Already In Your Store")
-                elif (
-                    product.product_creator == vendor
-                    and is_vendor_in_product_ava is None
-                ):
-                    store.store_products.add(product)
-                    success = True
-                elif (
-                    product.product_creator == vendor
-                    and not is_vendor_in_product_ava is None
-                ):
-                    raise GraphQLError("Item Already In Your Store")
+                raise GraphQLError("Item Already Exists")
 
             else:
                 product_category = ItemAttribute.objects.filter(
@@ -117,8 +102,6 @@ class AddProductMutation(graphene.Mutation):
                             product_creator=vendor,
                         )
                     product.save()
-                    # product = Item.objects.filter(
-                    #     product_name=product_name.strip()).first()
                     for product_image in product_images:
                         qs = ItemImage.objects.filter(product=product).first()
                         is_primary = True
@@ -137,7 +120,6 @@ class AddProductMutation(graphene.Mutation):
                             product.product_avaliable_in.add(vendor.store)
                             product.product_images.add(productImage)
                             product.save()
-            store.store_products.add(product)
             # check if product have all the required fields
             if (
                 not product.product_name is None
@@ -197,10 +179,8 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                 if not product is None and not vendor is None:
                     if action == "add":
                         product.product_avaliable_in.add(vendor.store)
-                        vendor.store.store_products.add(product)
                     elif action == "remove":
                         product.product_avaliable_in.remove(vendor.store)
-                        vendor.store.store_products.remove(product)
                     else:
                         raise GraphQLError("Enter either `add/remove` for actions.")
                     product.save()

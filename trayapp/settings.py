@@ -4,12 +4,14 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 
+from django.core.management.utils import get_random_secret_key
+
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-#)2!^38c7a772a9b3716")
+SECRET_KEY = os.getenv("SECRET_KEY", "1234")
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -65,13 +67,10 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_countries",
     "channels",
-    
     "users",
     "product",
     "core",
-
     "storages",
     "graphene_django",
     "graphql_auth",
@@ -80,10 +79,11 @@ INSTALLED_APPS = [
     "django_unused_media",
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
     "corsheaders",
-    "django_extensions",
     "rest_framework",
+    "django_extensions",
     "anymail",
     "theme",
+    "django_countries",
 ]
 
 USE_MAILERSEND = "True" in os.environ.get("USE_MAILERSEND", "False")
@@ -151,7 +151,7 @@ AUTHENTICATION_BACKENDS = [
 GRAPHQL_JWT = {
     "JWT_ALLOW_ARGUMENT": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-    "JWT_EXPIRATION_DELTA": timedelta(days=7),
+    "JWT_EXPIRATION_DELTA": timedelta(days=10),
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
         "graphql_auth.mutations.VerifyAccount",
