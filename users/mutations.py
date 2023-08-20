@@ -11,7 +11,16 @@ from graphql_auth.decorators import verification_required
 from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import StoreType, VendorType, UserNodeType  # , BankNode
-from .models import Vendor, Store, Client, Hostel, Gender, Profile, UserAccount, Wallet
+from .models import (
+    Vendor,
+    Store,
+    School,
+    Client,
+    Hostel,
+    Gender,
+    Profile,
+    UserAccount,
+)
 
 User = UserAccount
 
@@ -39,12 +48,12 @@ class CreateStoreMutation(Output, graphene.Mutation):
         store_type = graphene.String(required=True)
         store_categories = graphene.List(graphene.String, required=True)
         store_phone_numbers = graphene.List(graphene.String, required=True)
-        store_bio = graphene.String(required=True)
+        store_bio = graphene.String(required=False)
         store_nickname = graphene.String(required=True)
         store_school = graphene.String(required=True)
 
     # The class attributes define the response of the mutation
-    vendor = graphene.Field(VendorType)
+    store = graphene.Field(StoreType)
     user = graphene.Field(UserNodeType)
 
     @staticmethod
@@ -74,6 +83,10 @@ class CreateStoreMutation(Output, graphene.Mutation):
             ).first()  # check if the store nickname is already taken
             if store_check is None:  # if not taken
                 vendor = Vendor.objects.create(user=profile)
+                store_school_qs = School.objects.filter(slug=store_school.strip())
+                if not store_school_qs.exists():
+                    raise GraphQLError("School does not exist, please try again")
+                vendor.save()
                 store = Store.objects.create(
                     store_name=store_name,
                     store_country=store_country,
@@ -83,12 +96,10 @@ class CreateStoreMutation(Output, graphene.Mutation):
                     store_phone_numbers=store_phone_numbers,
                     store_bio=store_bio,
                     store_nickname=store_nickname,
-                    store_school=store_school,
+                    store_school=store_school_qs.first(),
                     vendor=vendor,
                 )  # create the store
                 store.save()
-                vendor.store = store
-                vendor.save()
                 user.role = "vendor"  # do not touch
                 user.save()
 
@@ -107,11 +118,14 @@ class CreateStoreMutation(Output, graphene.Mutation):
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
+        # check if the store is was not created then delete the vendor
+        if user.vendor and not user.vendor.store:
+            user.vendor.delete()
         if user.profile and user.vendor:
-            return cls(success=True, user=user, vendor=user.vendor)
+            return cls(success=True, user=user, store=user.vendor.store)
         else:
-            vendor = Vendor.objects.filter(user=user.profile).first()
-            return cls(success=False, user=user, vendor=vendor)
+            store = Store.objects.filter(vendor=user.vendor).first()
+            return cls(success=False, user=user, store=store)
 
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):

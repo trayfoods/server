@@ -1,5 +1,6 @@
 import graphene
 from django.contrib.auth import get_user_model
+from graphql import GraphQLError
 from graphql_auth import mutations
 from django.db.models import Q
 
@@ -12,14 +13,14 @@ from .mutations import (
     CreateClientMutation,
     UserDeviceMutation,
 )
-from .models import Client, Vendor, Store, Hostel
+from .models import Client, Vendor, Store, Hostel, School
 from .types import (
     ClientType,
     VendorType,
     StoreType,
     HostelType,
     UserNodeType,
-    SchoolType
+    SchoolType,
 )
 from graphql_auth.models import UserStatus
 
@@ -54,8 +55,14 @@ class Query(BankListQuery, graphene.ObjectType):
 
     schools = graphene.List(
         SchoolType,
-        search_query=graphene.String(required=True),
+        name=graphene.String(required=False),
+        country=graphene.String(required=False),
         count=graphene.Int(required=False),
+    )
+
+    school = graphene.Field(
+        SchoolType,
+        slug=graphene.String(required=True),
     )
 
     def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
@@ -134,6 +141,34 @@ class Query(BankListQuery, graphene.ObjectType):
         else:  # the user does not exist
             data["msg"] = "email do not exists"
         return data
+
+    def resolve_schools(self, info, name=None, country=None, count=None):
+        schools = []
+
+        # check if country and name is not None
+        if name and country:
+            schools = School.objects.filter(
+                Q(name__icontains=name) | Q(country__icontains=country)
+            )
+
+        if name is None and country is None:
+            raise GraphQLError("name and country cannot be None")
+
+        if name:
+            schools = School.objects.filter(name__icontains=name)
+        if country:
+            schools = School.objects.filter(country__icontains=country)
+
+        if count:
+            schools = schools[:count]
+
+        return schools
+
+    def resolve_school(self, info, slug):
+        school = School.objects.filter(slug=slug).first()
+        if school is None:
+            raise GraphQLError("school does not exist")
+        return school
 
 
 class AuthMutation(graphene.ObjectType):
