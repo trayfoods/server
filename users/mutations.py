@@ -105,7 +105,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
                 success = True
 
                 # return the vendor and user
-                return CreateStoreMutation(success=success, user=user, store=store)
+                return CreateStoreMutation(success=success, user=user)
             else:  # if taken
                 raise GraphQLError(
                     "Store Nickname Already Exists, Please use a unique name"
