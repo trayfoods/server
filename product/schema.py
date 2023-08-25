@@ -192,7 +192,7 @@ class Query(graphene.ObjectType):
                 ).count()
                 > 0
             ):
-                raise GraphQLError("404: Item Not Found")
+                raise GraphQLError("404: Item Not Avaliable in Store")
 
             item.product_views += 1
             item.save()
