@@ -74,9 +74,10 @@ class ItemImage(models.Model):
 class Item(models.Model):
     product_name = models.CharField(max_length=200)
     product_qty = models.IntegerField(default=0)
+    product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.FloatField()
     product_calories = models.IntegerField(default=0)
-    product_desc = models.CharField(max_length=500, blank=True, null=True)
+    product_desc = models.CharField(max_length=200, blank=True, null=True)
     product_share_visibility = models.CharField(
         max_length=20,
         choices=(("private", "private"), ("public", "public")),
@@ -110,6 +111,8 @@ class Item(models.Model):
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
 
+    is_groupable = models.BooleanField(default=False)
+
     class Meta:
         ordering = ["-product_clicks"]
 
@@ -120,7 +123,7 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
-    
+
     # filter the product available in a store
     @classmethod
     def get_items_by_store(cls, store):
