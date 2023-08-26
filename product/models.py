@@ -72,7 +72,7 @@ class ItemImage(models.Model):
 
 
 class Item(models.Model):
-    product_name = models.CharField(max_length=200)
+    product_name = models.CharField(max_length=100)
     product_qty = models.IntegerField(default=0)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.FloatField()
