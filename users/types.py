@@ -99,6 +99,18 @@ class TransactionType(DjangoObjectType):
         model = Transaction
         fields = ["id", "title", "amount", "desc", "created_at", "_type"]
 
+class TransactionNode(TransactionType, graphene.ObjectType):
+    class Meta:
+        model = Transaction
+        filter_fields = [
+            "title",
+            "amount",
+            "desc",
+            "created_at",
+            "_type",
+            "transaction_id",
+        ]
+        interfaces = (graphene.relay.Node,)
 
 class VendorType(DjangoObjectType):
     profile = graphene.Field(ProfileType)

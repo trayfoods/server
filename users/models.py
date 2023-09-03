@@ -1,5 +1,6 @@
 from decimal import Decimal
 import os
+import uuid
 
 from django.db import models
 from django_countries.fields import CountryField
@@ -196,6 +197,8 @@ class Transaction(models.Model):
         ("failed", "failed"),
         ("unknown", "unknown"),
     )
+
+    transaction_id = models.UUIDField(default=uuid.uuid4, blank=True, editable=False, null=True)
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
