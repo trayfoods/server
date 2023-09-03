@@ -2,29 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --theme-color: #ffffff;
+*,
+:before,
+:after {
+  box-sizing: revert !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --theme-color: #1c1c2d;
-  }
-}
-
-/* Header and Top Navigation Bar */
-#header {
-  background-color: var(--theme-color);
-
-  a {
-    color: var(--header-link-color);
-    &:link {
-      &:visited {
-        color: #cce390 !important;
-      }
-    }
-  }
-}
 .related-widget-wrapper {
   display: flex;
   align-items: center;
@@ -48,4 +31,11 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 16px;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }

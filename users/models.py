@@ -198,7 +198,9 @@ class Transaction(models.Model):
         ("unknown", "unknown"),
     )
 
-    transaction_id = models.UUIDField(default=uuid.uuid4, blank=True, editable=False, null=True)
+    transaction_id = models.UUIDField(
+        default=uuid.uuid4, blank=True, editable=False, null=True
+    )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
@@ -212,7 +214,17 @@ class Transaction(models.Model):
         decimal_places=2,
         editable=False,
     )
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ("success", "success"),
+            ("failed", "failed"),
+            ("pending", "pending"),
+        ),
+        default="pending",
+    )
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
+    updated_on = models.DateTimeField(auto_now=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
     # check if the transaction is for a order

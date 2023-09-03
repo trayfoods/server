@@ -1,24 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root {
-  --theme-color: #ffffff;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --theme-color: #1c1c2d;
-  }
-}
-/* Header and Top Navigation Bar */
-#header {
-  background-color: var(--theme-color);
-}
-#header a {
-  color: var(--header-link-color);
-}
-#header a:link:visited {
-  color: #cce390 !important;
+*,
+:before,
+:after {
+  box-sizing: revert !important;
 }
 
 .related-widget-wrapper {
@@ -46,4 +32,11 @@
   align-items: center;
   gap: 0.5rem;
   font-size: 16px;
+}
+
+.submit-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }/*# sourceMappingURL=styles.css.map */
