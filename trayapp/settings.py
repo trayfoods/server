@@ -80,7 +80,7 @@ INSTALLED_APPS = [
     "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
     "corsheaders",
     "rest_framework",
-    "django_extensions",
+    # "django_extensions",
     "anymail",
     "theme",
     "django_countries",
@@ -164,6 +164,8 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.RevokeToken",
     ],
 }
+EMAIL_ASYNC_TASK = "trayapp.task.graphql_auth_async_email"
+
 GRAPHQL_AUTH = {
     "EMAIL_FROM": DEFAULT_FROM_EMAIL,
     "EMAIL_TEMPLATE_VARIABLES": {"frontend_domain": FRONTEND_URL},
