@@ -6,7 +6,6 @@ from django.utils.module_loading import import_string
 
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
-from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.decorators import verification_required
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -21,11 +20,12 @@ from .models import (
     Profile,
     UserAccount,
 )
+from django.conf import settings
 
 User = UserAccount
 
-if app_settings.EMAIL_ASYNC_TASK and isinstance(app_settings.EMAIL_ASYNC_TASK, str):
-    async_email_func = import_string(app_settings.EMAIL_ASYNC_TASK)
+if settings.EMAIL_ASYNC_TASK and isinstance(settings.EMAIL_ASYNC_TASK, str):
+    async_email_func = import_string(settings.EMAIL_ASYNC_TASK)
 else:
     async_email_func = None
 
