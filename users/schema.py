@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from graphql import GraphQLError
 from graphql_auth import mutations
 from django.db.models import Q
+from users.queries.transactions import TransactionQueries
 
 from trayapp.utils import paginate_queryset
 from .mutations import (
@@ -29,7 +30,7 @@ from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 User = get_user_model()
 
 
-class Query(BankListQuery, graphene.ObjectType):
+class Query(BankListQuery, TransactionQueries, graphene.ObjectType):
     me = graphene.Field(UserNodeType)
     vendors = graphene.List(VendorType)
     # clients = graphene.List(ClientType)
