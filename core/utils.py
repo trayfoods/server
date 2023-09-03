@@ -58,6 +58,9 @@ class ProcessPayment:
 
         # get the order from the database
         order = Order.objects.get(order_track_id=order_id)
+        # check if the order is already successful
+        if order.order_payment_status == "success":
+            return HttpResponse("Payment already successful", status=200)
         order.order_payment_method = order_payment_method
 
         # get all the needed data to verify the payment
