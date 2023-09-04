@@ -16,8 +16,8 @@ from users.models import (
 
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "username", "role")
-    search_fields = ("username", "role", "first_name", "last_name", "email")
-    list_filter = ("id",)
+    search_fields = ("username", "first_name", "last_name", "email")
+    list_filter = ("role",)
 
 
 class VendorAdmin(admin.ModelAdmin):

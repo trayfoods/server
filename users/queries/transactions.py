@@ -3,11 +3,14 @@ from graphene_django.filter import DjangoFilterConnectionField
 from trayapp.permissions import IsAuthenticated, permission_checker
 from users.models import Transaction
 from users.types import TransactionNode, TransactionType
+from users.filters import TransactionFilter
 
 
 class TransactionQueries(graphene.ObjectType):
-    transaction = graphene.Field(TransactionType, transaction_id=graphene.Int())
-    transactions = DjangoFilterConnectionField(TransactionNode)
+    transaction = graphene.relay.Node.Field(TransactionNode)
+    transactions = DjangoFilterConnectionField(
+        TransactionNode
+    )
 
     @permission_checker([IsAuthenticated])
     def resolve_transactions(self, info, **kwargs):

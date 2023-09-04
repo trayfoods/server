@@ -1,7 +1,11 @@
-from profile import Profile
+from django.utils import timezone
 import graphene
 from graphene_django.types import DjangoObjectType
 from graphql_auth.schema import UserNode
+
+from trayapp.utils import convert_time_to_ago
+
+from users.filters import TransactionFilter
 from .models import (
     UserAccount,
     School,
@@ -95,22 +99,33 @@ class ClientType(DjangoObjectType):
 
 
 class TransactionType(DjangoObjectType):
+    display_date = (
+        graphene.String()
+    )  # display date in format 1 hour ago, 2 days ago etc
+
     class Meta:
         model = Transaction
-        fields = ["id", "title", "amount", "desc", "created_at", "_type"]
+        fields = [
+            "status",
+            "title",
+            "amount",
+            "desc",
+            "_type",
+            "created_at",
+            "transaction_id",
+            "display_date",
+        ]
+
+    def resolve_display_date(self, info):
+        return convert_time_to_ago(self.created_at)
+
 
 class TransactionNode(TransactionType, graphene.ObjectType):
     class Meta:
         model = Transaction
-        filter_fields = [
-            "title",
-            "amount",
-            "desc",
-            "created_at",
-            "_type",
-            "transaction_id",
-        ]
         interfaces = (graphene.relay.Node,)
+        filterset_class = TransactionFilter
+
 
 class VendorType(DjangoObjectType):
     profile = graphene.Field(ProfileType)

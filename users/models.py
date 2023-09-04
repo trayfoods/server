@@ -227,10 +227,19 @@ class Transaction(models.Model):
     updated_on = models.DateTimeField(auto_now=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
+    class Meta:
+        ordering = ["-created_at", "-updated_on"]
+
     # check if the transaction is for a order
     @property
     def is_order(self):
         return hasattr(self, "order")
+    
+    def get_by_order(self, order):
+        return Transaction.objects.filter(order=order).first()
+    
+    def get_by_wallet(self, wallet):
+        return Transaction.objects.filter(wallet=wallet).first()
 
 
 class Wallet(models.Model):
@@ -321,6 +330,7 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title="Wallet Credited" if not title else title,
+                status="success",
                 desc=f"{amount} {self.currency} was added to wallet"
                 if not desc
                 else desc,
@@ -362,6 +372,7 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title="Wallet Debited" if not title else title,
+                status="success",
                 desc=f"Deducted {self.currency} {amount} from wallet"
                 if not desc
                 else desc,
@@ -394,6 +405,7 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title="Wallet Credited" if not title else title,
+                status="success",
                 desc=f"{amount} {self.currency} was refunded to your wallet"
                 if not desc
                 else desc,
