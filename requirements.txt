@@ -20,7 +20,7 @@ constantly
 cryptography
 daphne
 dj-database-url
-Django
+Django==4.2
 django-anymail
 django-cleanup
 django-cors-headers
