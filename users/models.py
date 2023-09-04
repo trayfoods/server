@@ -194,8 +194,6 @@ class Transaction(models.Model):
         ("refund", "refund"),
         ("credit", "credit"),
         ("debit", "debit"),
-        ("failed", "failed"),
-        ("unknown", "unknown"),
     )
 
     transaction_id = models.UUIDField(

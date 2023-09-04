@@ -2,8 +2,7 @@ import graphene
 from graphene_django.filter import DjangoFilterConnectionField
 from trayapp.permissions import IsAuthenticated, permission_checker
 from users.models import Transaction
-from users.types import TransactionNode, TransactionType
-from users.filters import TransactionFilter
+from users.types import TransactionNode
 
 
 class TransactionQueries(graphene.ObjectType):
