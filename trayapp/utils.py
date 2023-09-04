@@ -135,6 +135,58 @@ def get_dataframe_from_qs(queryset):
     return df
 
 
+import datetime
+
+
+def convert_time_to_ago(time: datetime.datetime):
+    """
+    Convert time to ago
+    """
+    from django.utils import timezone
+
+    # get the time difference between now and the time the transaction was created
+    time_difference = timezone.now() - time
+    # get the time difference in seconds
+    time_difference_in_seconds = time_difference.total_seconds()
+    # get the time difference in minutes
+    time_difference_in_minutes = time_difference_in_seconds / 60
+    # get the time difference in hours
+    time_difference_in_hours = time_difference_in_minutes / 60
+
+    # get the time difference in days
+    time_difference_in_days = time_difference_in_hours / 24
+
+    # get the time difference in weeks
+    time_difference_in_weeks = time_difference_in_days / 7
+
+    # get the time difference in months
+    time_difference_in_months = time_difference_in_weeks / 4
+
+    # get the time difference in years
+    time_difference_in_years = time_difference_in_months / 12
+
+    # return the time difference in the appropriate format
+    if time_difference_in_seconds < 60:
+        return "just now"
+    elif time_difference_in_minutes < 60:
+        return str(int(time_difference_in_minutes)) + " minutes ago"
+    elif time_difference_in_hours < 24:
+        return str(int(time_difference_in_hours)) + " hours ago"
+    elif time_difference_in_days < 7:
+        # check if it was yesterday
+        if time_difference_in_days < 2:
+            return "yesterday"
+        else:
+            return str(int(time_difference_in_days)) + " days ago"
+
+    elif time_difference_in_weeks < 4:
+        return str(int(time_difference_in_weeks)) + " weeks ago"
+    elif time_difference_in_months < 12:
+        return str(int(time_difference_in_months)) + " months ago"
+    else:
+        return str(int(time_difference_in_years)) + " years ago"
+
+
 from django.core.paginator import Paginator
 
 
