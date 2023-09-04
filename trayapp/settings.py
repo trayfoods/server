@@ -4,8 +4,6 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 
-from django.core.management.utils import get_random_secret_key
-
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -19,6 +17,8 @@ DEBUG = "True" in os.environ.get("DEBUG", "True")
 
 USE_S3 = "True" in os.environ.get("USE_S3", "False")
 USE_DB = "True" in os.environ.get("USE_DB", "False")
+
+CSRF_TRUSTED_ORIGINS = ['https://*.trayfoods.com','https://*.127.0.0.1']
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
