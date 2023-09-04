@@ -188,9 +188,10 @@ class StoreType(DjangoObjectType):
         return self.store_categories
 
     def resolve_store_phone_numbers(self, info):
-        if self.store_phone_numbers is None:
+        try:
+            return self.store_phone_numbers
+        except:
             return []
-        return self.store_phone_numbers
 
     def resolve_store_products(self, info):
         return self.store_products.all()
