@@ -34,15 +34,8 @@ if "localhost" in FRONTEND_URL:
 else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
 
-if DEBUG == True:
-    ALLOWED_HOSTS = ["*"]
-else:
-    ALLOWED_HOSTS = [
-        "127.0.0.1",
-        "192.168.137.1",
-        "localhost",
-        "%s" % os.environ.get("SITE_ORIGIN_URL", "api.trayfoods.com"),
-    ]
+ALLOWED_HOSTS = ["*"]
+
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
 SESSION_COOKIE_SECURE = DEBUG == False
