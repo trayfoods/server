@@ -22,7 +22,7 @@ ROLE_CHOICES = (
 )
 
 
-class UserFilter(admin.SimpleListFilter):
+class RoleFilter(admin.SimpleListFilter):
     title = "Role"
     parameter_name = "role"
 
@@ -45,7 +45,7 @@ class UserFilter(admin.SimpleListFilter):
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "username", "role")
     search_fields = ("username", "first_name", "last_name", "email")
-    list_filter = (UserFilter,)
+    list_filter = (RoleFilter,)
 
 
 class VendorAdmin(admin.ModelAdmin):
