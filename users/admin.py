@@ -1,6 +1,6 @@
 from django.contrib import admin
 from users.models import (
-    Client,
+    Student,
     Vendor,
     Store,
     Profile,
@@ -13,11 +13,39 @@ from users.models import (
     Transaction,
 )
 
+ROLE_CHOICES = (
+    ("VENDOR", "VENDOR"),
+    ("CLIENT", "CLIENT"),
+    ("DELIVERY_PERSON", "DELIVERY_PERSON"),
+    ("STUDENT", "STUDENT"),
+    ("SCHOOL", "SCHOOL"),
+)
+
+
+class UserFilter(admin.SimpleListFilter):
+    title = "Role"
+    parameter_name = "role"
+
+    def lookups(self, request, model_admin):
+        return ROLE_CHOICES
+
+    def queryset(self, request, queryset):
+        print(self.value())
+        if self.value():
+            users = UserAccount.objects.all()
+            list_of_users = []
+            for user in users:
+                if user.role == self.value():
+                    list_of_users.append(user.id)
+            return queryset.filter(id__in=list_of_users)
+        else:
+            return queryset
+
 
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "username", "role")
     search_fields = ("username", "first_name", "last_name", "email")
-    list_filter = ("role",)
+    list_filter = (UserFilter,)
 
 
 class VendorAdmin(admin.ModelAdmin):
@@ -63,7 +91,7 @@ class TransactionAdmin(admin.ModelAdmin):
 admin.site.register(Gender)
 admin.site.register(Profile)
 admin.site.register(Store)
-admin.site.register(Client)
+admin.site.register(Student)
 admin.site.register(Hostel)
 admin.site.register(DeliveryPerson)
 

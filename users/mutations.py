@@ -14,7 +14,7 @@ from .models import (
     Vendor,
     Store,
     School,
-    Client,
+    Student,
     Hostel,
     Gender,
     Profile,
@@ -38,6 +38,27 @@ class Output:
 
     success = graphene.Boolean(default_value=False)
     error = graphene.String(default_value=None)
+
+
+import graphql_jwt
+from graphql_auth.mixins import ObtainJSONWebTokenMixin
+from graphql_auth.bases import MutationMixin
+from graphql_auth.settings import graphql_auth_settings as app_settings
+
+
+class LoginMutation(
+    MutationMixin, ObtainJSONWebTokenMixin, graphql_jwt.JSONWebTokenMutation
+):
+    __doc__ = ObtainJSONWebTokenMixin.__doc__
+    user = graphene.Field(UserNodeType)
+    unarchiving = graphene.Boolean(default_value=False)
+
+    @classmethod
+    def Field(cls, *args, **kwargs):
+        cls._meta.arguments.update({"password": graphene.String(required=True)})
+        for field in app_settings.LOGIN_ALLOWED_FIELDS:
+            cls._meta.arguments.update({field: graphene.String()})
+        return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
 
 
 class CreateStoreMutation(Output, graphene.Mutation):
@@ -99,10 +120,10 @@ class CreateStoreMutation(Output, graphene.Mutation):
                     vendor=vendor,
                 )  # create the store
                 store.save()
-                user.role = "vendor"  # do not touch
-                user.save()
 
                 success = True
+
+                user = User.objects.get(username=user.username)
 
                 # return the vendor and user
                 return CreateStoreMutation(success=success, user=user)
@@ -278,7 +299,7 @@ class CreateClientMutation(Output, graphene.Mutation):
         if user.is_authenticated:
             vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
             if vendor is None:
-                client = Client.objects.filter(user=profile).first()  # get the client
+                client = Student.objects.filter(user=profile).first()  # get the client
                 if client is None:  # if client does not exist
                     hostel = Hostel.objects.filter(
                         short_name=hostel_shortname
@@ -288,7 +309,7 @@ class CreateClientMutation(Output, graphene.Mutation):
                     if not gender is None:
                         gender.rank += 1  # increment the rank
                         gender.save()
-                        new_client = Client.objects.create(
+                        new_client = Student.objects.create(
                             user=profile, hostel=hostel, room=room
                         )  # create the client
                         new_client_profile = Profile.objects.filter(
@@ -299,9 +320,6 @@ class CreateClientMutation(Output, graphene.Mutation):
                             new_client_profile.save()  # save the profile
                         new_client.save()
                         user = User.objects.filter(username=user.username).first()
-                        if not user is None:
-                            user.role = "student"  # do not touch
-                            user.save()
                     else:
                         # raise error if gender does not exist
                         raise GraphQLError("Gender do not exists")

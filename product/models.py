@@ -251,6 +251,11 @@ class Order(models.Model):
     def get_orders_by_store(cls, store):
         return cls.objects.filter(linked_stores=store)
 
+    # check if a delivery person is linked in any order, if yes, return the orders
+    @classmethod
+    def get_orders_by_delivery_person(cls, delivery_person):
+        return cls.objects.filter(delivery_person=delivery_person)
+
     # re-generate a order_track_id for the order and update the order_track_id of the order
     @property
     def regenerate_order_track_id(self):

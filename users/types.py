@@ -1,4 +1,3 @@
-from django.utils import timezone
 import graphene
 from graphene_django.types import DjangoObjectType
 from graphql_auth.schema import UserNode
@@ -9,7 +8,7 @@ from users.filters import TransactionFilter
 from .models import (
     UserAccount,
     School,
-    Client,
+    Student,
     Vendor,
     Store,
     Profile,
@@ -31,6 +30,7 @@ class SchoolType(DjangoObjectType):
 
 
 class ProfileType(DjangoObjectType):
+    is_student = graphene.Boolean()
     class Meta:
         model = Profile
         fields = "__all__"
@@ -41,10 +41,16 @@ class ProfileType(DjangoObjectType):
         else:
             image = None
         return image
+    
+    def resolve_is_student(self, info, *args, **kwargs):
+        # check if the user role is student
+        return self.user.role == "STUDENT"
 
 
 class UserNodeType(UserNode, graphene.ObjectType):
     profile = graphene.Field(ProfileType)
+    orders = graphene.List("product.schema.OrderType")
+    role = graphene.String()
 
     class Meta:
         model = UserAccount
@@ -57,24 +63,14 @@ class UserNodeType(UserNode, graphene.ObjectType):
             "is_active",
             "role",
             "profile",
+            "orders",
         ]
 
     def resolve_role(self, info):
-        role = self.role
-        # confirm if role is the correct role
-        user = UserAccount.objects.filter(id=self.id).first()
-        profile = Profile.objects.filter(user=user).first()
-        vendor = Vendor.objects.filter(user=profile).first()
-        client = Client.objects.filter(user=profile).first()
-        if not vendor is None:
-            role = "vendor"
+        return self.role
 
-        if not client is None:
-            role = "student"
-
-        if client is None and vendor is None:
-            role = "client"
-        return role.lower()
+    def resolve_orders(self, info):
+        return self.orders.all()
 
     def resolve_profile(self, info):
         return self.profile
@@ -92,9 +88,9 @@ class HostelType(DjangoObjectType):
         fields = "__all__"
 
 
-class ClientType(DjangoObjectType):
+class StudentType(DjangoObjectType):
     class Meta:
-        model = Client
+        model = Student
         fields = "__all__"
 
 

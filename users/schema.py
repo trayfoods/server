@@ -13,10 +13,11 @@ from .mutations import (
     UpdateAccountMutation,
     CreateClientMutation,
     UserDeviceMutation,
+    LoginMutation,
 )
-from .models import Client, Vendor, Store, Hostel, School
+from .models import Student, Vendor, Store, Hostel, School
 from .types import (
-    ClientType,
+    StudentType,
     VendorType,
     StoreType,
     HostelType,
@@ -33,7 +34,7 @@ User = get_user_model()
 class Query(BankListQuery, TransactionQueries, graphene.ObjectType):
     me = graphene.Field(UserNodeType)
     vendors = graphene.List(VendorType)
-    # clients = graphene.List(ClientType)
+    # clients = graphene.List(StudentType)
     hostels = graphene.List(HostelType)
 
     check_email_verification = graphene.Field(
@@ -42,7 +43,7 @@ class Query(BankListQuery, TransactionQueries, graphene.ObjectType):
 
     vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
 
-    client = graphene.Field(ClientType, client_id=graphene.Int())
+    client = graphene.Field(StudentType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
     search_stores = graphene.Field(
         StoreType,
@@ -108,7 +109,7 @@ class Query(BankListQuery, TransactionQueries, graphene.ObjectType):
         return Vendor.objects.get(pk=vendor_id)
 
     def resolve_client(self, info, client_id):
-        return Client.objects.get(pk=client_id)
+        return Student.objects.get(pk=client_id)
 
     def resolve_get_store(self, info, store_nickname):
         store = Store.objects.filter(store_nickname=store_nickname).first()
@@ -181,7 +182,7 @@ class AuthMutation(graphene.ObjectType):
     password_change = mutations.PasswordChange.Field()
 
     # django-graphql-jwt inheritances
-    token_auth = mutations.ObtainJSONWebToken.Field()
+    token_auth = LoginMutation.Field()
     verify_token = mutations.VerifyToken.Field()
     refresh_token = mutations.RefreshToken.Field()
     revoke_token = mutations.RevokeToken.Field()
