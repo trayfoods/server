@@ -72,20 +72,53 @@ def school_logo_directory_path(instance, filename):
 class UserAccount(AbstractUser, models.Model):
     email = models.EmailField(_("email address"), blank=True, unique=True)
     password = models.CharField(_("password"), max_length=128, editable=False)
-    role = models.CharField(
-        _("role"),
-        max_length=20,
-        default="client",
-        choices=(
-            ("client", "client"),
-            ("vendor", "vendor"),
-            ("student", "student"),
-            ("school", "school"),
-            ("delivery", "delivery"),
-        ),
-    )
+    # role = models.CharField(
+    #     _("role"),
+    #     max_length=20,
+    #     default="client",
+    #     choices=(
+    #         ("client", "client"),
+    #         ("vendor", "vendor"),
+    #         ("student", "student"),
+    #         ("school", "school"),
+    #         ("delivery", "delivery"),
+    #     ),
+    #     editable=False,
+    # )
 
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
+
+    @property
+    def role(self):  # set user role
+        role = "client"
+        user = UserAccount.objects.filter(id=self.id).first()
+        profile = Profile.objects.filter(user=user).first()
+        vendor = Vendor.objects.filter(user=profile).first()
+        student = Student.objects.filter(user=profile).first()
+        school = School.objects.filter(user=user).first()
+        delivery_person = DeliveryPerson.objects.filter(user=profile).first()
+
+        if (
+            student is None
+            and vendor is None
+            and school is None
+            and delivery_person is None
+        ):
+            role = "client"
+
+        if not vendor is None:
+            role = "vendor"
+
+        if not student is None and vendor is None:
+            role = "student"
+
+        if not school is None and vendor is None:
+            role = "school"
+
+        if not delivery_person is None and vendor is None and school is None:
+            role = "delivery_person"
+
+        return role.upper()  # DO NOT TOUCH THIS
 
     # get user's orders
     @property
@@ -160,14 +193,36 @@ class Profile(models.Model):
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
     )
-    school = models.ForeignKey(
-        School, on_delete=models.SET_NULL, null=True, blank=True, editable=False
-    )
     country = CountryField(null=True, blank=True, default="NG")
+    city = models.CharField(max_length=50, null=True, blank=True)
+    state = models.CharField(max_length=50, null=True, blank=True)
     phone_number = models.CharField(max_length=16)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    is_student = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
+
+    def has_required_fields(self):
+        """
+        Check if user has the required fields, which are:
+        - School if the user role is equals to 'student'
+        - gender
+        - country
+        - phone_number
+        """
+
+        if self.user.role == "student":
+            if self.school is None:
+                return False
+
+        if self.gender is None:
+            return False
+
+        if self.country is None:
+            return False
+
+        if self.phone_number is None:
+            return False
+
+        return True
 
     @property
     def is_vendor(self):
@@ -232,10 +287,10 @@ class Transaction(models.Model):
     @property
     def is_order(self):
         return hasattr(self, "order")
-    
+
     def get_by_order(self, order):
         return Transaction.objects.filter(order=order).first()
-    
+
     def get_by_wallet(self, wallet):
         return Transaction.objects.filter(wallet=wallet).first()
 
@@ -506,8 +561,12 @@ class Hostel(models.Model):
         return self.name
 
 
-class Client(models.Model):
+class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
+    school = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True, blank=True, editable=False
+    )
+    campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
     room = models.JSONField(default=dict, null=True, blank=True)
 
@@ -521,7 +580,7 @@ class DeliveryPerson(models.Model):
     is_verified = models.BooleanField(default=False)
     is_available = models.BooleanField(default=False)
     is_on_delivery = models.BooleanField(default=False)
-    orders = models.ManyToManyField("product.Order", blank=True)
+    # orders = models.ManyToManyField("product.Order", blank=True)
 
     def __str__(self) -> str:
         return self.user.user.username
@@ -533,6 +592,10 @@ class DeliveryPerson(models.Model):
     # credit delivery person wallet
     def credit_wallet(self, **kwargs):
         self.wallet.add_balance(**kwargs)
+
+    @property
+    def orders(self):
+        return Order.get_orders_by_delivery_person(delivery_person=self)
 
 
 ACTIVITY_TYPES = (
