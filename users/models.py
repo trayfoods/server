@@ -546,6 +546,7 @@ class Vendor(models.Model):
     @property
     def store(self):
         store = Store.objects.filter(vendor=self).first()
+        print(store)
         return store
 
 
