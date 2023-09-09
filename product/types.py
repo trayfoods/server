@@ -127,14 +127,23 @@ class ItemType(DjangoObjectType):
     def resolve_editable(self, info):
         user = info.context.user
         editable = False
-        if user.is_authenticated:
-            vendor = Vendor.objects.filter(user=user.profile).first()
-            if not vendor is None:
-                if vendor.store == self.product_creator.store:
-                    # check if other stored have added this item
+        if (
+            user.is_authenticated
+            and Vendor.objects.filter(user=user.profile).exists()
+            and self.product_creator is not None
+        ):
+            vendor = Vendor.objects.get(user=user.profile)
+            # check if other stored have added this item
+            if vendor.store == self.product_creator.store:
+                # get all the stores that have this item and exclude the current store
+                stores = self.product_avaliable_in.exclude(
+                    store_nickname=self.product_creator.store
+                )
+                if stores.count() > 0:
+                    editable = False
+                else:
                     editable = True
-                    if self.product_avaliable_in.all().count() > 1:
-                        editable = False
+
         return editable
 
     def resolve_average_rating(self, info):
@@ -144,7 +153,11 @@ class ItemType(DjangoObjectType):
         user = info.context.user
         product_share_visibility = self.product_share_visibility
         # check if the user is authenticated
-        if user.is_authenticated and Vendor.objects.filter(user=user.profile).exists():
+        if (
+            user.is_authenticated
+            and Vendor.objects.filter(user=user.profile).exists()
+            and self.product_creator is not None
+        ):
             # check if the user is a vendor
             vendor = Vendor.objects.get(user=user.profile)
             # check if the vendor is the creator of the product

@@ -546,6 +546,9 @@ class Vendor(models.Model):
     @property
     def store(self):
         return Store.objects.get(vendor=self)
+    
+    def is_store_owner(self, store):
+        return True if store.vendor == self else False
 
 
 class Hostel(models.Model):
