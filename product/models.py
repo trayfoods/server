@@ -202,8 +202,9 @@ class Order(models.Model):
         choices=(
             ("not-started", "not-started"),
             ("processing", "processing"),
+            ("shipped", "shipped"),
             ("delivered", "delivered"),
-            ("cancelled", "cancelled"),
+            ("canceled", "canceled"),
         ),
         default="not-started",
     )

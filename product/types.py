@@ -302,6 +302,7 @@ class OrderType(DjangoObjectType):
             "shipping",
             "stores_infos",
             "linked_items",
+            "order_status",
             "order_payment_currency",
             "order_payment_status",
             "created_on",
