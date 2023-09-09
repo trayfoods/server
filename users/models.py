@@ -545,9 +545,7 @@ class Vendor(models.Model):
     # get vendor's store
     @property
     def store(self):
-        store = Store.objects.filter(vendor=self).first()
-        print(store)
-        return store
+        return Store.objects.get(vendor=self)
 
 
 class Hostel(models.Model):
