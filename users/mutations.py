@@ -7,6 +7,7 @@ from django.utils.module_loading import import_string
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.decorators import verification_required
+from users.mixins import RegisterMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import UserNodeType  # , BankNode
@@ -42,8 +43,19 @@ class Output:
 
 import graphql_jwt
 from graphql_auth.mixins import ObtainJSONWebTokenMixin
-from graphql_auth.bases import MutationMixin
+from graphql_auth.utils import normalize_fields
+from graphql_auth.bases import MutationMixin, DynamicArgsMixin
 from graphql_auth.settings import graphql_auth_settings as app_settings
+
+
+class RegisterMutation(
+    MutationMixin, DynamicArgsMixin, RegisterMixin, graphene.Mutation
+):
+    __doc__ = RegisterMixin.__doc__
+    _required_args = normalize_fields(
+        app_settings.REGISTER_MUTATION_FIELDS, ["password1", "password2"]
+    )
+    _args = app_settings.REGISTER_MUTATION_FIELDS_OPTIONAL
 
 
 class LoginMutation(

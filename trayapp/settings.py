@@ -18,7 +18,7 @@ DEBUG = "True" in os.environ.get("DEBUG", "True")
 USE_S3 = "True" in os.environ.get("USE_S3", "False")
 USE_DB = "True" in os.environ.get("USE_DB", "False")
 
-CSRF_TRUSTED_ORIGINS = ['https://*.trayfoods.com','https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ["https://*.trayfoods.com", "https://*.127.0.0.1"]
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
@@ -67,13 +67,11 @@ INSTALLED_APPS = [
     "storages",
     "graphene_django",
     "graphql_auth",
+    "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
     "django_filters",
     "django_cleanup.apps.CleanupConfig",
     "django_unused_media",
-    "graphql_jwt.refresh_token.apps.RefreshTokenConfig",
     "corsheaders",
-    "rest_framework",
-    # "django_extensions",
     "anymail",
     "theme",
     "django_countries",
