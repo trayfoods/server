@@ -1,5 +1,10 @@
 import graphene
-from graphql_auth.exceptions import EmailAlreadyInUse
+from graphql_auth.exceptions import (
+    UserNotVerified,
+    WrongUsage,
+    EmailAlreadyInUse,
+    InvalidCredentials,
+)
 from graphql_auth.constants import Messages
 from django.db import transaction
 from smtplib import SMTPException
@@ -9,8 +14,11 @@ from users.models import UserAccount
 from graphql_auth.settings import graphql_auth_settings as app_settings
 from graphql_auth.mixins import Output
 from graphql_auth.forms import RegisterForm
+from graphql_auth.shortcuts import get_user_to_login
+from graphql_jwt.exceptions import JSONWebTokenError
+from django.core.exceptions import ObjectDoesNotExist
 
-from .types import UserNodeType  # , BankNode
+from .types import UserNodeType
 
 
 class RegisterMixin(Output):
@@ -83,3 +91,73 @@ class RegisterMixin(Output):
             )
         except SMTPException:
             return cls(success=False, errors=Messages.EMAIL_FAIL)
+
+
+class ObtainJSONWebTokenMixin(Output):
+    """
+    Obtain JSON web token for given user.
+
+    Allow to perform login with different fields,
+    and secondary email if set. The fields are
+    defined on settings.
+
+    Not verified users can login by default. This
+    can be changes on settings.
+
+    If user is archived, make it unarchive and
+    return `unarchiving=True` on output.
+    """
+
+    token = graphene.String(default_value="")
+    refresh_token = graphene.String(default_value="")
+
+    @classmethod
+    def resolve(cls, root, info, **kwargs):
+        unarchiving = kwargs.get("unarchiving", False)
+        return cls(user=info.context.user, unarchiving=unarchiving)
+
+    @classmethod
+    def resolve_mutation(cls, root, info, **kwargs):
+        if len(kwargs.items()) != 2:
+            raise WrongUsage(
+                "Must login with password and one of the following fields %s."
+                % (app_settings.LOGIN_ALLOWED_FIELDS)
+            )
+
+        try:
+            next_kwargs = None
+            USERNAME_FIELD = UserAccount.USERNAME_FIELD
+            unarchiving = False
+
+            # extract USERNAME_FIELD to use in query
+            if USERNAME_FIELD in kwargs:
+                query_kwargs = {USERNAME_FIELD: kwargs[USERNAME_FIELD]}
+                next_kwargs = kwargs
+                password = kwargs.get("password")
+            else:  # use what is left to query
+                password = kwargs.pop("password")
+                query_field, query_value = kwargs.popitem()
+                query_kwargs = {query_field: query_value}
+
+            user = get_user_to_login(**query_kwargs)
+
+            if not next_kwargs:
+                next_kwargs = {
+                    "password": password,
+                    USERNAME_FIELD: getattr(user, USERNAME_FIELD),
+                }
+            if user.status.archived is True:  # unarchive on login
+                UserStatus.unarchive(user)
+                unarchiving = True
+
+            if user.status.verified or app_settings.ALLOW_LOGIN_NOT_VERIFIED:
+                return cls.parent_resolve(
+                    root, info, unarchiving=unarchiving, **next_kwargs
+                )
+            if user.check_password(password):
+                raise UserNotVerified
+            raise InvalidCredentials
+        except (JSONWebTokenError, ObjectDoesNotExist, InvalidCredentials):
+            return cls(success=False, errors=Messages.INVALID_CREDENTIALS)
+        except UserNotVerified:
+            return cls(success=False, errors=Messages.NOT_VERIFIED)

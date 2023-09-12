@@ -7,10 +7,10 @@ from django.utils.module_loading import import_string
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.decorators import verification_required
-from users.mixins import RegisterMixin
+from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import UserNodeType  # , BankNode
+from .types import UserNodeType
 from .models import (
     Vendor,
     Store,
@@ -42,7 +42,6 @@ class Output:
 
 
 import graphql_jwt
-from graphql_auth.mixins import ObtainJSONWebTokenMixin
 from graphql_auth.utils import normalize_fields
 from graphql_auth.bases import MutationMixin, DynamicArgsMixin
 from graphql_auth.settings import graphql_auth_settings as app_settings
@@ -71,6 +70,20 @@ class LoginMutation(
         for field in app_settings.LOGIN_ALLOWED_FIELDS:
             cls._meta.arguments.update({field: graphene.String()})
         return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
+
+    # @classmethod
+    # def mutate(cls, root, info, password, **kwargs):
+    #     try:
+    #         return super().mutate(root, info, password, **kwargs)
+    #     except Exception:
+    #         return cls(
+    #             success=False,
+    #             errors={
+    #                 "nonFieldErrors": ["Unable to log in with provided credentials."]
+    #             },
+    #             token="",
+    #             refresh_token="",
+    #         )
 
 
 class CreateStoreMutation(Output, graphene.Mutation):
