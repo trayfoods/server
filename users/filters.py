@@ -2,7 +2,7 @@ from django.utils import timezone
 from django_filters import FilterSet, NumberFilter, CharFilter
 from users.models import Transaction
 
-DATE_FILTER_TYPES = ["today", "7days", "30days"]
+DATE_FILTER_TYPES = ["today", "7days", "30days", "Alldays"]
 
 
 class DateTypeFilter(CharFilter):
