@@ -1,6 +1,5 @@
 import requests
 import json
-import os
 
 import graphene
 from graphql import GraphQLError
@@ -10,6 +9,7 @@ from django.utils.module_loading import import_string
 from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
 from graphql_auth.decorators import verification_required
+from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -23,14 +23,13 @@ from .models import (
     Gender,
     Profile,
     UserAccount,
-    Transaction,
     Wallet,
 )
 from django.conf import settings
 import uuid
 
 User = UserAccount
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
+PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 if settings.EMAIL_ASYNC_TASK and isinstance(settings.EMAIL_ASYNC_TASK, str):
     async_email_func = import_string(settings.EMAIL_ASYNC_TASK)
@@ -431,6 +430,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         recipient_code = graphene.String(required=True)
         pass_code = graphene.Int(required=True)
         reason = graphene.String(required=False)
+        account_transferred_to = graphene.String(required=False)
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -441,18 +441,26 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         success = False
         wallet = Wallet.objects.filter(user=profile).first()
 
+        # check if wallet exists
+        if wallet is None:
+            raise GraphQLError("Wallet does not exist, Please contact support")
+
+        # check if passcode is empty
+        if pass_code is None:
+            raise GraphQLError("Pin cannot be empty")
+
         is_passcode = False
         try:
             is_passcode = wallet.check_passcode(pass_code)
         except Exception as e:
             raise GraphQLError(e)
 
-        print("is_passcode", is_passcode)
-        if not is_passcode:
-            raise GraphQLError("Invalid Passcode")
+        if is_passcode == False:
+            raise GraphQLError("Wrong Pin")
 
-        # check if the wallet exists
-        if wallet.balance < amount:
+        # check if the amount is greater than the balance
+        amount_with_charges = calculate_tranfer_fee(amount) + float(amount)
+        if amount_with_charges > wallet.balance:
             raise GraphQLError("Insufficient Balance")
 
         url = "https://api.paystack.co/transfer"
@@ -461,27 +469,29 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             "Content-Type": "application/json",
         }
         reference = str(uuid.uuid4())
-        print("reference", reference)
-        data = {
+        lower_amount = float(amount) * 100
+        post_data = {
             "source": "balance",
-            "amount": amount,
+            "amount": lower_amount,
             "reference": reference,
             "recipient": recipient_code,
             "reason": reason,
         }
 
-        response = requests.post(url, data=json.dumps(data), headers=headers)
+        print("post_data", post_data)
+
+        response = requests.post(url, data=json.dumps(post_data), headers=headers)
+        print(response.json())
         if response.status_code == 200:
             response = response.json()
-            print(response)
             if not response["data"] or not response["data"]["status"]:
                 success = False
                 error = response["message"]
             if response["status"] == True:
                 success = True
-                # deduct the amount from the wallet
+                # deduct the amount_with_charges from the wallet
                 kwargs = {
-                    "amount": amount,
+                    "amount": amount_with_charges,
                     "transaction_id": reference,
                     "desc": reason,
                     "status": response["data"]["status"],

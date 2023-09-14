@@ -245,11 +245,11 @@ class Transaction(models.Model):
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
     )
+    currency = models.CharField(max_length=4, default="NGN", editable=False)
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=200, null=True, blank=True)
     amount = models.DecimalField(
         max_digits=7,
-        null=True,
         default=0,
         decimal_places=2,
         editable=False,
