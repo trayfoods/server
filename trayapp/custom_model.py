@@ -179,9 +179,7 @@ class BankListQuery(graphene.ObjectType):
             raise GraphQLError("Login Required")
 
     # This is the function that will be called when we query the validate_bank_account
-    def resolve_validate_bank_account(
-        self, info, account_number, bank_code
-    ):
+    def resolve_validate_bank_account(self, info, account_number, bank_code):
         if info.context.user.is_authenticated:  # Check if user is authenticated
             # Get the inputs and store it in a dict
             data = {"account_number": account_number, "bank_code": bank_code}
@@ -190,7 +188,6 @@ class BankListQuery(graphene.ObjectType):
                     data
                 )  # Get the bank account details
                 if accountDetails:  # Check if the account details is not empty
-                    print(accountDetails)
                     if accountDetails["status"] == True:  # Check if the status is true
                         data = accountDetails["data"]
                         account_details = {

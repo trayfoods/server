@@ -9,7 +9,8 @@ from trayapp.utils import paginate_queryset
 from .mutations import (
     CreateStoreMutation,
     UpdateStoreMutation,
-    UpdateVendorBankAccount,
+    CreateTransferRecipient,
+    WithdrawFromWalletMutation,
     UpdateAccountMutation,
     CreateClientMutation,
     UserDeviceMutation,
@@ -194,7 +195,8 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_store = CreateStoreMutation.Field()
     update_store = UpdateStoreMutation.Field()
     create_client = CreateClientMutation.Field()
-    update_vendor_bank_details = UpdateVendorBankAccount.Field()
+    create_transfer_recipient = CreateTransferRecipient.Field()
+    withdraw_from_wallet = WithdrawFromWalletMutation.Field()
     user_device = UserDeviceMutation.Field()
 
 
