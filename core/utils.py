@@ -89,9 +89,6 @@ class ProcessPayment:
             stores__ids__with_credits.append({"id": store_id, "credit": total_price})
             stores_total_price += total_price
 
-        print("stores_total_price: ", stores_total_price)
-        print("order_price: ", order_price)
-        print("overall_price: ", overall_price)
         # if the stores_total_price is greater than the overall_price or
         # if the order_price is not equal to the overall_price
         # then the order is not valid
@@ -148,7 +145,7 @@ class ProcessPayment:
         #     return HttpResponse("Order does not exist", status=404)
 
     def transfer_success(self):
-        pass
+        print("transfer_success", self.event_data)
 
     def transfer_failed(self):
         pass
