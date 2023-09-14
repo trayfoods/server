@@ -1,7 +1,10 @@
+import requests
+import json
+import os
+
 import graphene
 from graphql import GraphQLError
 from graphene_file_upload.scalars import Upload
-
 from django.utils.module_loading import import_string
 
 from graphql_auth.mixins import UpdateAccountMixin
@@ -20,10 +23,14 @@ from .models import (
     Gender,
     Profile,
     UserAccount,
+    Transaction,
+    Wallet,
 )
 from django.conf import settings
+import uuid
 
 User = UserAccount
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 
 if settings.EMAIL_ASYNC_TASK and isinstance(settings.EMAIL_ASYNC_TASK, str):
     async_email_func = import_string(settings.EMAIL_ASYNC_TASK)
@@ -70,20 +77,6 @@ class LoginMutation(
         for field in app_settings.LOGIN_ALLOWED_FIELDS:
             cls._meta.arguments.update({field: graphene.String()})
         return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
-
-    # @classmethod
-    # def mutate(cls, root, info, password, **kwargs):
-    #     try:
-    #         return super().mutate(root, info, password, **kwargs)
-    #     except Exception:
-    #         return cls(
-    #             success=False,
-    #             errors={
-    #                 "nonFieldErrors": ["Unable to log in with provided credentials."]
-    #             },
-    #             token="",
-    #             refresh_token="",
-    #         )
 
 
 class CreateStoreMutation(Output, graphene.Mutation):
@@ -387,35 +380,121 @@ class EmailVerifiedCheckerMutation(graphene.Mutation):
         return EmailVerifiedCheckerMutation(is_verified=is_verified, error=error)
 
 
-class UpdateVendorBankAccount(Output, graphene.Mutation):
+class CreateTransferRecipient(Output, graphene.Mutation):
     class Arguments:
         account_number = graphene.String(required=True)
         account_name = graphene.String(required=True)
         bank_code = graphene.String(required=True)
 
+    recipient_code = graphene.String()
+
     @staticmethod
     @permission_checker([IsAuthenticated])
     def mutate(self, info, account_number, account_name, bank_code):
+        recipient_code = None
         success = False
         error = None
         user = info.context.user
-        if user.is_authenticated:  # check if the user is authenticated
-            profile = Profile.objects.filter(user=user).first()  # get the profile
-            if not profile is None:  # check if the profile exists
-                vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
-                if not vendor is None:
-                    vendor.account_number = account_number
-                    vendor.account_name = account_name
-                    vendor.bank_code = bank_code
-                    vendor.save()
+        if user.role == "VENDOR":
+            url = "https://api.paystack.co/transferrecipient"
+            headers = {
+                "Authorization": "Bearer " + PAYSTACK_SECRET_KEY,
+                "Content-Type": "application/json",
+            }
+            data = {
+                "type": "nuban",
+                "name": account_name,
+                "account_number": account_number,
+                "bank_code": bank_code,
+                "currency": "NGN",
+            }
+
+            response = requests.post(url, data=json.dumps(data), headers=headers)
+            if response.status_code == 201:
+                response = response.json()
+                print(response)
+                if response["status"] == True:
+                    recipient_code = response["data"]["recipient_code"]
                     success = True
-                else:  # the vendor does not exist
-                    error = "Vendor do not exist"
-            else:  # the profile does not exist
-                error = "Profile do not exist"
-        else:  # the user is not authenticated
-            error = "Login required"
-        return UpdateVendorBankAccount(success=success, error=error)
+                else:
+                    error = response["message"]
+        else:  # the vendor does not exist
+            error = "Vendor do not exist"
+        return CreateTransferRecipient(
+            success=success, error=error, recipient_code=recipient_code
+        )
+
+
+class WithdrawFromWalletMutation(Output, graphene.Mutation):
+    class Arguments:
+        amount = graphene.Float(required=True)
+        recipient_code = graphene.String(required=True)
+        pass_code = graphene.Int(required=True)
+        reason = graphene.String(required=False)
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, amount, recipient_code, pass_code, reason=None):
+        user = info.context.user
+        profile = user.profile
+        error = None
+        success = False
+        wallet = Wallet.objects.filter(user=profile).first()
+
+        is_passcode = False
+        try:
+            is_passcode = wallet.check_passcode(pass_code)
+        except Exception as e:
+            raise GraphQLError(e)
+
+        print("is_passcode", is_passcode)
+        if not is_passcode:
+            raise GraphQLError("Invalid Passcode")
+
+        # check if the wallet exists
+        if wallet.balance < amount:
+            raise GraphQLError("Insufficient Balance")
+
+        url = "https://api.paystack.co/transfer"
+        headers = {
+            "Authorization": "Bearer " + PAYSTACK_SECRET_KEY,
+            "Content-Type": "application/json",
+        }
+        reference = str(uuid.uuid4())
+        print("reference", reference)
+        data = {
+            "source": "balance",
+            "amount": amount,
+            "reference": reference,
+            "recipient": recipient_code,
+            "reason": reason,
+        }
+
+        response = requests.post(url, data=json.dumps(data), headers=headers)
+        if response.status_code == 200:
+            response = response.json()
+            print(response)
+            if not response["data"] or not response["data"]["status"]:
+                success = False
+                error = response["message"]
+            if response["status"] == True:
+                success = True
+                # deduct the amount from the wallet
+                wallet.deduct_balance(
+                    {
+                        "amount": amount,
+                        "transaction_id": reference,
+                        "desc": reason,
+                        "status": response["data"]["status"],
+                    }
+                )
+            else:
+                success = False
+                error = response["message"]
+        else:
+            success = False
+            error = response["message"]
+        return WithdrawFromWalletMutation(success=success, error=error)
 
 
 class UserDeviceMutation(Output, graphene.Mutation):

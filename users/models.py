@@ -72,19 +72,6 @@ def school_logo_directory_path(instance, filename):
 class UserAccount(AbstractUser, models.Model):
     email = models.EmailField(_("email address"), blank=True, unique=True)
     password = models.CharField(_("password"), max_length=128, editable=False)
-    # role = models.CharField(
-    #     _("role"),
-    #     max_length=20,
-    #     default="client",
-    #     choices=(
-    #         ("client", "client"),
-    #         ("vendor", "vendor"),
-    #         ("student", "student"),
-    #         ("school", "school"),
-    #         ("delivery", "delivery"),
-    #     ),
-    #     editable=False,
-    # )
 
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
@@ -322,6 +309,9 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
+    passcode = models.CharField(
+        _("passcode"), max_length=128, editable=False, null=True, blank=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -336,6 +326,41 @@ class Wallet(models.Model):
             balance_updated.send(sender=self.__class__, balance=self.balance)
 
         super().save(*args, **kwargs)
+
+    # set passcode for wallet
+    def set_passcode(self, passcode):
+        """
+        Set the passcode for the wallet
+        e.g
+        ```
+        wallet = Wallet.objects.get(user__username="divine")
+        wallet.set_passcode("1234")
+        ```
+        """
+        from django.contrib.auth.hashers import make_password
+
+        self.passcode = make_password(passcode)
+        self.save()
+
+    def check_passcode(self, passcode):
+        print(self.passcode)
+        """
+        Check if the passcode is correct
+        e.g
+        ```
+        wallet = Wallet.objects.get(user__username="divine")
+        wallet.check_passcode("1234")
+        # returns True if the passcode is correct
+        ```
+        """
+        from django.contrib.auth.hashers import check_password
+
+        # check if passcode is set
+        if self.passcode is None:
+            # set passcode to 1234
+            self.set_passcode("1234")
+
+        return check_password(passcode, self.passcode)
 
     def get_dirty_fields(self):
         """
@@ -407,7 +432,9 @@ class Wallet(models.Model):
         amount = kwargs.get("amount")
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
+        transaction_id = kwargs.get("transaction_id", None)
         order = kwargs.get("order", None)
+        status = kwargs.get("status", None)
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
         transaction = None
@@ -424,8 +451,9 @@ class Wallet(models.Model):
             # create a transaction
             transaction = Transaction.objects.create(
                 wallet=self,
+                transaction_id=transaction_id,
                 title="Wallet Debited" if not title else title,
-                status="success",
+                status="pending" if not status else status,
                 desc=f"Deducted {self.currency} {amount} from wallet"
                 if not desc
                 else desc,
@@ -434,6 +462,10 @@ class Wallet(models.Model):
                 _type="debit",
             )
             transaction.save()
+            if transaction_id and transaction_id != transaction.transaction_id:
+                # delete the transaction
+                transaction.delete()
+                raise Exception("Something went wrong, please try again later")
         return transaction
 
     def refund_transaction(self, **kwargs):
