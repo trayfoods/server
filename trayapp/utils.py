@@ -23,6 +23,44 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
 
 
+def calculate_order_fee(
+    order_total,
+    gateway_fee_percentage=0.018,
+    gateway_fixed_fee=100,
+    markup_percentage=0.10,
+):
+    # Calculate the payment gateway fee
+    gateway_fee = (order_total * gateway_fee_percentage) + gateway_fixed_fee
+
+    # Calculate your markup fee
+    markup_fee = markup_percentage * order_total
+
+    # Calculate the total transaction fee
+    transaction_fee = gateway_fee + markup_fee
+
+    return transaction_fee
+
+
+def calculate_tranfer_fee(amount: int, currency="NGN") -> int:
+    # Remove commas and convert the amount to a float
+    float_amount = float(amount)
+
+    if currency == "NGN":
+        transfer_fee = 10
+
+        # Calculate the payment gateway fee
+        if float_amount >= 50_000:
+            transfer_fee = 100
+        elif float_amount >= 10_000:
+            transfer_fee = 50
+        elif float_amount > 5001:
+            transfer_fee = 20
+
+        return transfer_fee
+    else:
+        raise Exception("Currency not supported")
+
+
 def image_exists(image_path):
     # Construct full image path
     full_image_path = os.path.join(settings.MEDIA_ROOT, image_path)
