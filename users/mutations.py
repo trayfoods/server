@@ -480,14 +480,13 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             if response["status"] == True:
                 success = True
                 # deduct the amount from the wallet
-                wallet.deduct_balance(
-                    {
-                        "amount": amount,
-                        "transaction_id": reference,
-                        "desc": reason,
-                        "status": response["data"]["status"],
-                    }
-                )
+                kwargs = {
+                    "amount": amount,
+                    "transaction_id": reference,
+                    "desc": reason,
+                    "status": response["data"]["status"],
+                }
+                wallet.deduct_balance(**kwargs)
             else:
                 success = False
                 error = response["message"]
