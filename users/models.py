@@ -355,7 +355,7 @@ class Wallet(models.Model):
         e.g
         ```
         wallet = Wallet.objects.get(user__username="divine")
-        wallet.check_passcode("1234")
+        wallet.check_passcode("0000")
         # returns True if the passcode is correct
         ```
         """
@@ -363,8 +363,8 @@ class Wallet(models.Model):
 
         # check if passcode is set
         if self.passcode is None:
-            # set passcode to 1234
-            self.set_passcode("1234")
+            # set passcode to 0000
+            self.set_passcode("0000")
 
         return check_password(passcode, self.passcode)
 
