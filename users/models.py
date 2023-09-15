@@ -254,6 +254,12 @@ class Transaction(models.Model):
         decimal_places=2,
         editable=False,
     )
+    transaction_fee = models.DecimalField(
+        max_digits=7,
+        default=0,
+        decimal_places=2,
+        editable=False,
+    )
     status = models.CharField(
         max_length=20,
         choices=(
@@ -430,6 +436,7 @@ class Wallet(models.Model):
 
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
+        transaction_fee = kwargs.get("transaction_fee", 0.00)
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
         transaction_id = kwargs.get("transaction_id", None)
@@ -439,6 +446,7 @@ class Wallet(models.Model):
         cleared = kwargs.get("cleared", False)
         transaction = None
         amount = Decimal(amount)
+        transaction_fee = Decimal(transaction_fee)
         if cleared:
             self.cleared_balance -= amount
             self.save()
@@ -452,13 +460,14 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 transaction_id=transaction_id,
+                transaction_fee=transaction_fee,
                 title="Wallet Debited" if not title else title,
                 status="pending" if not status else status,
                 desc=f"Deducted {self.currency} {amount} from wallet"
                 if not desc
                 else desc,
                 order=order,
-                amount=amount,
+                amount=amount - transaction_fee,
                 _type="debit",
             )
             transaction.save()

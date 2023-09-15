@@ -430,7 +430,6 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         recipient_code = graphene.String(required=True)
         pass_code = graphene.Int(required=True)
         reason = graphene.String(required=False)
-        account_transferred_to = graphene.String(required=False)
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -459,7 +458,8 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             raise GraphQLError("Wrong Pin")
 
         # check if the amount is greater than the balance
-        amount_with_charges = calculate_tranfer_fee(amount) + float(amount)
+        transaction_fee = calculate_tranfer_fee(amount)
+        amount_with_charges = transaction_fee + float(amount)
         if amount_with_charges > wallet.balance:
             raise GraphQLError("Insufficient Balance")
 
@@ -478,10 +478,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             "reason": reason,
         }
 
-        print("post_data", post_data)
-
         response = requests.post(url, data=json.dumps(post_data), headers=headers)
-        print(response.json())
         if response.status_code == 200:
             response = response.json()
             if not response["data"] or not response["data"]["status"]:
@@ -493,6 +490,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 kwargs = {
                     "amount": amount_with_charges,
                     "transaction_id": reference,
+                    "transaction_fee": transaction_fee,
                     "desc": reason,
                     "status": response["data"]["status"],
                 }
