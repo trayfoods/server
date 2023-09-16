@@ -17,7 +17,6 @@ PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 @csrf_exempt
 def paystack_webhook_handler(request):
-    print("request", request)
     HTTP_X_PAYSTACK_SIGNATURE_EXIST = (
         "HTTP_X_PAYSTACK_SIGNATURE" in request.META
         or "HTTP_X_PAYSTACK_SIGNATURE_HEADER" in request.META
@@ -45,7 +44,10 @@ def paystack_webhook_handler(request):
 
         # Compare the calculated signature with the provided signature
         # byepass signature verification for local development
-        if hmac.compare_digest(calculated_signature, paystack_signature) or settings.DEBUG:
+        if (
+            hmac.compare_digest(calculated_signature, paystack_signature)
+            or settings.DEBUG
+        ):
             # Signature is valid, proceed with processing the event
             try:
                 # get the event from request.body
@@ -58,12 +60,6 @@ def paystack_webhook_handler(request):
                 process_payment = ProcessPayment(event_type, event_data)
                 return process_payment.process_payment()
 
-                # return JsonResponse(
-                #     {
-                #         "status": event["event"],
-                #     },
-                #     status=200,
-                # )
             except UnicodeDecodeError:
                 return HttpResponse("Invalid request body encoding", status=400)
 
