@@ -447,7 +447,7 @@ class Wallet(models.Model):
         status = kwargs.get("status", None)
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
-        nor_debit_wallet = kwargs.get("nor_debit_wallet", False) # do not debit wallet
+        nor_debit_wallet = kwargs.get("nor_debit_wallet", False)  # do not debit wallet
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)
@@ -465,7 +465,8 @@ class Wallet(models.Model):
             self.uncleared_balance -= amount
             self.save()
         else:
-            if nor_debit_wallet == False:  # check if the wallet should be debited
+            if nor_debit_wallet != True:  # check if the wallet should be debited
+                print("debiting wallet")
                 # debit the wallet
                 self.balance -= amount
                 self.save()
@@ -490,7 +491,14 @@ class Wallet(models.Model):
                     amount=amount - transaction_fee,
                     _type="debit",
                 )
-                transaction.save()
+
+            transaction.title = "Wallet Debited" if not title else title
+            transaction.desc = (
+                f"Deducted {self.currency} {amount} from wallet" if not desc else desc
+            )
+            transaction.status = "pending" if not status else status
+
+            transaction.save()
             if transaction_id and transaction_id != transaction.transaction_id:
                 # delete the transaction
                 transaction.delete()
