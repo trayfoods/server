@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from product.models import Order
 from users.models import Store, Transaction
 from trayapp.decorators import get_time_complexity
+from decimal import Decimal
+
 
 
 class ProcessPayment:
@@ -163,9 +165,12 @@ class ProcessPayment:
             return HttpResponse("Transaction does not exist", status=404)
 
         if amount:
-            amount = float(amount) / 100
+            amount = Decimal(amount) / 100
         else:
             amount = transaction.amount
+
+        # add transaction fee to the amount
+        amount_with_charges = Decimal(amount) + Decimal(transaction.transaction_fee)
 
         if transaction.amount != amount:
             return HttpResponse("Invalid amount", status=400)
@@ -178,7 +183,7 @@ class ProcessPayment:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
-                "amount": amount + transaction.transaction_fee,
+                "amount": amount_with_charges,
                 "transaction_id": transaction_id,
                 "desc": "TRF to " + account_name,
                 "status": "success",
