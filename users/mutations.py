@@ -496,6 +496,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                     "transaction_fee": transaction_fee,
                     "desc": "TRF to " + account_name,
                     "status": response["data"]["status"],
+                    "nor_debit_wallet": True,
                 }
                 wallet.deduct_balance(**kwargs)
             else:

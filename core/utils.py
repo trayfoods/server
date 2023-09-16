@@ -173,8 +173,21 @@ class ProcessPayment:
             return HttpResponse("Transfer already failed", status=400)
 
         if "success" in transfer_status:
+            account_name = self.event_data["recipient"]["name"]
+            # deduct the amount_with_charges from the wallet
+            kwargs = {
+                "amount": amount,
+                "transaction_id": transaction_id,
+                "desc": "TRF to " + account_name,
+                "status": "success",
+                "nor_debit_wallet": True,
+            }
+            transaction = transaction.wallet.deduct_balance(**kwargs)
+
+            if not transaction:
+                return HttpResponse("Transfer failed", status=400)
             # update the transaction status
-            transaction.status = transfer_status
+            transaction.status = "success"
             transaction.gateway_transfer_id = gateway_transfer_id
             transaction.save()
             return HttpResponse("Transfer successful", status=200)
@@ -182,7 +195,78 @@ class ProcessPayment:
         return HttpResponse("Transfer failed", status=400)
 
     def transfer_failed(self):
-        pass
+        amount = self.event_data["amount"]
+        amount = float(amount) / 100
+        transaction_id = self.event_data["reference"]
+        gateway_transfer_id = self.event_data["id"]
+        transfer_status = self.event_data["status"]
+        failures = self.event_data["failures"]
+
+        if failures:
+            return HttpResponse("Transfer failed", status=400)
+
+        # get transaction from the database
+        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+
+        if not transaction:
+            return HttpResponse("Transaction does not exist", status=404)
+
+        if transaction.amount != amount:
+            return HttpResponse("Invalid amount", status=400)
+
+        # check if the transaction is already failed
+        if transaction.status == "failed":
+            return HttpResponse("Transfer already failed", status=200)
+
+        if "failed" in transfer_status:
+            # update the transaction status
+            transaction.status = "failed"
+            transaction.gateway_transfer_id = gateway_transfer_id
+            transaction.save()
+            return HttpResponse("Transfer failed", status=200)
+
+        return HttpResponse("Transfer failed", status=400)
+
+    def transfer_reversed(self):
+        amount = self.event_data["amount"]
+        amount = float(amount) / 100
+        transaction_id = self.event_data["reference"]
+        gateway_transfer_id = self.event_data["id"]
+        transfer_status = self.event_data["status"]
+        failures = self.event_data["failures"]
+        account_name = self.event_data["recipient"]["name"]
+
+        if failures:
+            return HttpResponse("Transfer failed", status=400)
+
+        # get transaction from the database
+        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+
+        if not transaction:
+            return HttpResponse("Transaction does not exist", status=404)
+
+        if transaction.amount != amount:
+            return HttpResponse("Invalid amount", status=400)
+
+        # check if the transaction is already successful
+        if transaction.status == "reversed":
+            return HttpResponse("Transfer already Reversed", status=200)
+
+        if "reversed" in transfer_status:
+            # reverse the transaction
+            kwargs = {
+                "amount": amount,
+                "transaction_id": transaction_id,
+                "desc": "TRF to " + account_name + " was reversed to your wallet",
+            }
+            transaction.wallet.reverse_transaction(**kwargs)
+            # update the transaction status
+            transaction.status = "reversed"
+            transaction.gateway_transfer_id = gateway_transfer_id
+            transaction.save()
+            return HttpResponse("Transfer Reversed", status=200)
+
+        return HttpResponse("Transfer Process Failed", status=400)
 
     def invoice_create(self):
         pass
@@ -212,7 +296,4 @@ class ProcessPayment:
         pass
 
     def subscription_update(self):
-        pass
-
-    def transfer_reversed(self):
         pass
