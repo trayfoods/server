@@ -3,6 +3,7 @@ import json
 from django.http import HttpResponse
 from product.models import Order
 from users.models import Store, Transaction
+from trayapp.decorators import get_time_complexity
 
 
 class ProcessPayment:
@@ -15,6 +16,7 @@ class ProcessPayment:
         self.event_data = event_data
         self.response_data = {}
 
+    @get_time_complexity
     def process_payment(self):
         print("event_type", self.event_type)
         if self.event_type == "charge.success":
@@ -172,7 +174,9 @@ class ProcessPayment:
         if transaction.status == "success":
             return HttpResponse("Transfer already successful", status=200)
 
+        print("transfer_status: ", transfer_status)
         if "success" in transfer_status:
+            print("transfer_status: ", transfer_status)
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
