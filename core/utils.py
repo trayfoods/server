@@ -145,7 +145,6 @@ class ProcessPayment:
         #     return HttpResponse("Order does not exist", status=404)
 
     def transfer_success(self):
-        print("transfer_success", self.event_data)
         amount = self.event_data["amount"]
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
@@ -173,10 +172,6 @@ class ProcessPayment:
         if transaction.status == "success":
             return HttpResponse("Transfer already successful", status=200)
 
-        # check if the transaction is already failed
-        if transaction.status == "failed":
-            return HttpResponse("Transfer already failed", status=400)
-
         if "success" in transfer_status:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
@@ -185,9 +180,9 @@ class ProcessPayment:
                 "transaction_id": transaction_id,
                 "desc": "TRF to " + account_name,
                 "status": "success",
-                "nor_debit_wallet": True,
+                "nor_debit_wallet": False,
             }
-            transaction = transaction.wallet.deduct_balance(**kwargs)
+            transaction.wallet.deduct_balance(**kwargs)
 
             if not transaction:
                 return HttpResponse("Transfer failed", status=400)
