@@ -447,7 +447,7 @@ class Wallet(models.Model):
         status = kwargs.get("status", None)
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
-        nor_debit_wallet = kwargs.get("nor_debit_wallet", False)
+        nor_debit_wallet = kwargs.get("nor_debit_wallet", False) # do not debit wallet
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)

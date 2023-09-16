@@ -146,7 +146,6 @@ class ProcessPayment:
 
     def transfer_success(self):
         amount = self.event_data["amount"]
-        amount = float(amount) / 100
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
@@ -160,6 +159,11 @@ class ProcessPayment:
 
         if not transaction:
             return HttpResponse("Transaction does not exist", status=404)
+
+        if amount:
+            amount = float(amount) / 100
+        else:
+            amount = transaction.amount
 
         if transaction.amount != amount:
             return HttpResponse("Invalid amount", status=400)
