@@ -503,8 +503,14 @@ class Wallet(models.Model):
 
     def reverse_transaction(self, **kwargs):
         amount = kwargs.get("amount")
-        title = kwargs.get("title", None)
-        desc = kwargs.get("desc", None)
+        title = kwargs.get("title", "Transfer Reversed")
+
+        currency_symbol = "₦" if self.currency == "NGN" else None
+        currency = self.currency if currency_symbol is None else ""
+        desc = kwargs.get(
+            "desc", f"{currency_symbol}{amount} {currency} was reversed to your wallet"
+        )
+
         order = kwargs.get("order", None)
         transaction_id = kwargs.get("transaction_id", None)
         unclear = kwargs.get("unclear", False)
@@ -523,24 +529,18 @@ class Wallet(models.Model):
             self.balance += amount
             self.save()
 
-            currency_symbol = "₦" if self.currency == "NGN" else None
-            currency = self.currency if currency_symbol is None else ""
             if transaction is None:
                 # create a transaction
                 transaction = Transaction.objects.create(
                     wallet=self,
-                    title="Transfer Reversed" if not title else title,
+                    title=title,
                     status="reversed",
                     amount=amount,
                     order=order,
                     _type="debit",
                 )
-            transaction.title = "Transfer Reversed" if not title else title
-            transaction.desc = (
-                f"{currency_symbol}{amount} {currency} was reversed to your wallet"
-                if not desc
-                else desc
-            )
+            transaction.title = title
+            transaction.desc = desc
             transaction.save()
         return transaction
 

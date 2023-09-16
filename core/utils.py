@@ -201,10 +201,6 @@ class ProcessPayment:
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
-        failures = self.event_data["failures"]
-
-        if failures:
-            return HttpResponse("Transfer failed", status=400)
 
         # get transaction from the database
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
@@ -234,11 +230,7 @@ class ProcessPayment:
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
-        failures = self.event_data["failures"]
         account_name = self.event_data["recipient"]["name"]
-
-        if failures:
-            return HttpResponse("Transfer failed", status=400)
 
         # get transaction from the database
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
@@ -298,3 +290,27 @@ class ProcessPayment:
 
     def subscription_update(self):
         pass
+
+
+def get_paystack_balance(currency="NGN"):
+    import requests
+    from django.conf import settings
+
+    PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
+
+    url = "https://api.paystack.co/balance"
+    headers = {
+        "Authorization": "Bearer " + PAYSTACK_SECRET_KEY,
+        "Content-Type": "application/json",
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        response = response.json()
+        if response["status"] == True:
+            balances = response["data"]
+            balance = None
+            for balance in balances:
+                if balance["currency"] == currency:
+                    balance = float(balance["balance"]) / 100
+                    break
+            return balance
