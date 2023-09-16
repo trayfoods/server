@@ -504,6 +504,51 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         return WithdrawFromWalletMutation(success=success, error=error)
 
 
+class ChangePinMutation(Output, graphene.Mutation):
+    class Arguments:
+        old_pin = graphene.Int(required=True)
+        new_pin = graphene.Int(required=True)
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, old_pin, new_pin):
+        user = info.context.user
+        profile = user.profile
+        error = None
+        success = False
+        wallet = Wallet.objects.filter(user=profile).first()
+
+        new_pin = str(new_pin)
+        old_pin = str(old_pin)
+
+        # check if wallet exists
+        if wallet is None:
+            raise GraphQLError("Wallet does not exist, Please contact support")
+
+        # check if old pin is empty
+        if old_pin is None:
+            raise GraphQLError("Old Pin cannot be empty")
+
+        # check if new pin is empty
+        if new_pin is None:
+            raise GraphQLError("New Pin cannot be empty")
+
+        is_old_pin = False
+        try:
+            is_old_pin = wallet.check_passcode(old_pin)
+        except Exception as e:
+            raise GraphQLError(e)
+
+        if is_old_pin == False:
+            raise GraphQLError("Wrong Old Pin")
+
+        wallet.set_passcode(new_pin)
+        wallet.save()
+
+        success = True
+        return ChangePinMutation(success=success, error=error)
+
+
 class UserDeviceMutation(Output, graphene.Mutation):
     class Arguments:
         device_token = graphene.String(required=True)
