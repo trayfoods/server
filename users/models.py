@@ -233,7 +233,6 @@ class Profile(models.Model):
 
 class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
-        ("refund", "refund"),
         ("credit", "credit"),
         ("debit", "debit"),
     )
@@ -269,6 +268,7 @@ class Transaction(models.Model):
             ("success", "success"),
             ("failed", "failed"),
             ("pending", "pending"),
+            ("reversed", "reversed"),
         ),
         default="pending",
     )
@@ -447,9 +447,17 @@ class Wallet(models.Model):
         status = kwargs.get("status", None)
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
+        nor_debit_wallet = kwargs.get("nor_debit_wallet", False)
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)
+
+        if not transaction_id:
+            raise Exception("Transaction ID is required")
+
+        if self.balance < amount:
+            raise Exception("Insufficient funds")
+
         if cleared:
             self.cleared_balance -= amount
             self.save()
@@ -457,37 +465,49 @@ class Wallet(models.Model):
             self.uncleared_balance -= amount
             self.save()
         else:
-            self.balance -= amount
-            self.save()
-            # create a transaction
-            transaction = Transaction.objects.create(
-                wallet=self,
-                transaction_id=transaction_id,
-                transaction_fee=transaction_fee,
-                title="Wallet Debited" if not title else title,
-                status="pending" if not status else status,
-                desc=f"Deducted {self.currency} {amount} from wallet"
-                if not desc
-                else desc,
-                order=order,
-                amount=amount - transaction_fee,
-                _type="debit",
-            )
-            transaction.save()
+            if nor_debit_wallet == False:  # check if the wallet should be debited
+                # debit the wallet
+                self.balance -= amount
+                self.save()
+            else:  # else, do not debit the wallet and get the transaction
+                # check if transaction exists
+                transaction = Transaction.objects.filter(
+                    transaction_id=transaction_id
+                ).first()
+
+            if transaction is None:
+                # create a transaction
+                transaction = Transaction.objects.create(
+                    wallet=self,
+                    transaction_id=transaction_id,
+                    transaction_fee=transaction_fee,
+                    title="Wallet Debited" if not title else title,
+                    status="pending" if not status else status,
+                    desc=f"Deducted {self.currency} {amount} from wallet"
+                    if not desc
+                    else desc,
+                    order=order,
+                    amount=amount - transaction_fee,
+                    _type="debit",
+                )
+                transaction.save()
             if transaction_id and transaction_id != transaction.transaction_id:
                 # delete the transaction
                 transaction.delete()
                 raise Exception("Something went wrong, please try again later")
         return transaction
 
-    def refund_transaction(self, **kwargs):
+    def reverse_transaction(self, **kwargs):
         amount = kwargs.get("amount")
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
         order = kwargs.get("order", None)
+        transaction_id = kwargs.get("transaction_id", None)
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
-        transaction = None
+
+        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+
         amount = Decimal(amount)
         if cleared:
             self.cleared_balance += amount
@@ -498,17 +518,24 @@ class Wallet(models.Model):
         else:
             self.balance += amount
             self.save()
-            # create a transaction
-            transaction = Transaction.objects.create(
-                wallet=self,
-                title="Wallet Credited" if not title else title,
-                status="success",
-                desc=f"{amount} {self.currency} was refunded to your wallet"
+
+            currency_symbol = "₦" if self.currency == "NGN" else None
+            currency = self.currency if currency_symbol is None else ""
+            if transaction is None:
+                # create a transaction
+                transaction = Transaction.objects.create(
+                    wallet=self,
+                    title="Transfer Reversed" if not title else title,
+                    status="reversed",
+                    amount=amount,
+                    order=order,
+                    _type="debit",
+                )
+            transaction.title = "Transfer Reversed" if not title else title
+            transaction.desc = (
+                f"{currency_symbol}{amount} {currency} was reversed to your wallet"
                 if not desc
-                else desc,
-                amount=amount,
-                order=order,
-                _type="refund",
+                else desc
             )
             transaction.save()
         return transaction
