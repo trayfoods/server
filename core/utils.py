@@ -180,7 +180,6 @@ class ProcessPayment:
                 "transaction_id": transaction_id,
                 "desc": "TRF to " + account_name,
                 "status": "success",
-                "nor_debit_wallet": False,
             }
             transaction.wallet.deduct_balance(**kwargs)
 
