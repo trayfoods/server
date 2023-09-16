@@ -428,12 +428,15 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
     class Arguments:
         amount = graphene.Float(required=True)
         recipient_code = graphene.String(required=True)
+        account_name = graphene.String(required=True)
         pass_code = graphene.Int(required=True)
         reason = graphene.String(required=False)
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, amount, recipient_code, pass_code, reason=None):
+    def mutate(
+        self, info, amount, recipient_code, pass_code, account_name, reason=None
+    ):
         user = info.context.user
         profile = user.profile
         error = None
@@ -491,7 +494,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                     "amount": amount_with_charges,
                     "transaction_id": reference,
                     "transaction_fee": transaction_fee,
-                    "desc": reason,
+                    "desc": "TRF to " + account_name,
                     "status": response["data"]["status"],
                 }
                 wallet.deduct_balance(**kwargs)

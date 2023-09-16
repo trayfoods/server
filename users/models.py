@@ -241,6 +241,9 @@ class Transaction(models.Model):
     transaction_id = models.UUIDField(
         default=uuid.uuid4, blank=True, editable=False, null=True
     )
+    gateway_transfer_id = models.CharField(
+        max_length=50, null=True, blank=True, editable=False
+    )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, null=True, blank=True, editable=False

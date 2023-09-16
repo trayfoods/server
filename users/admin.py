@@ -63,7 +63,7 @@ class VendorAdmin(admin.ModelAdmin):
 class TransactionInline(admin.TabularInline):
     model = Transaction
     extra = 0
-    readonly_fields = ("wallet", "amount", "_type", "created_at")
+    readonly_fields = ("wallet", "amount", "transaction_id", "_type", "created_at")
 
 
 class WalletAdmin(admin.ModelAdmin):
@@ -82,10 +82,10 @@ class WalletAdmin(admin.ModelAdmin):
 
 
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("wallet", "amount", "_type", "created_at")
-    search_fields = ("wallet__user__user__username", "wallet__user__user__email")
+    list_display = ("wallet", "amount", "status", "_type", "created_at")
+    search_fields = ("wallet__user__user__username", "wallet__user__user__email", "transaction_id", "gateway_transfer_id")
     list_filter = ("created_at", "_type")
-    readonly_fields = ("wallet", "amount", "_type", "created_at")
+    readonly_fields = ("wallet", "amount", "transaction_id", "gateway_transfer_id", "_type", "created_at")
 
 
 admin.site.register(Gender)
