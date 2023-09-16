@@ -411,7 +411,6 @@ class CreateTransferRecipient(Output, graphene.Mutation):
             response = requests.post(url, data=json.dumps(data), headers=headers)
             if response.status_code == 201:
                 response = response.json()
-                print(response)
                 if response["status"] == True:
                     recipient_code = response["data"]["recipient_code"]
                     success = True
