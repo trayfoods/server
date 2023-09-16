@@ -440,11 +440,13 @@ class Wallet(models.Model):
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
         transaction_fee = kwargs.get("transaction_fee", 0.00)
-        title = kwargs.get("title", None)
-        desc = kwargs.get("desc", None)
+        title = kwargs.get("title", "Wallet Debited")
+        desc = kwargs.get(
+            "desc", f"{self.currency} {amount} was deducted from your wallet"
+        )
         transaction_id = kwargs.get("transaction_id", None)
         order = kwargs.get("order", None)
-        status = kwargs.get("status", None)
+        status = kwargs.get("status", "pending")
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
         nor_debit_wallet = kwargs.get("nor_debit_wallet", False)  # do not debit wallet
@@ -482,21 +484,17 @@ class Wallet(models.Model):
                     wallet=self,
                     transaction_id=transaction_id,
                     transaction_fee=transaction_fee,
-                    title="Wallet Debited" if not title else title,
-                    status="pending" if not status else status,
-                    desc=f"Deducted {self.currency} {amount} from wallet"
-                    if not desc
-                    else desc,
+                    title=title,
+                    status=status,
+                    desc=desc,
                     order=order,
                     amount=amount - transaction_fee,
                     _type="debit",
                 )
 
-            transaction.title = "Wallet Debited" if not title else title
-            transaction.desc = (
-                f"Deducted {self.currency} {amount} from wallet" if not desc else desc
-            )
-            transaction.status = "pending" if not status else status
+            transaction.title = title
+            transaction.desc = desc
+            transaction.status = status
 
             transaction.save()
             if transaction_id and transaction_id != transaction.transaction_id:
