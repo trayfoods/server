@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpResponse
 from product.models import Order
-from users.models import Store, UserActivity
+from users.models import Store, Transaction
 
 
 class ProcessPayment:
@@ -145,7 +145,41 @@ class ProcessPayment:
         #     return HttpResponse("Order does not exist", status=404)
 
     def transfer_success(self):
-        print("transfer_success", self.event_data)
+        amount = self.event_data["amount"]
+        amount = float(amount) / 100
+        transaction_id = self.event_data["reference"]
+        gateway_transfer_id = self.event_data["id"]
+        transfer_status = self.event_data["status"]
+        failures = self.event_data["failures"]
+
+        if failures:
+            return HttpResponse("Transfer failed", status=400)
+
+        # get transaction from the database
+        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+
+        if not transaction:
+            return HttpResponse("Transaction does not exist", status=404)
+
+        if transaction.amount != amount:
+            return HttpResponse("Invalid amount", status=400)
+
+        # check if the transaction is already successful
+        if transaction.status == "success":
+            return HttpResponse("Transfer already successful", status=200)
+
+        # check if the transaction is already failed
+        if transaction.status == "failed":
+            return HttpResponse("Transfer already failed", status=400)
+
+        if "success" in transfer_status:
+            # update the transaction status
+            transaction.status = transfer_status
+            transaction.gateway_transfer_id = gateway_transfer_id
+            transaction.save()
+            return HttpResponse("Transfer successful", status=200)
+
+        return HttpResponse("Transfer failed", status=400)
 
     def transfer_failed(self):
         pass
