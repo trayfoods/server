@@ -145,6 +145,7 @@ class ProcessPayment:
         #     return HttpResponse("Order does not exist", status=404)
 
     def transfer_success(self):
+        print("transfer_success", self.event_data.keys())
         amount = self.event_data["amount"]
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
