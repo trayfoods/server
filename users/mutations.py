@@ -26,6 +26,7 @@ from .models import (
     Wallet,
 )
 from django.conf import settings
+from core.utils import get_paystack_balance
 import uuid
 
 User = UserAccount
@@ -462,8 +463,24 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         # check if the amount is greater than the balance
         transaction_fee = calculate_tranfer_fee(amount)
         amount_with_charges = transaction_fee + float(amount)
+
         if amount_with_charges > wallet.balance:
             raise GraphQLError("Insufficient Balance")
+
+        # check if amount_with_charges is greater than the paystack balance
+        paystack_balance = get_paystack_balance()
+        if amount_with_charges > paystack_balance:
+            user_wallet_balance = wallet.balance
+
+            # check if the user has enough balance to withdraw
+            available_balance_to_withdraw = user_wallet_balance - transaction_fee
+            if available_balance_to_withdraw < 0:
+                available_balance_to_withdraw = 0
+
+            raise GraphQLError(
+                "Insufficient Balance, Available Balance to withdraw is ₦"
+                + str(available_balance_to_withdraw)
+            )
 
         url = "https://api.paystack.co/transfer"
         headers = {
