@@ -352,7 +352,6 @@ class Wallet(models.Model):
         self.save()
 
     def check_passcode(self, passcode):
-        print(self.passcode)
         """
         Check if the passcode is correct
         e.g
@@ -468,7 +467,6 @@ class Wallet(models.Model):
             self.save()
         else:
             if nor_debit_wallet != True:  # check if the wallet should be debited
-                print("debiting wallet")
                 # debit the wallet
                 self.balance -= amount
                 self.save()

@@ -160,7 +160,6 @@ class ProcessPayment:
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
 
         if not transaction:
-            print("transaction_id: ", transaction_id)
             return HttpResponse("Transaction does not exist", status=404)
 
         if amount:
@@ -169,17 +168,13 @@ class ProcessPayment:
             amount = transaction.amount
 
         if transaction.amount != amount:
-            print("amount: ", amount)
             return HttpResponse("Invalid amount", status=400)
 
         # check if the transaction is already successful
         if transaction.status == "success":
-            print("transfer_status: ", transfer_status)
             return HttpResponse("Transfer already successful", status=200)
 
-        print("transfer_status: ", transfer_status)
         if "success" in transfer_status:
-            print("transfer_status: ", transfer_status)
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
