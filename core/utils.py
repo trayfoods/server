@@ -178,7 +178,7 @@ class ProcessPayment:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
-                "amount": amount,
+                "amount": amount + transaction.transaction_fee,
                 "transaction_id": transaction_id,
                 "desc": "TRF to " + account_name,
                 "status": "success",
