@@ -1,3 +1,4 @@
+from decimal import Decimal
 import requests
 import json
 
@@ -463,7 +464,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
 
         # check if the amount is greater than the balance
         transaction_fee = calculate_tranfer_fee(amount)
-        amount_with_charges = transaction_fee + float(amount)
+        amount_with_charges = transaction_fee + Decimal(amount)
 
         if amount_with_charges > wallet.balance:
             raise GraphQLError("Insufficient Balance")
@@ -489,7 +490,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             "Content-Type": "application/json",
         }
         reference = str(uuid.uuid4())
-        lower_amount = float(amount) * 100
+        lower_amount = Decimal(amount) * 100
         post_data = {
             "source": "balance",
             "amount": lower_amount,

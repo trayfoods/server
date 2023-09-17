@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.utils import timezone
 from django.conf import settings
 import graphene
@@ -343,7 +344,7 @@ class AddProductClickMutation(graphene.Mutation):
 class CreateOrderMutation(graphene.Mutation):
     class Arguments:
         overall_price = graphene.Float(required=True)
-        delivery_price = graphene.Float(required=True)
+        delivery_fee = graphene.Float(required=True)
         shipping = ShippingInputType(required=True)
         linked_items = graphene.List(graphene.String, required=True)
         stores_infos = graphene.JSONString(required=True)
@@ -355,10 +356,11 @@ class CreateOrderMutation(graphene.Mutation):
     @permission_checker([IsAuthenticated])
     def mutate(self, info, **kwargs):
         overall_price = kwargs.get("overall_price")
-        delivery_price = kwargs.get("delivery_price")
+        delivery_fee = kwargs.get("delivery_fee")
         shipping = kwargs.get("shipping")
         linked_items = kwargs.get("linked_items")
         stores_infos = kwargs.get("stores_infos")
+        transaction_fee = Decimal(0.015) * overall_price
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
@@ -396,12 +398,13 @@ class CreateOrderMutation(graphene.Mutation):
         current_user = info.context.user
         order_payment_status = None
 
-        overall_price = float(overall_price) + 10.0
+        overall_price = Decimal(overall_price)
 
         create_order = Order.objects.create(
             user=current_user,
             overall_price=overall_price,
-            delivery_price=delivery_price,
+            delivery_fee=delivery_fee,
+            transaction_fee=transaction_fee,
             shipping=shipping,
             stores_infos=stores_infos,
             order_payment_status=order_payment_status,
@@ -509,7 +512,7 @@ class InitializeTransactionMutation(graphene.Mutation):
             raise ValueError("Invalid Order Id")
 
         try:
-            response = order.create_payment_link
+            response = order.create_payment_link()
 
             if response["status"] and response["status"] == True:
                 transaction_id = response["data"]["reference"]

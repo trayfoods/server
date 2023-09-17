@@ -310,7 +310,7 @@ class OrderType(DjangoObjectType):
         fields = [
             "id",
             "overall_price",
-            "delivery_price",
+            "delivery_fee",
             "shipping",
             "stores_infos",
             "linked_items",

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 import PIL
 import blurhash
@@ -23,27 +24,27 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
 
 
-def calculate_order_fee(
-    order_total,
-    gateway_fee_percentage=0.018,
-    gateway_fixed_fee=100,
-    markup_percentage=0.10,
-):
-    # Calculate the payment gateway fee
-    gateway_fee = (order_total * gateway_fee_percentage) + gateway_fixed_fee
+def calculate_total_amount(item_price, currency="NGN"):
 
-    # Calculate your markup fee
-    markup_fee = markup_percentage * order_total
+    if currency == "NGN":
+        # Define the transaction fee percentage and fixed fee
+        transaction_fee_percentage = 1.5 / 100  # 1.5%
+        fixed_fee = 100  # N100
 
-    # Calculate the total transaction fee
-    transaction_fee = gateway_fee + markup_fee
+        # Calculate the transaction fee
+        transaction_fee = item_price * transaction_fee_percentage + fixed_fee
 
-    return transaction_fee
+        # Calculate the total amount
+        total_amount = item_price + transaction_fee
+
+        return total_amount
+    else:
+        raise Exception("Currency not supported")
 
 
 def calculate_tranfer_fee(amount: int, currency="NGN") -> int:
     # Remove commas and convert the amount to a float
-    float_amount = float(amount)
+    float_amount = Decimal(amount)
 
     if currency == "NGN":
         transfer_fee = 10

@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 import uuid
 from django.db import models
@@ -75,7 +76,7 @@ class Item(models.Model):
     product_name = models.CharField(max_length=100)
     product_qty = models.IntegerField(default=0)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
-    product_price = models.FloatField()
+    product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     product_calories = models.IntegerField(default=0)
     product_desc = models.CharField(max_length=200, blank=True, null=True)
     product_share_visibility = models.CharField(
@@ -210,8 +211,15 @@ class Order(models.Model):
     )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
-    overall_price = models.FloatField(default=0.0, editable=False)
-    delivery_price = models.FloatField(default=0.0, editable=False)
+    overall_price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
+    delivery_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
+    transaction_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=dict)
     linked_items = models.ManyToManyField(Item, editable=False)
@@ -264,7 +272,7 @@ class Order(models.Model):
         self.save()
         return self.order_track_id
 
-    @property
+    # create a payment link for the order
     def create_payment_link(self):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
@@ -275,14 +283,20 @@ class Order(models.Model):
             order_track_id = self.regenerate_order_track_id
         else:
             order_track_id = self.order_track_id
-        amount = self.overall_price
+        amount = (
+            Decimal(self.overall_price)
+            + Decimal(self.delivery_fee)
+            + Decimal(self.transaction_fee)
+        )
         amount = amount * 100
 
         callback_url = f"{FRONTEND_URL}/checkout/{order_track_id}"
         data = {
-            "email": self.user.email,
+            "email": self.user.email
+            if self.user
+            else f"{self.user.username}@gmail.com",
             "currency": self.order_payment_currency,
-            "amount": float(amount),
+            "amount": Decimal(amount),
             "reference": f"{order_track_id}",
         }
 

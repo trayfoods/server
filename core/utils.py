@@ -57,7 +57,7 @@ class ProcessPayment:
         order_payment_status = self.event_data["status"]
         order_payment_method = self.event_data["authorization"]["channel"]
         order_price = self.event_data["amount"]
-        order_price = float(order_price) / 100
+        order_price = Decimal(order_price) / 100
 
         # get the order from the database
         order = Order.objects.get(order_track_id=order_id)
@@ -70,11 +70,11 @@ class ProcessPayment:
         stores = order.stores_infos
         stores = json.loads(stores)
 
-        delivery_price = float(order.delivery_price)
+        delivery_fee = Decimal(order.delivery_fee)
 
-        # minus delivery_price from overall_price and order_price
-        overall_price = float(order.overall_price) - delivery_price
-        order_price = order_price - delivery_price
+        # get the overall price of the order
+        overall_price = Decimal(order.overall_price)
+        order_price = order_price - delivery_fee
 
         # minus transaction_fee (10) from overall_price and order_price
         order_price = order_price - 10
@@ -116,7 +116,7 @@ class ProcessPayment:
                 ).first()
                 if store_qs:
                     kwargs = {
-                        "amount": float(store["credit"]),
+                        "amount": Decimal(store["credit"]),
                         "description": f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
                         "unclear": False,
                         "order": order,
@@ -129,7 +129,7 @@ class ProcessPayment:
             # update the order payment status
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
-            order.delivery_price = delivery_price
+            order.delivery_fee = delivery_fee
             order.order_status = "processing"
             order.order_message = "Your Order Payment Was Successful"
             order.save()
@@ -168,9 +168,6 @@ class ProcessPayment:
         else:
             amount = transaction.amount
 
-        # add transaction fee to the amount
-        amount_with_charges = Decimal(amount) + Decimal(transaction.transaction_fee)
-
         if transaction.amount != amount:
             return HttpResponse("Invalid amount", status=400)
 
@@ -202,7 +199,7 @@ class ProcessPayment:
 
     def transfer_failed(self):
         amount = self.event_data["amount"]
-        amount = float(amount) / 100
+        amount = Decimal(amount) / 100
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
@@ -231,7 +228,7 @@ class ProcessPayment:
 
     def transfer_reversed(self):
         amount = self.event_data["amount"]
-        amount = float(amount) / 100
+        amount = Decimal(amount) / 100
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
@@ -316,6 +313,6 @@ def get_paystack_balance(currency="NGN"):
             balance = None
             for balance in balances:
                 if balance["currency"] == currency:
-                    balance = float(balance["balance"]) / 100
+                    balance = Decimal(balance["balance"]) / 100
                     break
             return balance
