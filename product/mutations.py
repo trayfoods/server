@@ -343,8 +343,8 @@ class AddProductClickMutation(graphene.Mutation):
 
 class CreateOrderMutation(graphene.Mutation):
     class Arguments:
-        overall_price = graphene.Float(required=True)
-        delivery_fee = graphene.Float(required=True)
+        overall_price = graphene.Decimal(required=True)
+        delivery_fee = graphene.Decimal(required=True)
         shipping = ShippingInputType(required=True)
         linked_items = graphene.List(graphene.String, required=True)
         stores_infos = graphene.JSONString(required=True)
@@ -355,12 +355,16 @@ class CreateOrderMutation(graphene.Mutation):
 
     @permission_checker([IsAuthenticated])
     def mutate(self, info, **kwargs):
-        overall_price = kwargs.get("overall_price")
-        delivery_fee = kwargs.get("delivery_fee")
+        overall_price = kwargs.get("overall_price", 0.00)
+        delivery_fee = kwargs.get("delivery_fee", 0.00)
         shipping = kwargs.get("shipping")
         linked_items = kwargs.get("linked_items")
         stores_infos = kwargs.get("stores_infos")
-        transaction_fee = Decimal(0.015) * overall_price
+
+        overall_price = Decimal(overall_price)
+        delivery_fee = Decimal(delivery_fee)
+
+        transaction_fee = Decimal(0.005) * overall_price if overall_price > 5000 else 10
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
@@ -397,8 +401,6 @@ class CreateOrderMutation(graphene.Mutation):
 
         current_user = info.context.user
         order_payment_status = None
-
-        overall_price = Decimal(overall_price)
 
         create_order = Order.objects.create(
             user=current_user,
