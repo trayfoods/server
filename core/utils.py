@@ -52,7 +52,7 @@ class ProcessPayment:
             return HttpResponse("Invalid event type", status=400)
 
     def charge_success(self):
-        # get the order_id from event_data
+        # get the values from event_data
         order_id = self.event_data["reference"]
         order_payment_status = self.event_data["status"]
         order_payment_method = self.event_data["authorization"]["channel"]
@@ -60,10 +60,16 @@ class ProcessPayment:
         order_price = Decimal(order_price) / 100
 
         # get the order from the database
-        order = Order.objects.get(order_track_id=order_id)
+        order = Order.objects.filter(order_track_id=order_id).first()
+
+        # check if the order exists
+        if not order:
+            return HttpResponse("Order does not exist", status=404)
+        
         # check if the order is already successful
         if order.order_payment_status == "success":
             return HttpResponse("Payment already successful", status=200)
+        
         order.order_payment_method = order_payment_method
 
         # get all the needed data to verify the payment
@@ -74,11 +80,7 @@ class ProcessPayment:
 
         # get the overall price of the order
         overall_price = Decimal(order.overall_price)
-        order_price = order_price - delivery_fee
-
-        # minus transaction_fee (10) from overall_price and order_price
-        order_price = order_price - 10
-        overall_price = overall_price - 10
+        order_price = order_price - delivery_fee - Decimal(order.transaction_fee)
 
         # calculate the total price of the stores
         # and compare it with the overall price

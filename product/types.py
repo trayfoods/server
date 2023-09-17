@@ -311,6 +311,7 @@ class OrderType(DjangoObjectType):
             "id",
             "overall_price",
             "delivery_fee",
+            "transaction_fee",
             "shipping",
             "stores_infos",
             "linked_items",
