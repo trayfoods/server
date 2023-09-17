@@ -511,32 +511,34 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         )
         transaction.save()
 
-        try:
-            response = requests.post(url, data=json.dumps(post_data), headers=headers)
-            if response.status_code == 200:
-                response = response.json()
-                if not response["data"] or not response["data"]["status"]:
-                    success = False
-                    # delete the transaction
-                    transaction.delete()
-                    error = response["message"]
-                if response["status"] == True:
-                    success = True
+        if not transaction is None:
+
+            try:
+                response = requests.post(url, data=json.dumps(post_data), headers=headers)
+                if response.status_code == 200:
+                    response = response.json()
+                    if not response["data"] or not response["data"]["status"]:
+                        success = False
+                        # delete the transaction
+                        transaction.delete()
+                        error = response["message"]
+                    if response["status"] == True:
+                        success = True
+                    else:
+                        success = False
+                        # delete the transaction
+                        transaction.delete()
+                        error = response["message"]
                 else:
                     success = False
                     # delete the transaction
                     transaction.delete()
                     error = response["message"]
-            else:
+            except Exception as e:
                 success = False
                 # delete the transaction
                 transaction.delete()
-                error = response["message"]
-        except Exception as e:
-            success = False
-            # delete the transaction
-            transaction.delete()
-            error = str(e)
+                error = str(e)
         return WithdrawFromWalletMutation(success=success, error=error)
 
 
