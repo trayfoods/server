@@ -498,32 +498,45 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             "reason": reason,
         }
 
-        response = requests.post(url, data=json.dumps(post_data), headers=headers)
-        if response.status_code == 200:
-            response = response.json()
-            if not response["data"] or not response["data"]["status"]:
-                success = False
-                error = response["message"]
-            if response["status"] == True:
-                success = True
-                # create a transaction
-                transaction = Transaction.objects.create(
-                    wallet=wallet,
-                    transaction_id=reference,
-                    transaction_fee=transaction_fee,
-                    title="Wallet Debited",
-                    status="pending",
-                    desc="TRF to " + account_name,
-                    amount=amount,
-                    _type="debit",
-                )
-                transaction.save()
+        # create a transaction
+        transaction = Transaction.objects.create(
+            wallet=wallet,
+            transaction_id=reference,
+            transaction_fee=transaction_fee,
+            title="Wallet Debited",
+            status="pending",
+            desc="TRF to " + account_name,
+            amount=amount,
+            _type="debit",
+        )
+        transaction.save()
+
+        try:
+            response = requests.post(url, data=json.dumps(post_data), headers=headers)
+            if response.status_code == 200:
+                response = response.json()
+                if not response["data"] or not response["data"]["status"]:
+                    success = False
+                    # delete the transaction
+                    transaction.delete()
+                    error = response["message"]
+                if response["status"] == True:
+                    success = True
+                else:
+                    success = False
+                    # delete the transaction
+                    transaction.delete()
+                    error = response["message"]
             else:
                 success = False
+                # delete the transaction
+                transaction.delete()
                 error = response["message"]
-        else:
+        except Exception as e:
             success = False
-            error = response["message"]
+            # delete the transaction
+            transaction.delete()
+            error = str(e)
         return WithdrawFromWalletMutation(success=success, error=error)
 
 
