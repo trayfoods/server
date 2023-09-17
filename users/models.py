@@ -238,10 +238,10 @@ class Transaction(models.Model):
     )
 
     transaction_id = models.UUIDField(
-        default=uuid.uuid4, blank=True, editable=False, null=True
+        default=uuid.uuid4, blank=True, editable=False, unique=True
     )
     gateway_transfer_id = models.CharField(
-        max_length=50, null=True, blank=True, editable=False
+        max_length=50, null=True, blank=True, editable=False, unique=True
     )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
     order = models.ForeignKey(
@@ -448,13 +448,15 @@ class Wallet(models.Model):
         status = kwargs.get("status", "pending")
         unclear = kwargs.get("unclear", False)
         cleared = kwargs.get("cleared", False)
-        nor_debit_wallet = kwargs.get("nor_debit_wallet", False)  # do not debit wallet
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)
 
         if not transaction_id:
             raise Exception("Transaction ID is required")
+        
+
+        transaction_id = uuid.UUID(transaction_id)
 
         if self.balance < amount:
             raise Exception("Insufficient funds")
@@ -466,24 +468,21 @@ class Wallet(models.Model):
             self.uncleared_balance -= amount + transaction_fee
             self.save()
         else:
-            if nor_debit_wallet != True:  # check if the wallet should be debited
-                # debit the wallet
-                self.balance -= amount + transaction_fee
-                self.save()
+            # debit the wallet
+            self.balance -= amount + transaction_fee
+            self.save()
+
             # check if transaction exists
             transaction = Transaction.objects.filter(
                 wallet=self, transaction_id=transaction_id, _type="debit"
             ).first()
 
             transaction.title = title
+            transaction.order = order
             transaction.desc = desc
             transaction.status = status
 
             transaction.save()
-            if transaction_id and transaction_id != transaction.transaction_id:
-                # delete the transaction
-                transaction.delete()
-                raise Exception("Something went wrong, please try again later")
         return transaction
 
     def reverse_transaction(self, **kwargs):
