@@ -73,7 +73,7 @@ def order_redirect_share_view(request, order_id):
     order = Order.objects.filter(order_track_id=order_id).first()
     if order:
         if not order.order_payment_url:
-            order.create_payment_link
+            order.create_payment_link()
             order = Order.objects.filter(order_track_id=order.order_track_id).first()
         return redirect(order.order_payment_url)
     return JsonResponse(

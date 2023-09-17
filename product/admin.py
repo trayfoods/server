@@ -102,7 +102,7 @@ class OrderAdmin(admin.ModelAdmin):
         "order_track_id",
         "overall_price",
         "order_payment_status",
-        "delivery_price",
+        "delivery_fee",
         "order_payment_url",
     )
     search_fields = ["user__username", "order_track_id", "order_status"]
