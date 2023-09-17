@@ -507,7 +507,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 success = True
                 # deduct the amount_with_charges from the wallet
                 kwargs = {
-                    "amount": amount_with_charges,
+                    "amount": amount,
                     "transaction_id": reference,
                     "transaction_fee": transaction_fee,
                     "desc": "TRF to " + account_name,

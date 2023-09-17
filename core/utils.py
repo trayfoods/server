@@ -7,7 +7,6 @@ from trayapp.decorators import get_time_complexity
 from decimal import Decimal
 
 
-
 class ProcessPayment:
     """
     This class is used to process the payment based on the event type.
@@ -183,8 +182,9 @@ class ProcessPayment:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
-                "amount": amount_with_charges,
+                "amount": amount,
                 "transaction_id": transaction_id,
+                "transaction_fee": transaction.transaction_fee,
                 "desc": "TRF to " + account_name,
                 "status": "success",
             }

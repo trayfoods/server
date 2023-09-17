@@ -460,15 +460,15 @@ class Wallet(models.Model):
             raise Exception("Insufficient funds")
 
         if cleared:
-            self.cleared_balance -= amount
+            self.cleared_balance -= amount + transaction_fee
             self.save()
         elif unclear:
-            self.uncleared_balance -= amount
+            self.uncleared_balance -= amount + transaction_fee
             self.save()
         else:
             if nor_debit_wallet != True:  # check if the wallet should be debited
                 # debit the wallet
-                self.balance -= amount
+                self.balance -= amount + transaction_fee
                 self.save()
             else:  # else, do not debit the wallet and get the transaction
                 # check if transaction exists
@@ -486,7 +486,7 @@ class Wallet(models.Model):
                     status=status,
                     desc=desc,
                     order=order,
-                    amount=amount - transaction_fee,
+                    amount=amount,
                     _type="debit",
                 )
 
