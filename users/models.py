@@ -470,11 +470,10 @@ class Wallet(models.Model):
                 # debit the wallet
                 self.balance -= amount + transaction_fee
                 self.save()
-            else:  # else, do not debit the wallet and get the transaction
-                # check if transaction exists
-                transaction = Transaction.objects.filter(
-                    transaction_id=transaction_id
-                ).first()
+            # check if transaction exists
+            transaction = Transaction.objects.filter(
+                transaction_id=transaction_id
+            ).first()
 
             if transaction is None:
                 # create a transaction
