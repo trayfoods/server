@@ -472,22 +472,8 @@ class Wallet(models.Model):
                 self.save()
             # check if transaction exists
             transaction = Transaction.objects.filter(
-                transaction_id=transaction_id
+                wallet=self, transaction_id=transaction_id, _type="debit"
             ).first()
-
-            if transaction is None:
-                # create a transaction
-                transaction = Transaction.objects.create(
-                    wallet=self,
-                    transaction_id=transaction_id,
-                    transaction_fee=transaction_fee,
-                    title=title,
-                    status=status,
-                    desc=desc,
-                    order=order,
-                    amount=amount,
-                    _type="debit",
-                )
 
             transaction.title = title
             transaction.desc = desc

@@ -15,6 +15,7 @@ from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import UserNodeType
 from .models import (
+    Transaction,
     Vendor,
     Store,
     School,
@@ -505,16 +506,18 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 error = response["message"]
             if response["status"] == True:
                 success = True
-                # deduct the amount_with_charges from the wallet
-                kwargs = {
-                    "amount": amount,
-                    "transaction_id": reference,
-                    "transaction_fee": transaction_fee,
-                    "desc": "TRF to " + account_name,
-                    "status": "pending",
-                    "nor_debit_wallet": True,
-                }
-                wallet.deduct_balance(**kwargs)
+                # create a transaction
+                transaction = Transaction.objects.create(
+                    wallet=wallet,
+                    transaction_id=reference,
+                    transaction_fee=transaction_fee,
+                    title="Wallet Debited",
+                    status="pending",
+                    desc="TRF to " + account_name,
+                    amount=amount,
+                    _type="debit",
+                )
+                transaction.save()
             else:
                 success = False
                 error = response["message"]
