@@ -33,11 +33,11 @@ class AddProductMutation(Output, graphene.Mutation):
         # The input arguments for this mutation
         product_slug = graphene.String(required=True)
         product_name = graphene.String(required=True)
-        product_price = graphene.Int(required=True)
+        product_price = graphene.Decimal(required=True)
         product_type = graphene.String(required=True)
         product_category = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
-        product_calories = graphene.Int()
+        product_calories = graphene.Float()
         product_desc = graphene.String()
         product_qty = graphene.Int()
         product_qty_unit = graphene.String()
@@ -364,7 +364,7 @@ class CreateOrderMutation(graphene.Mutation):
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
 
-        transaction_fee = Decimal(0.005) * overall_price if overall_price > 5000 else 10
+        transaction_fee = Decimal(0.05) * overall_price if overall_price > 5000 else 10
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
