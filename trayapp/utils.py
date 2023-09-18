@@ -42,7 +42,7 @@ def calculate_total_amount(item_price, currency="NGN"):
         raise Exception("Currency not supported")
 
 
-def calculate_tranfer_fee(amount: int, currency="NGN") -> int:
+def calculate_tranfer_fee(amount: Decimal, currency="NGN") -> Decimal:
     # Remove commas and convert the amount to a float
     float_amount = Decimal(amount)
 
@@ -57,7 +57,7 @@ def calculate_tranfer_fee(amount: int, currency="NGN") -> int:
         elif float_amount > 5001:
             transfer_fee = 20
 
-        return transfer_fee
+        return Decimal(transfer_fee)
     else:
         raise Exception("Currency not supported")
 
