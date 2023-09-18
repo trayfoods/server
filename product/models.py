@@ -76,8 +76,8 @@ class Item(models.Model):
     product_name = models.CharField(max_length=100)
     product_qty = models.IntegerField(default=0)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
-    product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-    product_calories = models.IntegerField(default=0)
+    product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    product_calories = models.FloatField(default=0.0)
     product_desc = models.CharField(max_length=200, blank=True, null=True)
     product_share_visibility = models.CharField(
         max_length=20,
