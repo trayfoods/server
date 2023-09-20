@@ -5,7 +5,8 @@ from django.utils.encoding import force_bytes
 from django_countries import countries
 
 from django.conf import settings
-from core.types import IPInfoType, CountryType, UniversitySearchType
+from core.types import DeliveryType, IPInfoType, CountryType, UniversitySearchType
+from core.utils import calculate_delivery_fee
 
 STATIC_URL = settings.STATIC_URL
 
@@ -40,9 +41,33 @@ class CoreQueries(graphene.ObjectType):
     countries = graphene.List(CountryType)
     country = graphene.Field(CountryType, code=graphene.String())
     search_universities = graphene.List(
-        UniversitySearchType, query=graphene.String(required=True), country=graphene.String()
+        UniversitySearchType,
+        query=graphene.String(required=True),
+        country=graphene.String(),
     )
     ip_info = graphene.Field(IPInfoType)
+    delivery_options = graphene.List(
+        DeliveryType, amount=graphene.Decimal(required=True)
+    )
+
+    def resolve_delivery_options(self, info, amount):
+        VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
+        user = info.context.user
+        if user.is_authenticated:
+            VALID_DELIVERY_TYPES = user.get_delivery_types()
+        DELIVERY_TYPES = []
+        for DELIVERY_TYPE in VALID_DELIVERY_TYPES:
+            name = DELIVERY_TYPE.get("name")
+            DELIVERY_TYPES.append(
+                {
+                    "name": name,
+                    "fee": calculate_delivery_fee(
+                        fee=DELIVERY_TYPE.get("fee"), amount=amount
+                    ),
+                }
+            )
+
+        return DELIVERY_TYPES
 
     def resolve_countries(self, info):
         return [

@@ -107,6 +107,26 @@ class UserAccount(AbstractUser, models.Model):
 
         return role.upper()  # DO NOT TOUCH THIS
 
+    def get_delivery_types(self):
+        """
+        Get the delivery types for the user
+        e.g 
+        ```python
+        user = UserAccount.objects.get(username="divine")
+        user.get_delivery_types()
+        # returns [{'name': 'pickup', 'fee': 0.0}, {'name': 'hostel', 'fee': 100.0}]
+        ```
+        """
+        VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
+        if self.role == "VENDOR":
+            # remove hostels from delivery types
+            VALID_DELIVERY_TYPES = [
+                delivery_type
+                for delivery_type in VALID_DELIVERY_TYPES
+                if delivery_type.get("name") != "hostel"
+            ]
+        return VALID_DELIVERY_TYPES
+
     # get user's orders
     @property
     def orders(self):
@@ -454,7 +474,6 @@ class Wallet(models.Model):
 
         if not transaction_id:
             raise Exception("Transaction ID is required")
-        
 
         transaction_id = uuid.UUID(transaction_id)
 

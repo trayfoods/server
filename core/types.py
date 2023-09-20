@@ -20,3 +20,7 @@ class UniversitySearchType(graphene.ObjectType):
     state_province = graphene.String()
     domains = graphene.List(graphene.String)
     web_pages = graphene.List(graphene.String)
+
+class DeliveryType(graphene.ObjectType):
+    name = graphene.String()
+    fee = graphene.Decimal()

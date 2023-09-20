@@ -27,6 +27,22 @@ PAYSTACK_PUBLIC_KEY = os.environ.get(
     "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
 )
 
+VALID_DELIVERY_TYPES = [
+    {
+        "name": "pickup",
+        "fee": 100,
+    },
+    {
+        "name": "portal",
+        "fee": 200,
+    },
+    {
+        "name": "hostel",
+        "fee": 400,
+    },
+]
+
+
 FRONTEND_URL = os.environ.get("REACT_SITE_DOMAIN", "localhost:3000")
 
 if "localhost" in FRONTEND_URL:

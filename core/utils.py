@@ -6,6 +6,8 @@ from users.models import Store, Transaction
 from trayapp.decorators import get_time_complexity
 from decimal import Decimal
 
+from django.conf import settings
+
 
 class ProcessPayment:
     """
@@ -65,11 +67,11 @@ class ProcessPayment:
         # check if the order exists
         if not order:
             return HttpResponse("Order does not exist", status=404)
-        
+
         # check if the order is already successful
         if order.order_payment_status == "success":
             return HttpResponse("Payment already successful", status=200)
-        
+
         order.order_payment_method = order_payment_method
 
         # get all the needed data to verify the payment
@@ -298,7 +300,6 @@ class ProcessPayment:
 
 def get_paystack_balance(currency="NGN"):
     import requests
-    from django.conf import settings
 
     PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
@@ -318,3 +319,27 @@ def get_paystack_balance(currency="NGN"):
                     balance = Decimal(balance["balance"]) / 100
                     break
             return balance
+
+
+def calculate_delivery_fee(amount, fee, distance=None, price_per_km=None):
+    """
+    This function is used to calculate the delivery fee
+    """
+
+    amount = Decimal(amount)
+
+    delivery_fee = Decimal(fee)
+
+    if amount >= 2500 and not delivery_fee <= 100:
+        delivery_fee = amount * Decimal(0.05) + delivery_fee
+
+    if distance and price_per_km:
+        delivery_fee = Decimal(distance) * Decimal(price_per_km)
+
+    if delivery_fee <= 100:
+        delivery_fee = Decimal(100)
+
+    # round up the delivery fee to the next whole number not decimal
+    delivery_fee = delivery_fee.quantize(Decimal("1"), rounding="ROUND_UP")
+
+    return delivery_fee
