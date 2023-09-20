@@ -364,7 +364,7 @@ class CreateOrderMutation(graphene.Mutation):
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
 
-        transaction_fee = Decimal(0.05) * overall_price if overall_price > 5000 else 10
+        transaction_fee = Decimal(0.05) * overall_price
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
