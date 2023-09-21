@@ -246,12 +246,14 @@ class UpdateStoreMutation(Output, graphene.Mutation):
 
 class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
     class Arguments:
-        username = graphene.String(required=True)
         first_name = graphene.String()
         last_name = graphene.String()
         email = graphene.String()
         phone_number = graphene.String()
         profile_image = Upload()
+        country = graphene.String()
+        state = graphene.String()
+        city = graphene.String()
 
     user = graphene.Field(UserNodeType)
 
@@ -262,44 +264,60 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
     def mutate(
         self,
         info,
-        username,
-        first_name,
-        email,
-        last_name,
+        first_name=None,
+        email=None,
+        last_name=None,
+        country=None,
         phone_number=None,
         profile_image=None,
+        state=None,
+        city=None,
     ):
         user = info.context.user
         send_email = False
-        profile = user.profile
-        user.first_name = first_name
-        user.last_name = last_name
-        user.username = username
-        if profile_image:
-            profile.image = profile_image
+        profile = Profile.objects.get(user__username=user.username)
+
+        if first_name:
+            user.first_name = first_name
+
+        if last_name:
+            user.last_name = last_name
+
+        # update the profile values
+        if country:
+            profile.country = country
+
         if phone_number:
             profile.phone_number = phone_number
 
+        if profile_image:
+            profile.image = profile_image
+
+        if city:
+            profile.city = city
+
+        if state:
+            profile.state = state
+
         profile.save()
+
         if user.email != email:
             send_email = True
-            user.status.verified = True
+            user.status.verified = False
 
         if send_email == True:
-            try:
-                UserStatus.clean_email(email)
-                # TODO CHECK FOR EMAIL ASYNC SETTING
-                if async_email_func:
-                    async_email_func(user.status.send_activation_email, (info,))
-                else:
-                    user.status.send_activation_email(info)
-                user.email = email
-            except Exception as e:
-                raise GraphQLError(
-                    "Error trying to send confirmation mail to %s" % email
-                )
+            # try:
+            user_status = UserStatus.objects.filter(user=user).first()
+            user_status.clean_email(email)
+            user.email = email
+            user.save()
+            user_status.send_activation_email(info)
+            # except Exception as e:
+            #     raise GraphQLError(
+            #         "Error trying to send confirmation mail to %s" % email
+            #     )
         user.save()
-        # Notice we return an instance of this mutation
+        user = User.objects.get(username=user.username)
         return UpdateAccountMutation(user=user)
 
 
@@ -475,15 +493,18 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         paystack_balance = get_paystack_balance()
         if amount_with_charges > paystack_balance:
             user_wallet_balance = wallet.balance
+            amount_able_to_tranfer = 0
+            if user_wallet_balance > paystack_balance:
+                amount_able_to_tranfer = paystack_balance - transaction_fee - 100
+            else:
+                amount_able_to_tranfer = user_wallet_balance - transaction_fee - 100
 
-            # check if the user has enough balance to withdraw
-            available_balance_to_withdraw = user_wallet_balance - transaction_fee
-            if available_balance_to_withdraw < 0:
-                available_balance_to_withdraw = 0
+            if amount_able_to_tranfer < 0:
+                amount_able_to_tranfer = 0
 
             raise GraphQLError(
-                "Insufficient Balance, Available Balance to withdraw is ₦"
-                + str(available_balance_to_withdraw)
+                "Insufficient Balance, You can only withdraw "
+                + str(amount_able_to_tranfer)
             )
 
         url = "https://api.paystack.co/transfer"
@@ -515,9 +536,10 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         transaction.save()
 
         if not transaction is None:
-
             try:
-                response = requests.post(url, data=json.dumps(post_data), headers=headers)
+                response = requests.post(
+                    url, data=json.dumps(post_data), headers=headers
+                )
                 if response.status_code == 200:
                     response = response.json()
                     if not response["data"] or not response["data"]["status"]:
