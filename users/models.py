@@ -110,7 +110,7 @@ class UserAccount(AbstractUser, models.Model):
     def get_delivery_types(self):
         """
         Get the delivery types for the user
-        e.g 
+        e.g
         ```python
         user = UserAccount.objects.get(username="divine")
         user.get_delivery_types()
@@ -202,8 +202,8 @@ class Profile(models.Model):
     )
     country = CountryField(null=True, blank=True, default="NG")
     city = models.CharField(max_length=50, null=True, blank=True)
-    state = models.CharField(max_length=50, null=True, blank=True)
-    phone_number = models.CharField(max_length=16)
+    state = models.CharField(max_length=10, null=True, blank=True)
+    phone_number = models.CharField(max_length=20)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_verified = models.BooleanField(default=False)
 
@@ -213,10 +213,12 @@ class Profile(models.Model):
         - School if the user role is equals to 'student'
         - gender
         - country
+        - state
+        - city
         - phone_number
         """
 
-        if self.user.role == "student":
+        if self.user.role == "STUDENT":
             if self.school is None:
                 return False
 
@@ -224,6 +226,12 @@ class Profile(models.Model):
             return False
 
         if self.country is None:
+            return False
+
+        if self.state is None:
+            return False
+
+        if self.city is None:
             return False
 
         if self.phone_number is None:
