@@ -27,6 +27,8 @@ PAYSTACK_PUBLIC_KEY = os.environ.get(
     "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
 )
 
+X_CSCAPI_KEY = os.environ.get("X_CSCAPI_KEY", "1234")
+
 VALID_DELIVERY_TYPES = [
     {
         "name": "pickup",
