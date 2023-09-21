@@ -5,7 +5,13 @@ from django.utils.encoding import force_bytes
 from django_countries import countries
 
 from django.conf import settings
-from core.types import DeliveryType, IPInfoType, CountryType, UniversitySearchType
+from core.types import (
+    DeliveryType,
+    IPInfoType,
+    CountryType,
+    StateType,
+    UniversitySearchType,
+)
 from core.utils import calculate_delivery_fee
 
 STATIC_URL = settings.STATIC_URL
@@ -40,6 +46,7 @@ class CoreMutations(graphene.ObjectType):
 class CoreQueries(graphene.ObjectType):
     countries = graphene.List(CountryType)
     country = graphene.Field(CountryType, code=graphene.String())
+    states = graphene.List(StateType, country=graphene.String(required=True))
     search_universities = graphene.List(
         UniversitySearchType,
         query=graphene.String(required=True),
@@ -93,6 +100,22 @@ class CoreQueries(graphene.ObjectType):
                 f"{STATIC_URL}/flags/{code.lower()}.gif".replace("//", "/")
             ),
         )
+
+    def resolve_states(self, info, country):
+        X_CSCAPI_KEY = settings.X_CSCAPI_KEY
+        if not X_CSCAPI_KEY:
+            return []
+        import requests
+
+        url = f"https://api.countrystatecity.in/v1/countries/{country}/states"
+        headers = {"X-CSCAPI-KEY": X_CSCAPI_KEY}
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            return [
+                StateType(name=state.get("name"), code=state.get("iso2"))
+                for state in response.json()
+            ]
+        return []
 
     def resolve_search_universities(self, info, query, country=None):
         import universities
