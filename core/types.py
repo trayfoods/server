@@ -7,6 +7,12 @@ class CountryType(graphene.ObjectType):
     flag = graphene.String(description="URL to flag image")
 
 
+class StateType(graphene.ObjectType):
+    name = graphene.String(description="State name")
+    code = graphene.String(description="ISO 3166-2 state code")
+    
+
+
 class IPInfoType(graphene.ObjectType):
     ip_address = graphene.String(description="User's IP address")
     is_vpn = graphene.Boolean(description="Whether the IP address is from a VPN")
