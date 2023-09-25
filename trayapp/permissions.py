@@ -14,8 +14,10 @@ class IsAuthenticated(BasePermission):
 
     @classmethod
     def has_permission(cls, context):
-        return context.user and (
-            context.user.is_authenticated and context.user.is_active
+        return (
+            context.user
+            and (context.user.is_authenticated and context.user.is_active)
+            and context.user.profile
         )
 
 
@@ -25,7 +27,7 @@ def permission_checker(permissions: list):
             if check_permission(permissions, info.context):
                 return func(cls, info, **kwargs)
 
-            raise GraphQLError("Permission Denied")
+            raise GraphQLError("Login Required")
 
         return inner
 

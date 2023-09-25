@@ -31,6 +31,7 @@ class SchoolType(DjangoObjectType):
 
 class ProfileType(DjangoObjectType):
     is_student = graphene.Boolean()
+
     class Meta:
         model = Profile
         fields = "__all__"
@@ -41,7 +42,7 @@ class ProfileType(DjangoObjectType):
         else:
             image = None
         return image
-    
+
     def resolve_is_student(self, info, *args, **kwargs):
         # check if the user role is student
         return self.user.role == "STUDENT"
@@ -74,6 +75,11 @@ class UserNodeType(UserNode, graphene.ObjectType):
 
     def resolve_profile(self, info):
         return self.profile
+
+
+class WalletInfoNode(graphene.ObjectType):
+    balance = graphene.String()
+    success = graphene.Boolean()
 
 
 class GenderType(DjangoObjectType):
