@@ -91,11 +91,6 @@ class BankNode(Output, graphene.ObjectType):
     banks = graphene.List(SubBankNode)
 
 
-class AccountInfoNode(Output, graphene.ObjectType):
-    balance = graphene.String()
-    transactions = graphene.List(TransactionType)
-
-
 class BankAccountNode(Output, graphene.ObjectType):
     bank_id = graphene.Int()
     account_name = graphene.String()
@@ -117,29 +112,6 @@ class BankListQuery(graphene.ObjectType):
         account_number=graphene.String(required=True),
         bank_code=graphene.String(required=True),
     )
-
-    account_info = graphene.Field(AccountInfoNode)
-
-    def resolve_account_info(self, info, **kwargs):
-        user = info.context.user
-        data = {
-            "msg": "An Error Occured",
-            "success": False,
-            "balance": None,
-            "transactions": None,
-        }
-        if user and user.is_authenticated:
-            wallet = Wallet.objects.filter(user=user.profile).first()
-            transactions = Transaction.objects.filter(wallet=wallet).order_by(
-                "-created_at"
-            )
-            data = {
-                "msg": "ok",
-                "success": True,
-                "balance": wallet.balance if (wallet) else None,
-                "transactions": transactions,
-            }
-        return data
 
     # This is the function that will be called when we query the bank list
     def resolve_banksList(
