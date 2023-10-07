@@ -272,36 +272,18 @@ AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
 
 if USE_S3:
     # Static files (CSS, JavaScript, Images)
-    AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-    AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-    AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-    AWS_DEFAULT_ACL = os.getenv("AWS_DEFAULT_ACL")
-    if AWS_DEFAULT_ACL == "None":
-        AWS_DEFAULT_ACL = None
-    AWS_S3_CUSTOM_DOMAIN = (
-        f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_DEFAULT_REGION}.amazonaws.com"
-    )
-    AWS_S3_OBJECT_PARAMETERS = {"CacheControl": "max-age=86400"}
-    AWS_S3_SECURE_URLS = True
+    AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
+    AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
 
     # s3 static settings
     STATIC_LOCATION = "static"
-    STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
-    STATICFILES_STORAGE = "trayapp.storage_backends.StaticStorage"
-
-    # s3 cached static settings
-    COMPRESS_URL = STATIC_URL
-    COMPRESS_ROOT = BASE_DIR / "staticfiles"
-    COMPRESS_STORAGE = "trayapp.storage_backends.CachedStaticS3BotoStorage"
+    STATIC_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{STATIC_LOCATION}/"
+    STATICFILES_STORAGE = "trayapp.storage_backends.AzureStaticStorage"
 
     # s3 public media settings
     PUBLIC_MEDIA_LOCATION = "media"
-    MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/"
-    DEFAULT_FILE_STORAGE = "trayapp.storage_backends.PublicMediaStorage"
-
-    # s3 private media settings
-    PRIVATE_MEDIA_LOCATION = "private"
-    PRIVATE_FILE_STORAGE = "trayapp.storage_backends.PrivateMediaStorage"
+    MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{PUBLIC_MEDIA_LOCATION}/"
+    DEFAULT_FILE_STORAGE = 'trayapp.storage_backends.AzureMediaStorage'
 
 elif not USE_S3:
     STATIC_URL = "/assets/"

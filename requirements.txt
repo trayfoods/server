@@ -1,8 +1,5 @@
 better-profanity
 blurhash-python
-boto
-boto3
-botocore
 celery
 channels
 channels-redis
@@ -20,7 +17,7 @@ graphene-django==3.1.5
 graphql-core
 django-ipware
 django-redis
-django-storages
+django-storages[azure]
 django-unused-media
 graphene
 graphene-file-upload
@@ -44,7 +41,6 @@ python-dateutil
 python-dotenv
 redis
 requests
-s3transfer
 scikit-learn
 scipy
 service-identity
