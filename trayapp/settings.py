@@ -275,14 +275,16 @@ if USE_S3:
     AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
     AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
 
+    CUSTOM_DOMAIN = "cdn.trayfoods.com"
+
     # s3 static settings
     STATIC_LOCATION = "static"
-    STATIC_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{STATIC_LOCATION}/"
+    STATIC_URL = f"https://{CUSTOM_DOMAIN}/{STATIC_LOCATION}/"
     STATICFILES_STORAGE = "trayapp.storage_backends.AzureStaticStorage"
 
     # s3 public media settings
     PUBLIC_MEDIA_LOCATION = "media"
-    MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/{PUBLIC_MEDIA_LOCATION}/"
+    MEDIA_URL = f"https://{CUSTOM_DOMAIN}/{PUBLIC_MEDIA_LOCATION}/"
     DEFAULT_FILE_STORAGE = 'trayapp.storage_backends.AzureMediaStorage'
 
 elif not USE_S3:
