@@ -25,7 +25,7 @@ graphql-relay
 gunicorn
 joblib
 numba
-numpy
+# numpy
 packaging
 pandas
 Pillow
