@@ -105,7 +105,7 @@ class Item(models.Model):
         "users.Store", related_name="avaliable_in_store", blank=True
     )
     product_creator = models.ForeignKey(
-        "users.Vendor", null=True, on_delete=models.SET_NULL, blank=True
+        "users.Profile", null=True, on_delete=models.SET_NULL, blank=True
     )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
@@ -151,7 +151,7 @@ class Item(models.Model):
     @property
     # check if the current user is the creator of the product
     def is_creator(self):
-        return self.product_creator == self.request.user
+        return self.product_creator == self.request.user.profile
 
 
 class Rating(models.Model):

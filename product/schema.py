@@ -74,7 +74,7 @@ class Query(graphene.ObjectType):
     def resolve_store_orders(self, info, page, per_page=20):
         user = info.context.user
         if user.is_authenticated and user.profile.is_vendor:
-            user_store = user.profile.vendor.store
+            user_store = user.profile.store
             # get all orders for the store
             orders = user_store.orders.all()
             # pagination

@@ -2,9 +2,8 @@ import json
 
 import graphene
 from graphene_django.types import DjangoObjectType
-from graphql import GraphQLError
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
-from users.models import Vendor, Store
+from users.models import Store, Profile
 from users.types import StoreType
 
 from trayapp.custom_model import JSONField
@@ -127,22 +126,18 @@ class ItemType(DjangoObjectType):
     def resolve_editable(self, info):
         user = info.context.user
         editable = False
-        if (
-            user.is_authenticated
-            and Vendor.objects.filter(user=user.profile).exists()
-            and self.product_creator is not None
-        ):
-            vendor = Vendor.objects.get(user=user.profile)
-            # check if other stored have added this item
-            if vendor.store == self.product_creator.store:
-                # get all the stores that have this item and exclude the current store
-                stores = self.product_avaliable_in.exclude(
-                    store_nickname=self.product_creator.store
-                )
-                if stores.count() > 0:
-                    editable = False
-                else:
-                    editable = True
+        if (not user.is_authenticated and not user.profile is None and self.product_creator is not None):
+            return editable
+
+        # check if other stored have added this item
+        if user.profile.store == self.product_creator.store:
+            # get all the stores that have this item and exclude the current store
+            stores = self.product_avaliable_in.exclude(
+                store_nickname=self.product_creator.store
+            )
+            editable = True
+            if stores.count() > 0:
+                editable = False
 
         return editable
 
@@ -155,11 +150,11 @@ class ItemType(DjangoObjectType):
         # check if the user is authenticated
         if (
             user.is_authenticated
-            and Vendor.objects.filter(user=user.profile).exists()
+            and not user.profile is None
             and self.product_creator is not None
         ):
             # check if the user is a vendor
-            vendor = Vendor.objects.get(user=user.profile)
+            vendor = user.profile
             # check if the vendor is the creator of the product
             if vendor.store == self.product_creator.store:
                 product_share_visibility = "PUBLIC"
@@ -182,7 +177,7 @@ class ItemType(DjangoObjectType):
         store_item = "not_login"
         if user.is_authenticated:
             store_item = "not_vendor"
-            vendor = Vendor.objects.filter(user=user.profile).first()
+            vendor = user.profile
             if not vendor is None:
                 is_product_in_store = vendor.store.store_products.filter(
                     product_slug=self.product_slug

@@ -18,8 +18,6 @@ from product.models import Item, Order
 
 from django.conf import settings
 
-User = settings.AUTH_USER_MODEL
-
 
 def profile_image_directory_path(instance, filename):
     """
@@ -80,7 +78,7 @@ class UserAccount(AbstractUser, models.Model):
         role = "client"
         user = UserAccount.objects.filter(id=self.id).first()
         profile = Profile.objects.filter(user=user).first()
-        vendor = Vendor.objects.filter(user=profile).first()
+        vendor = Store.objects.filter(vendor=profile).first()
         student = Student.objects.filter(user=profile).first()
         school = School.objects.filter(user=user).first()
         delivery_person = DeliveryPerson.objects.filter(user=profile).first()
@@ -148,7 +146,7 @@ class UserAccount(AbstractUser, models.Model):
 
 
 class UserDevice(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     device_token = models.TextField()
     device_type = models.CharField(max_length=100, null=True, blank=True)
     device_name = models.CharField(max_length=100, null=True, blank=True)
@@ -190,12 +188,17 @@ class Gender(models.Model):
     name = models.CharField(max_length=20, help_text="SHOULD BE IN UPPERCASE!")
     rank = models.FloatField(default=0)
 
+    def save(self, *args, **kwargs):
+        # make sure the name is in uppercase
+        self.name = self.name.upper()
+        super().save(*args, **kwargs)
+
     def __str__(self) -> str:
         return self.name
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
     image = models.ImageField(upload_to=profile_image_directory_path, null=True)
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
@@ -242,6 +245,10 @@ class Profile(models.Model):
     @property
     def is_vendor(self):
         return hasattr(self, "vendor")
+    
+    @property
+    def store(self):
+        return Store.objects.filter(vendor=self).first()
 
     def __str__(self) -> str:
         return self.user.username
@@ -560,7 +567,7 @@ class Store(models.Model):
     wallet = models.OneToOneField(
         Wallet, on_delete=models.CASCADE, null=True, blank=True
     )
-    vendor = models.ForeignKey("Vendor", on_delete=models.CASCADE)
+    vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=20, null=True, blank=True)
@@ -580,6 +587,8 @@ class Store(models.Model):
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
     store_rank = models.FloatField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.store_nickname}"
@@ -616,25 +625,6 @@ class Store(models.Model):
     @property
     def orders(self):
         return Order.get_orders_by_store(store=self)
-
-
-class Vendor(models.Model):
-    user = models.OneToOneField(Profile, on_delete=models.CASCADE)
-    account_number = models.CharField(max_length=20, null=True, blank=True)
-    account_name = models.CharField(max_length=60, null=True, blank=True)
-    bank_code = models.CharField(max_length=20, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self) -> str:
-        return self.user.user.username
-
-    # get vendor's store
-    @property
-    def store(self):
-        return Store.objects.get(vendor=self)
-
-    def is_store_owner(self, store):
-        return True if store.vendor == self else False
 
 
 class Hostel(models.Model):
@@ -725,7 +715,7 @@ class UserActivity(models.Model):
 
 
 # Signals
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=UserAccount)
 def update_profile_signal(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)

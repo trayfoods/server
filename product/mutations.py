@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Vendor, Store
+from users.models import UserActivity, Store
 from graphene_file_upload.scalars import Upload
 from .types import ShippingInputType, OrderType, RatingInputType
 
@@ -89,8 +89,8 @@ class AddProductMutation(Output, graphene.Mutation):
 
         success = False
         product = None
-        vendor = Vendor.objects.filter(user=info.context.user.profile).first()
-        if vendor is None:
+        profile = info.context.user.profile
+        if profile is None:
             success = False
             raise GraphQLError("You Need To Become A Vendor To Add New Item")
 
@@ -109,7 +109,7 @@ class AddProductMutation(Output, graphene.Mutation):
             product_type = ItemAttribute.objects.filter(
                 urlParamName=product_type_val
             ).first()
-            if product is None and not vendor is None:
+            if product is None and not profile is None:
                 # spread the kwargs
                 save_data = {
                     **kwargs,
@@ -117,7 +117,7 @@ class AddProductMutation(Output, graphene.Mutation):
                     # "product_name": product_name.strip(),
                     "product_category": product_category,
                     "product_type": product_type,
-                    "product_creator": vendor,
+                    "product_creator": profile,
                 }
 
                 # Checking if slug already exists
@@ -154,7 +154,7 @@ class AddProductMutation(Output, graphene.Mutation):
                         is_primary=is_primary,
                     )
                     productImage.save()
-                    product.product_avaliable_in.add(vendor.store)
+                    product.product_avaliable_in.add(profile.store)
                     product.product_images.add(productImage)
                     product.save()
         except Exception as e:
@@ -206,12 +206,12 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
             for item in products:
                 product = Item.objects.filter(product_slug=item.strip()).first()
                 product_list.append(product)
-                vendor = Vendor.objects.filter(user=info.context.user.profile).first()
+                profile = info.context.user.profile
                 # Checking if the current user is equals to the store vendor
                 # Then add 0.5 to the store_rank
                 try:
                     if not product.product_creator is None:
-                        if product.product_creator != vendor:
+                        if product.product_creator != profile:
                             store = Store.objects.filter(
                                 store_nickname=product.product_creator.store.store_nickname
                             ).first()
@@ -220,11 +220,11 @@ class AddMultipleAvaliableProductsMutation(graphene.Mutation):
                                 store.save()
                 except:
                     pass
-                if not product is None and not vendor is None:
+                if not product is None and not profile is None:
                     if action == "add":
-                        product.product_avaliable_in.add(vendor.store)
+                        product.product_avaliable_in.add(profile.store)
                     elif action == "remove":
-                        product.product_avaliable_in.remove(vendor.store)
+                        product.product_avaliable_in.remove(profile.store)
                     else:
                         raise GraphQLError("Enter either `add/remove` for actions.")
                     product.save()
@@ -256,10 +256,9 @@ class AddAvaliableProductMutation(graphene.Mutation):
         profile = user.profile
         # Checking if the current user is equals to the store vendor
         # Then add 0.5 to the store_rank
-        if not product is None and user.profile.is_vendor:
-            vendor = profile.vendor
+        if not product is None and profile.is_vendor:
             if (
-                product.product_creator != vendor
+                product.product_creator != profile
                 and product.product_share_visibility == "private"
             ):  # then check if the user is a vendor
                 raise GraphQLError(
@@ -267,7 +266,7 @@ class AddAvaliableProductMutation(graphene.Mutation):
                 )
             try:
                 if not product.product_creator is None:
-                    if product.product_creator != vendor:
+                    if product.product_creator != profile:
                         store = Store.objects.filter(
                             store_nickname=product.product_creator.store.store_nickname
                         ).first()
@@ -276,7 +275,7 @@ class AddAvaliableProductMutation(graphene.Mutation):
                             store.save()
             except:
                 pass
-            store = vendor.store
+            store = profile.store
             if action == "add":
                 new_activity = UserActivity.objects.create(
                     user_id=info.context.user.id,

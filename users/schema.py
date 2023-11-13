@@ -19,10 +19,9 @@ from .mutations import (
     LoginMutation,
     RegisterMutation,
 )
-from .models import Student, Vendor, Store, Hostel, School
+from .models import Student, Store, Hostel, School
 from .types import (
     StudentType,
-    VendorType,
     StoreType,
     HostelType,
     UserNodeType,
@@ -37,14 +36,11 @@ User = get_user_model()
 
 class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectType):
     me = graphene.Field(UserNodeType)
-    vendors = graphene.List(VendorType)
     hostels = graphene.List(HostelType)
 
     check_email_verification = graphene.Field(
         EmailVerifiedNode, email=graphene.String()
     )
-
-    vendor = graphene.Field(VendorType, vendor_id=graphene.Int())
 
     client = graphene.Field(StudentType, client_id=graphene.Int())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
@@ -102,14 +98,9 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectTyp
             return user
         return None
 
-    def resolve_vendors(self, info, **kwargs):
-        return Vendor.objects.all().order_by("-id")
-
     def resolve_hostels(self, info, **kwargs):
         return Hostel.objects.all()
 
-    def resolve_vendor(self, info, vendor_id):
-        return Vendor.objects.get(pk=vendor_id)
 
     def resolve_client(self, info, client_id):
         return Student.objects.get(pk=client_id)
