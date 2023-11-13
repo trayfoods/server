@@ -5,7 +5,7 @@ channels
 channels-redis
 daphne
 dj-database-url
-Django==3.2.19
+Django==3.2.23
 django-anymail
 django-cleanup
 django-cors-headers
