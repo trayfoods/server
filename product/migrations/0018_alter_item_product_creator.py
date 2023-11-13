@@ -7,7 +7,6 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0060_store_created_at_alter_store_vendor_delete_vendor'),
         ('product', '0017_alter_item_product_creator'),
     ]
 
