@@ -567,7 +567,7 @@ class Store(models.Model):
     wallet = models.OneToOneField(
         Wallet, on_delete=models.CASCADE, null=True, blank=True
     )
-    vendor = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True)
+    vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
     store_type = models.CharField(max_length=20, null=True, blank=True)
@@ -637,7 +637,6 @@ class Hostel(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
 
 class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
