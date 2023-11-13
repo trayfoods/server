@@ -5,7 +5,7 @@ channels
 channels-redis
 daphne
 dj-database-url
-Django
+Django==3.2
 django-anymail
 django-cleanup
 django-cors-headers
@@ -24,7 +24,6 @@ graphene-file-upload
 graphql-relay
 gunicorn
 joblib
-numba
 numpy
 packaging
 pandas

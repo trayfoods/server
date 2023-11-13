@@ -9,7 +9,6 @@ from .models import (
     UserAccount,
     School,
     Student,
-    Vendor,
     Store,
     Profile,
     Hostel,
@@ -31,6 +30,7 @@ class SchoolType(DjangoObjectType):
 
 class ProfileType(DjangoObjectType):
     is_student = graphene.Boolean()
+    store = graphene.Field("users.schema.StoreType")
 
     class Meta:
         model = Profile
@@ -46,6 +46,10 @@ class ProfileType(DjangoObjectType):
     def resolve_is_student(self, info, *args, **kwargs):
         # check if the user role is student
         return self.user.role == "STUDENT"
+    
+    def resolve_store(self, info, *args, **kwargs):
+        # check if the user role is student
+        return self.store
 
 
 class UserNodeType(UserNode, graphene.ObjectType):
@@ -129,33 +133,6 @@ class TransactionNode(TransactionType, graphene.ObjectType):
         filterset_class = TransactionFilter
 
 
-class VendorType(DjangoObjectType):
-    profile = graphene.Field(ProfileType)
-    store = graphene.Field("users.schema.StoreType")
-
-    class Meta:
-        model = Vendor
-        fields = [
-            "id",
-            "profile",
-            "store",
-            "account_number",
-            "account_name",
-            "bank_code",
-            "created_at",
-        ]
-
-    def resolve_id(self, info):
-        return self.pk
-
-    def resolve_profile(self, info):
-        return self.user.user.profile
-
-    def resolve_store(self, info):
-        store = Store.objects.filter(vendor=self).first()
-        return store
-
-
 class StoreType(DjangoObjectType):
     store_country = graphene.String()
     store_categories = graphene.List(graphene.String)
@@ -199,14 +176,12 @@ class StoreType(DjangoObjectType):
         return self.store_products.all()
 
     def resolve_store_image(self, info):
-        store = Store.objects.filter(vendor=self.vendor).first()
-        vendor = store.vendor
+        vendor = self.vendor
         if vendor is None:
             return None
-        profile = vendor.user
         image = None
         try:
-            image = info.context.build_absolute_uri(profile.image.url)
+            image = info.context.build_absolute_uri(vendor.image.url)
         except:
             pass
         return image

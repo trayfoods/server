@@ -17,7 +17,6 @@ from trayapp.permissions import IsAuthenticated, permission_checker
 from .types import UserNodeType
 from .models import (
     Transaction,
-    Vendor,
     Store,
     School,
     Student,
@@ -116,17 +115,14 @@ class CreateStoreMutation(Output, graphene.Mutation):
 
         user = User.objects.get(username=user.username)
         profile = user.profile
-        vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
-        if vendor is None:
+        if profile is None:
             store_check = Store.objects.filter(
                 store_nickname=store_nickname.strip()
             ).first()  # check if the store nickname is already taken
             if store_check is None:  # if not taken
-                vendor = Vendor.objects.create(user=profile)
                 store_school_qs = School.objects.filter(slug=store_school.strip())
                 if not store_school_qs.exists():
                     raise GraphQLError("School does not exist, please try again")
-                vendor.save()
                 store = Store.objects.create(
                     store_name=store_name,
                     store_country=store_country,
@@ -137,7 +133,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
                     store_bio=store_bio,
                     store_nickname=store_nickname,
                     store_school=store_school_qs.first(),
-                    vendor=vendor,
+                    vendor=profile,
                 )  # create the store
                 store.save()
 
@@ -159,12 +155,11 @@ class CreateStoreMutation(Output, graphene.Mutation):
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
         # check if the store is was not created then delete the vendor
-        if user.vendor and not user.vendor.store:
-            user.vendor.delete()
-        if user.profile and user.vendor:
-            return cls(success=True, user=user)
-        else:
+        if user.profile and not user.profile.store:
+            user.profile.store.delete()
             return cls(success=False, user=user)
+        else:
+            return cls(success=True, user=user)
 
 
 class UpdateStoreMutation(Output, graphene.Mutation):
@@ -201,10 +196,9 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         success = False
         user = info.context.user
         profile = user.profile
-        vendor = Vendor.objects.filter(user=profile).first()
-        if vendor is None:
+        if profile is None:
             raise GraphQLError("You are not a vendor")
-        store = Store.objects.filter(vendor=vendor).first()
+        store = Store.objects.filter(vendor=profile).first()
         if store is None:
             raise GraphQLError("You do not have a store")
         if store_name:
@@ -238,7 +232,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
         user = info.context.user
-        if user.vendor and user.vendor.store:
+        if user.profile and user.profile.store:
             return cls(success=True, user=user)
         else:
             return cls(success=False, user=user)
@@ -334,35 +328,32 @@ class CreateClientMutation(Output, graphene.Mutation):
     def mutate(self, info, gender, hostel_shortname=None, room=None):
         user = info.context.user
         profile = info.context.user.profile
-        if user.is_authenticated:
-            vendor = Vendor.objects.filter(user=profile).first()  # get the vendor
-            if vendor is None:
-                client = Student.objects.filter(user=profile).first()  # get the client
-                if client is None:  # if client does not exist
-                    hostel = Hostel.objects.filter(
-                        short_name=hostel_shortname
-                    ).first()  # get the hostel
-                    gender = gender.upper()
-                    gender = Gender.objects.filter(name=gender).first()
-                    if not gender is None:
-                        gender.rank += 1  # increment the rank
-                        gender.save()
-                        new_client = Student.objects.create(
-                            user=profile, hostel=hostel, room=room
-                        )  # create the client
-                        new_client_profile = Profile.objects.filter(
-                            user=user
-                        ).first()  # get the profile
-                        if not new_client_profile is None:  # if profile exists
-                            new_client_profile.gender = gender
-                            new_client_profile.save()  # save the profile
-                        new_client.save()
-                        user = User.objects.filter(username=user.username).first()
-                    else:
-                        # raise error if gender does not exist
-                        raise GraphQLError("Gender do not exists")
-        else:
-            raise GraphQLError("Login Required.")
+        if profile is None:
+            client = Student.objects.filter(user=profile).first()  # get the client
+            if client is None:  # if client does not exist
+                hostel = Hostel.objects.filter(
+                    short_name=hostel_shortname
+                ).first()  # get the hostel
+                gender = gender.upper()
+                gender = Gender.objects.filter(name=gender).first()
+                if not gender is None:
+                    gender.rank += 1  # increment the rank
+                    gender.save()
+                    new_client = Student.objects.create(
+                        user=profile, hostel=hostel, room=room
+                    )  # create the client
+                    new_client_profile = Profile.objects.filter(
+                        user=user
+                    ).first()  # get the profile
+                    if not new_client_profile is None:  # if profile exists
+                        new_client_profile.gender = gender
+                        new_client_profile.save()  # save the profile
+                    new_client.save()
+                    user = User.objects.filter(username=user.username).first()
+                else:
+                    # raise error if gender does not exist
+                    raise GraphQLError("Gender do not exists")
+
         return CreateClientMutation(user=user)
 
     @verification_required
