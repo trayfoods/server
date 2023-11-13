@@ -81,7 +81,7 @@ class UserAccount(AbstractUser, models.Model):
         vendor = Store.objects.filter(vendor=profile).first()
         student = Student.objects.filter(user=profile).first()
         school = School.objects.filter(user=user).first()
-        delivery_person = DeliveryPerson.objects.filter(user=profile).first()
+        delivery_person = DeliveryPerson.objects.filter(profile=profile).first()
 
         if (
             student is None
@@ -649,18 +649,18 @@ class Student(models.Model):
 
 
 class DeliveryPerson(models.Model):
-    user = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
+    profile = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
     wallet = models.OneToOneField(
         Wallet, on_delete=models.CASCADE, null=True, blank=True, unique=True
     )
-    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_verified = models.BooleanField(default=False)
     is_available = models.BooleanField(default=False)
     is_on_delivery = models.BooleanField(default=False)
-    # orders = models.ManyToManyField("product.Order", blank=True)
+    not_allowed_bash = models.JSONField(default=list, null=True, blank=True)
+    not_allowed_locations = models.JSONField(default=list, null=True, blank=True)
 
     def __str__(self) -> str:
-        return self.user.user.username
+        return self.profile.user.username
 
     class Meta:
         ordering = ["-is_available"]
@@ -673,6 +673,33 @@ class DeliveryPerson(models.Model):
     @property
     def orders(self):
         return Order.get_orders_by_delivery_person(delivery_person=self)
+    
+    # function to check if a order is able ti be delivered by a delivery person
+    def can_deliver(self, order):
+        shipping = order.shipping
+        sch = shipping.get("sch")
+        address = shipping.get("address")
+        bash = shipping.get("bash")
+
+
+        # check if the delivery person is not allowed to deliver the order
+        if bash in self.not_allowed_bash:
+            return False
+        # check if the delivery person is not allowed to deliver to the order location
+        delivery_location = f"{sch} {address}"
+        if delivery_location in self.not_allowed_locations:
+            return False
+        return True
+    
+    # function to get delivery people that can deliver a order
+    @staticmethod
+    def get_delivery_people_that_can_deliver(order):
+        delivery_people = DeliveryPerson.objects.filter(is_available=True, is_on_delivery=False)
+        delivery_people_that_can_deliver = []
+        for delivery_person in delivery_people:
+            if delivery_person.can_deliver(order):
+                delivery_people_that_can_deliver.append(delivery_person)
+        return delivery_people_that_can_deliver
 
 
 ACTIVITY_TYPES = (
