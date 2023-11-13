@@ -127,15 +127,9 @@ class ItemType(DjangoObjectType):
         user = info.context.user
         editable = False
 
-        if user.is_authenticated is False:
-            return editable
-
-
-        if not user.profile is None and self.product_creator is not None:
-            return editable
-
         # check if other stored have added this item
-        if user.profile.store == self.product_creator.store:
+        if (user and user.is_authenticated and user.profile.store and 
+            self.product_creator and user.profile.store == self.product_creator.store):
             # get all the stores that have this item and exclude the current store
             stores = self.product_avaliable_in.exclude(
                 store_nickname=self.product_creator.store
