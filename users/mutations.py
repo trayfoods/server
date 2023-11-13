@@ -115,7 +115,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
 
         user = User.objects.get(username=user.username)
         profile = user.profile
-        if profile is None:
+        if profile.store is None:
             store_check = Store.objects.filter(
                 store_nickname=store_nickname.strip()
             ).first()  # check if the store nickname is already taken
@@ -196,7 +196,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         success = False
         user = info.context.user
         profile = user.profile
-        if profile is None:
+        if profile.store is None:
             raise GraphQLError("You are not a vendor")
         store = Store.objects.filter(vendor=profile).first()
         if store is None:
@@ -328,7 +328,7 @@ class CreateClientMutation(Output, graphene.Mutation):
     def mutate(self, info, gender, hostel_shortname=None, room=None):
         user = info.context.user
         profile = info.context.user.profile
-        if profile is None:
+        if profile.store is None:
             client = Student.objects.filter(user=profile).first()  # get the client
             if client is None:  # if client does not exist
                 hostel = Hostel.objects.filter(
