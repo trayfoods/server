@@ -742,9 +742,9 @@ def update_store_wallet_signal(sender, instance, created, **kwargs):
         # check if wallet exists
         if not instance.wallet:
             # check if user has a wallet
-            wallet = Wallet.objects.filter(user=instance.vendor.user).first()
+            wallet = Wallet.objects.filter(user=instance.vendor).first()
             if not wallet:
-                wallet = Wallet.objects.create(user=instance.vendor.user)
+                wallet = Wallet.objects.create(user=instance.vendor)
                 wallet.save()
             instance.wallet = wallet
             instance.wallet.save()
