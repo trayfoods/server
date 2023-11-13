@@ -126,7 +126,12 @@ class ItemType(DjangoObjectType):
     def resolve_editable(self, info):
         user = info.context.user
         editable = False
-        if (not user.is_authenticated and not user.profile is None and self.product_creator is not None):
+
+        if user.is_authenticated is False:
+            return editable
+
+
+        if not user.profile is None and self.product_creator is not None:
             return editable
 
         # check if other stored have added this item
@@ -147,12 +152,10 @@ class ItemType(DjangoObjectType):
     def resolve_product_share_visibility(self, info):
         user = info.context.user
         product_share_visibility = self.product_share_visibility
+        if user.is_authenticated is False:
+            return product_share_visibility
         # check if the user is authenticated
-        if (
-            user.is_authenticated
-            and not user.profile is None
-            and self.product_creator is not None
-        ):
+        if not user.profile is None and self.product_creator is not None:
             # check if the user is a vendor
             vendor = user.profile
             # check if the vendor is the creator of the product
