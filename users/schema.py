@@ -1,10 +1,10 @@
 import graphene
 from django.contrib.auth import get_user_model
-from graphql import GraphQLError
 from graphql_auth import mutations
 from django.db.models import Q
 from users.queries.transactions import TransactionQueries
 from users.queries.wallet import WalletQueries
+from users.queries.school import SchoolQueries
 
 from trayapp.utils import paginate_queryset
 from .mutations import (
@@ -14,18 +14,17 @@ from .mutations import (
     WithdrawFromWalletMutation,
     ChangePinMutation,
     UpdateAccountMutation,
+    UpdateProfileMutation,
     CreateClientMutation,
     UserDeviceMutation,
     LoginMutation,
     RegisterMutation,
 )
-from .models import Student, Store, Hostel, School
+from .models import Student, Store
 from .types import (
     StudentType,
     StoreType,
-    HostelType,
     UserNodeType,
-    SchoolType,
 )
 from graphql_auth.models import UserStatus
 
@@ -34,9 +33,8 @@ from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 User = get_user_model()
 
 
-class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectType):
+class Query(BankListQuery, WalletQueries, TransactionQueries, SchoolQueries, graphene.ObjectType):
     me = graphene.Field(UserNodeType)
-    hostels = graphene.List(HostelType)
 
     check_email_verification = graphene.Field(
         EmailVerifiedNode, email=graphene.String()
@@ -52,18 +50,6 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectTyp
 
     get_trending_stores = graphene.List(
         StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
-    )
-
-    schools = graphene.List(
-        SchoolType,
-        name=graphene.String(required=False),
-        country=graphene.String(required=False),
-        count=graphene.Int(required=False),
-    )
-
-    school = graphene.Field(
-        SchoolType,
-        slug=graphene.String(required=True),
     )
 
     def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
@@ -97,9 +83,6 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectTyp
         if user.is_authenticated:
             return user
         return None
-
-    def resolve_hostels(self, info, **kwargs):
-        return Hostel.objects.all()
 
 
     def resolve_client(self, info, client_id):
@@ -138,34 +121,6 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, graphene.ObjectTyp
             data["msg"] = "email do not exists"
         return data
 
-    def resolve_schools(self, info, name=None, country=None, count=None):
-        schools = []
-
-        # check if country and name is not None
-        if name and country:
-            schools = School.objects.filter(
-                Q(name__icontains=name) | Q(country__icontains=country)
-            )
-
-        if name is None and country is None:
-            raise GraphQLError("name and country cannot be None")
-
-        if name:
-            schools = School.objects.filter(name__icontains=name)
-        if country:
-            schools = School.objects.filter(country__icontains=country)
-
-        if count:
-            schools = schools[:count]
-
-        return schools
-
-    def resolve_school(self, info, slug):
-        school = School.objects.filter(slug=slug).first()
-        if school is None:
-            raise GraphQLError("school does not exist")
-        return school
-
 
 class AuthMutation(graphene.ObjectType):
     register = RegisterMutation.Field()
@@ -184,6 +139,7 @@ class AuthMutation(graphene.ObjectType):
 
 class Mutation(AuthMutation, graphene.ObjectType):
     update_account = UpdateAccountMutation.Field()
+    update_profile = UpdateProfileMutation.Field()
     create_store = CreateStoreMutation.Field()
     update_store = UpdateStoreMutation.Field()
     create_client = CreateClientMutation.Field()

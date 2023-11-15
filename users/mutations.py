@@ -14,7 +14,7 @@ from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import UserNodeType
+from .types import UserNodeType, ProfileType
 from .models import (
     Transaction,
     Store,
@@ -249,6 +249,8 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         state = graphene.String()
         city = graphene.String()
 
+        is_student = graphene.Boolean()
+
     user = graphene.Field(UserNodeType)
 
     __doc__ = UpdateAccountMixin.__doc__
@@ -314,6 +316,99 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         user = User.objects.get(username=user.username)
         return UpdateAccountMutation(user=user)
 
+class UpdateProfileMutation(Output, graphene.Mutation):
+    class Arguments:
+        gender = graphene.String()
+        country = graphene.String()
+        phone_number = graphene.String()
+        state = graphene.String()
+        city = graphene.String()
+        is_student = graphene.String()
+        school = graphene.String()
+        campus = graphene.String()
+        hostel = graphene.String()
+        hostel_floor = graphene.String()
+        hostel_room = graphene.String()
+
+
+    profile = graphene.Field(ProfileType)
+
+
+    @permission_checker([IsAuthenticated])
+    def mutate(
+        self,
+        info,
+        gender=None,
+        country=None,
+        phone_number=None,
+        state=None,
+        city=None,
+        is_student=None,
+        school=None,
+        campus=None,
+        hostel=None,
+        hostel_floor=None,
+        hostel_room=None,
+    ):
+        user = info.context.user
+        profile = user.profile
+        if profile is None:
+            raise GraphQLError("Profile does not exist")
+        
+        if gender:
+            profile.gender = gender
+
+        if country:
+            profile.country = country
+
+        if phone_number:
+            profile.phone_number = phone_number
+
+        if state:
+            profile.state = state
+
+        if city:
+            profile.city = city
+
+        if is_student and is_student.lower().strip() == "yes":
+            student = Student.objects.filter(user=profile)
+            if student.exists():
+                student = student.first()
+            else:
+                # create a student
+                student = Student.objects.create(user=profile)
+            if school:
+                school = School.objects.filter(slug=school.strip()).first()
+                if not school:
+                    raise GraphQLError("School does not exist")
+                student.school = school
+            if campus:
+                student.campus = campus
+            if hostel:
+                hostel = Hostel.objects.filter(slug=hostel.strip()).first()
+                if not hostel:
+                    raise GraphQLError("Hostel does not exist")
+                student.hostel = hostel
+            if hostel_floor:
+                student.floor = hostel_floor
+            if hostel_room:
+                student.room = hostel_room
+            student.save()
+        else:
+            student = Student.objects.filter(user=profile)
+            if student.exists():
+                student = student.first()
+                student.delete()
+        profile.save()
+        return UpdateProfileMutation(profile=profile)
+    
+    @verification_required
+    def resolve_mutation(cls, root, info, **kwargs):
+        user = info.context.user
+        if user.profile:
+            return cls(success=True, profile=user.profile)
+        else:
+            return cls(success=False, profile=user.profile)
 
 class CreateClientMutation(Output, graphene.Mutation):
     class Arguments:

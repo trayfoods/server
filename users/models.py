@@ -206,13 +206,13 @@ class Profile(models.Model):
     country = CountryField(null=True, blank=True, default="NG")
     city = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=10, null=True, blank=True)
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=15, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    is_verified = models.BooleanField(default=False)
 
+    @property
     def has_required_fields(self):
         """
-        Check if user has the required fields, which are:
+        Checking if user has the required fields, which are:
         - School if the user role is equals to 'student'
         - gender
         - country
@@ -222,7 +222,8 @@ class Profile(models.Model):
         """
 
         if self.user.role == "STUDENT":
-            if self.school is None:
+            student = self.student
+            if student.school is None or student.campus is None or student.hostel is None or student.room is None:
                 return False
 
         if self.gender is None:
@@ -629,23 +630,46 @@ class Store(models.Model):
 
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
-    short_name = models.CharField(max_length=10, null=True, blank=True)
+    slug = models.SlugField(max_length=50, null=True, blank=True, unique=True)
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True)
+    campus = models.CharField(max_length=50, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
     is_floor = models.BooleanField(default=False)
     floor_count = models.IntegerField(default=0)
 
     def __str__(self) -> str:
         return self.name
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.slug:
+            self.slug = slugify(self.name)
+            self.save()
+
+    @property
+    def floors(self):
+        # if the hostel is not a floor...we return the floor count in a list
+        # else we return the floors in abc order
+
+        if not self.is_floor:
+            return [f"flat {i}" for i in range(1, self.floor_count + 1)]
+        else:
+            # represent the floor_count in alphabets
+            floor_count = self.floor_count
+            floors = []
+            for i in range(1, floor_count + 1):
+                floors.append(f"floor {chr(64 + i)}")
+            return floors
 
 class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     school = models.ForeignKey(
-        School, on_delete=models.SET_NULL, null=True, blank=True, editable=False
+        School, on_delete=models.SET_NULL, null=True, blank=True
     )
     campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
-    room = models.JSONField(default=dict, null=True, blank=True)
+    floor = models.CharField(max_length=50, null=True, blank=True)
+    room = models.CharField(max_length=50, null=True, blank=True)
 
 
 class DeliveryPerson(models.Model):

@@ -29,8 +29,9 @@ class SchoolType(DjangoObjectType):
 
 
 class ProfileType(DjangoObjectType):
-    is_student = graphene.Boolean()
     store = graphene.Field("users.schema.StoreType")
+    gender = graphene.String()
+    has_required_fields = graphene.Boolean()
 
     class Meta:
         model = Profile
@@ -42,14 +43,19 @@ class ProfileType(DjangoObjectType):
         else:
             image = None
         return image
-
-    def resolve_is_student(self, info, *args, **kwargs):
-        # check if the user role is student
-        return self.user.role == "STUDENT"
     
     def resolve_store(self, info, *args, **kwargs):
         # check if the user role is student
         return self.store
+    
+    def resolve_gender(self, info, *args, **kwargs):
+        return self.gender.name
+    
+    def resolve_has_required_fields(self, info, *args, **kwargs):
+        if info.context.user != self.user:
+            return False
+        # check if the user role is student
+        return self.has_required_fields
 
 
 class UserNodeType(UserNode, graphene.ObjectType):
