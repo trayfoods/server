@@ -175,7 +175,7 @@ class ItemType(DjangoObjectType):
         if user.is_authenticated:
             store_item = "not_vendor"
             vendor = user.profile
-            if not vendor is None:
+            if not vendor.store is None:
                 is_product_in_store = vendor.store.store_products.filter(
                     product_slug=self.product_slug
                 ).first()
