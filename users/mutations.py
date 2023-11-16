@@ -395,6 +395,8 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 student.room = hostel_room
             student.save()
         else:
+            if profile.is_vendor:
+                return GraphQLError("You are a vendor, you cannot be a student")
             student = Student.objects.filter(user=profile)
             if student.exists():
                 student = student.first()
