@@ -328,7 +328,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         campus = graphene.String()
         hostel = graphene.String()
         hostel_floor = graphene.String()
-        hostel_room = graphene.Int()
+        hostel_room = graphene.String()
 
 
     profile = graphene.Field(ProfileType)
@@ -392,7 +392,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
             if hostel_floor:
                 student.floor = hostel_floor
             if hostel_room:
-                student.room = str(hostel_room)
+                student.room = hostel_room
             student.save()
         else:
             student = Student.objects.filter(user=profile)
