@@ -49,3 +49,4 @@ sqlparse
 universities
 urllib3
 whitenoise
+python-restcountries==2.0.0
