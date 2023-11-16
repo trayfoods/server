@@ -331,7 +331,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         hostel_room = graphene.String()
 
 
-    profile = graphene.Field(ProfileType)
+    user = graphene.Field(UserNodeType)
 
 
     @permission_checker([IsAuthenticated])
@@ -400,7 +400,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 student = student.first()
                 student.delete()
         profile.save()
-        return UpdateProfileMutation(profile=profile, success=True)
+        return UpdateProfileMutation(user=info.context.user, success=True)
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
     class Arguments:
