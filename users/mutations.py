@@ -373,7 +373,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         if city:
             profile.city = city
 
-        if is_student and is_student.lower().strip() == "yes":
+        if is_student and is_student.lower().strip() == "yes" and profile.is_vendor == False:
             student = Student.objects.get_or_create(user=profile)
             student = student[0]
 
