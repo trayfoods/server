@@ -356,6 +356,9 @@ class UpdateProfileMutation(Output, graphene.Mutation):
             raise GraphQLError("Profile does not exist")
         
         if gender:
+            gender = gender.upper().strip()
+            gender = Gender.objects.filter(name=gender).first()
+            
             profile.gender = gender
 
         if country:
@@ -371,12 +374,9 @@ class UpdateProfileMutation(Output, graphene.Mutation):
             profile.city = city
 
         if is_student and is_student.lower().strip() == "yes":
-            student = Student.objects.filter(user=profile)
-            if student.exists():
-                student = student.first()
-            else:
-                # create a student
-                student = Student.objects.create(user=profile)
+            student = Student.objects.get_or_create(user=profile)
+            student = student[0]
+
             if school:
                 school = School.objects.filter(slug=school.strip()).first()
                 if not school:
@@ -400,65 +400,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 student = student.first()
                 student.delete()
         profile.save()
-        return UpdateProfileMutation(profile=profile)
-    
-    @verification_required
-    def resolve_mutation(cls, root, info, **kwargs):
-        user = info.context.user
-        if user.profile:
-            return cls(success=True, profile=user.profile)
-        else:
-            return cls(success=False, profile=user.profile)
-
-class CreateClientMutation(Output, graphene.Mutation):
-    class Arguments:
-        hostel_shortname = graphene.String(required=False)
-        room = graphene.String(required=False)
-        gender = graphene.String(required=True)
-
-    user = graphene.Field(UserNodeType)
-
-    @staticmethod
-    @permission_checker([IsAuthenticated])
-    def mutate(self, info, gender, hostel_shortname=None, room=None):
-        user = info.context.user
-        profile = info.context.user.profile
-        if profile.store is None:
-            client = Student.objects.filter(user=profile).first()  # get the client
-            if client is None:  # if client does not exist
-                hostel = Hostel.objects.filter(
-                    short_name=hostel_shortname
-                ).first()  # get the hostel
-                gender = gender.upper()
-                gender = Gender.objects.filter(name=gender).first()
-                if not gender is None:
-                    gender.rank += 1  # increment the rank
-                    gender.save()
-                    new_client = Student.objects.create(
-                        user=profile, hostel=hostel, room=room
-                    )  # create the client
-                    new_client_profile = Profile.objects.filter(
-                        user=user
-                    ).first()  # get the profile
-                    if not new_client_profile is None:  # if profile exists
-                        new_client_profile.gender = gender
-                        new_client_profile.save()  # save the profile
-                    new_client.save()
-                    user = User.objects.filter(username=user.username).first()
-                else:
-                    # raise error if gender does not exist
-                    raise GraphQLError("Gender do not exists")
-
-        return CreateClientMutation(user=user)
-
-    @verification_required
-    def resolve_mutation(cls, root, info, **kwargs):
-        user = info.context.user
-        if user.profile and user.client:
-            return cls(success=True, user=user)
-        else:
-            return cls(success=False, user=user)
-
+        return UpdateProfileMutation(profile=profile, success=True)
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
     class Arguments:

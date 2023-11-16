@@ -49,12 +49,10 @@ class ProfileType(DjangoObjectType):
         return self.store
     
     def resolve_gender(self, info, *args, **kwargs):
-        return self.gender.name
+        if self.gender:
+            return self.gender.name
     
     def resolve_has_required_fields(self, info, *args, **kwargs):
-        if info.context.user != self.user:
-            return False
-        # check if the user role is student
         return self.has_required_fields
 
 
