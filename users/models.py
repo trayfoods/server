@@ -90,16 +90,16 @@ class UserAccount(AbstractUser, models.Model):
         ):
             role = "client"
 
-        if is_vendor and not is_school:
-            role = "vendor"
-
-        if is_student and not is_school:
+        if is_student and not is_school and not is_vendor:
             role = "student"
 
-        if is_school and not is_student:
+        if is_vendor and not is_school and not is_student:
+            role = "vendor"
+
+        if is_school and not is_student and not is_vendor:
             role = "school"
 
-        if is_delivery_person and not is_school:
+        if is_delivery_person and not is_school and not is_student and not is_vendor:
             role = "delivery_person"
 
         return role.upper()  # DO NOT TOUCH THIS
