@@ -76,31 +76,30 @@ class UserAccount(AbstractUser, models.Model):
     @property
     def role(self):  # set user role
         role = "client"
-        user = UserAccount.objects.filter(id=self.id).first()
-        profile = Profile.objects.filter(user=user).first()
-        vendor = Store.objects.filter(vendor=profile).first()
-        student = Student.objects.filter(user=profile).first()
-        school = School.objects.filter(user=user).first()
-        delivery_person = DeliveryPerson.objects.filter(profile=profile).first()
+        profile = Profile.objects.filter(user=self).first()
+        is_student = profile.is_student
+        is_vendor = profile.is_vendor
+        is_school = School.objects.filter(user=self).exists()
+        is_delivery_person = DeliveryPerson.objects.filter(profile=profile).exists()
 
         if (
-            student is None
-            and vendor is None
-            and school is None
-            and delivery_person is None
+            not is_student
+            and not is_vendor
+            and not is_school
+            and not is_delivery_person
         ):
             role = "client"
 
-        if not vendor is None:
+        if is_vendor and not is_school:
             role = "vendor"
 
-        if not student is None and vendor is None:
+        if is_student and not is_school:
             role = "student"
 
-        if not school is None and vendor is None:
+        if is_school and not is_student:
             role = "school"
 
-        if not delivery_person is None and vendor is None and school is None:
+        if is_delivery_person and not is_school:
             role = "delivery_person"
 
         return role.upper()  # DO NOT TOUCH THIS
@@ -207,7 +206,7 @@ class Profile(models.Model):
     city = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=10, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
-    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
+    gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
 
     @property
     def has_required_fields(self):
@@ -221,24 +220,13 @@ class Profile(models.Model):
         - phone_number
         """
 
-        if self.user.role == "STUDENT":
+        if self.is_student:
             student = self.student
-            if student.school is None or student.campus is None or student.hostel is None or student.room is None:
+            print(student)
+            if student.school is None or not student.campus or student.hostel is None or not student.room:
                 return False
 
-        if self.gender is None:
-            return False
-
-        if self.country is None:
-            return False
-
-        if self.state is None:
-            return False
-
-        if self.city is None:
-            return False
-
-        if self.phone_number is None:
+        if self.gender is None or self.country is None or self.state is None or self.city is None or self.phone_number is None:
             return False
 
         return True
@@ -250,6 +238,14 @@ class Profile(models.Model):
     @property
     def store(self):
         return Store.objects.filter(vendor=self).first()
+    
+    @property
+    def is_student(self):
+        return hasattr(self, "student")
+    
+    @property
+    def is_delivery_person(self):
+        return hasattr(self, "delivery_person")
 
     def __str__(self) -> str:
         return self.user.username
@@ -667,7 +663,7 @@ class Student(models.Model):
         School, on_delete=models.SET_NULL, null=True, blank=True
     )
     campus = models.CharField(max_length=50, null=True, blank=True)
-    hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True)
+    hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
     floor = models.CharField(max_length=50, null=True, blank=True)
     room = models.CharField(max_length=50, null=True, blank=True)
 
