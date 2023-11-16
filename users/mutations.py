@@ -402,7 +402,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 student = student.first()
                 student.delete()
         profile.save()
-        return UpdateProfileMutation(user=info.context.user, success=True)
+        return UpdateProfileMutation(user=info.context.user, success=profile.has_required_fields)
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
     class Arguments:
