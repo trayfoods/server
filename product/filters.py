@@ -10,8 +10,9 @@ class ItemFilter(FilterSet):
     class Meta:
         model = Item
         fields = {
-            "product_name": ["exact", "icontains"],
-            "product_slug": ["exact"],
+            "product_name": ["icontains"],
+            "product_slug": ["icontains"],
+            "product_desc": ["icontains"],
             "product_price": ["exact", "lt", "gt"], # lt = less than, gt = greater than
             "product_category": ["exact"],
             "product_type": ["exact"],

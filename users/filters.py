@@ -53,7 +53,10 @@ class StoreFilter(FilterSet):
     class Meta:
         model = Store
         fields = {
-            "store_name": ["exact", "icontains"],
+            "store_name": ["icontains"],
+            "store_nickname": ["icontains"],
             "store_type": ["exact"],
             "store_country": ["exact"],
+            "store_school": ["exact"],
+            "store_address": ["icontains"],
         }
