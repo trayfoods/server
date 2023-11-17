@@ -111,6 +111,7 @@ class Item(models.Model):
     product_clicks = models.IntegerField(default=0)
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
+    product_currency = models.CharField(max_length=20, default="NGN")
 
     is_groupable = models.BooleanField(default=False)
 
