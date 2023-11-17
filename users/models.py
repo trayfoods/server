@@ -736,9 +736,9 @@ ACTIVITY_TYPES = (
 class UserActivity(models.Model):
     user_id = models.PositiveIntegerField()
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField()
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
     activity_message = models.TextField(null=True, blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.user_id} - {self.item.product_slug} - {self.timestamp}"

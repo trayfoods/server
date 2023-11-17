@@ -12,26 +12,16 @@ from product.mutations import (
     InitializeTransactionMutation,
 )
 from product.models import Item, ItemAttribute
-
-from product.utils import recommend_items
-from users.models import UserActivity
 from trayapp.custom_model import ItemsAvalibilityNode
-from django.utils import timezone
+
+from product.queries.item import ItemQueries
 
 # basic searching
 from django.db.models import Q
 
 
-class Query(graphene.ObjectType):
+class Query(ItemQueries, graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
-    items = graphene.List(
-        ItemType, count=graphene.Int(required=True), page=graphene.Int(required=False)
-    )
-    item = graphene.Field(
-        ItemType,
-        item_slug=graphene.String(required=True),
-        store_nickname=graphene.String(required=False),
-    )
 
     user_orders = graphene.List(
         OrderType,
@@ -47,12 +37,6 @@ class Query(graphene.ObjectType):
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, urlParamName=graphene.String())
-
-    search_items = graphene.List(
-        ItemType,
-        query=graphene.String(required=True),
-        count=graphene.Int(required=False),
-    )
 
     check_muliple_items_is_avaliable = graphene.List(
         ItemsAvalibilityNode, items_slug_store_nickName=graphene.String(required=True)
@@ -127,20 +111,6 @@ class Query(graphene.ObjectType):
                             list_of_items.append(new_item)
         return list_of_items
 
-    def resolve_search_items(self, info, query, count=None):
-        filtered_items = Item.objects.filter(
-            Q(product_name__icontains=query)
-            | Q(product_desc__icontains=query)
-            | Q(product_slug__iexact=query)
-        )
-        if count:
-            count = count + 1
-            if filtered_items.count() >= count:
-                filtered_items = filtered_items[:count]
-        else:
-            filtered_items = filtered_items[:20]
-        return filtered_items
-
     def resolve_hero_data(self, info, count=None):
         items = (
             Item.objects.filter(product_type__urlParamName__icontains="dish")
@@ -152,63 +122,6 @@ class Query(graphene.ObjectType):
             if items.count() >= count:
                 items = items[:count]
         return items
-
-    def resolve_items(self, info, count, page=None):
-        user = info.context.user
-
-        count = count + 1
-        items = Item.objects.all().distinct()
-        items = items[: count if items.count() >= count else items.count()]
-
-        if page:
-            items = items[(page - 1) * count : page * count]
-
-        try:
-            if (
-                user.is_authenticated
-                and UserActivity.objects.filter(user_id=info.context.user.id).count()
-                > 5
-            ):
-                items = recommend_items(
-                    info.context.user.id,
-                    n=count if (items.count() >= count) else items.count(),
-                )
-        except:
-            pass
-
-        if not items:
-            items = Item.objects.all().distinct()
-
-        return items
-
-    def resolve_item(self, info, item_slug, store_nickname=None):
-        item = Item.objects.filter(product_slug=item_slug).first()
-        if not item is None:
-            # check if item is avaliable in the store if store_nickname is provided
-            if (
-                not store_nickname is None
-                and not item.product_avaliable_in.filter(
-                    store_nickname=store_nickname
-                ).count()
-                > 0
-            ):
-                raise GraphQLError("404: Item Not Avaliable in Store")
-
-            item.product_views += 1
-            item.save()
-            if info.context.user.is_authenticated:
-                new_activity = UserActivity.objects.create(
-                    user_id=info.context.user.id,
-                    activity_message=None,
-                    activity_type="view",
-                    item=item,
-                    timestamp=timezone.now(),
-                )
-                new_activity.save()
-        else:
-            raise GraphQLError("404: Item Not Found")
-
-        return item
 
     def resolve_all_item_attributes(self, info, **kwargs):
         food_categories = [

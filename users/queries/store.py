@@ -13,12 +13,6 @@ class StoreQueries(graphene.ObjectType):
     get_trending_stores = graphene.List(
         StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
     )
-
-    def resolve_stores(self, info, **kwargs):
-        # check if there is a search query
-        if kwargs:
-            return Store.objects.filter(**kwargs)
-        return Store.objects.all()[::-1] # reverse the queryset
     
     def resolve_get_store(self, info, store_nickname):
         store = Store.objects.filter(store_nickname=store_nickname).first()

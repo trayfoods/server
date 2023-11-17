@@ -3,8 +3,9 @@ import json
 import graphene
 from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
-from users.models import Store, Profile
+from users.models import Store
 from users.types import StoreType
+from .filters import ItemFilter
 
 from trayapp.custom_model import JSONField
 
@@ -76,6 +77,7 @@ class ItemType(DjangoObjectType):
     avaliable_store = graphene.Field(
         StoreType, store_nickname=graphene.String(required=False)
     )
+    product_avaliable_in = graphene.List(StoreType)
 
     class Meta:
         model = Item
@@ -233,6 +235,13 @@ class ItemType(DjangoObjectType):
                         store = self.product_avaliable_in.first()
         return store
 
+    def resolve_product_avaliable_in(self, info):
+        return self.product_avaliable_in.all()
+class ItemNode(ItemType, DjangoObjectType):
+    class Meta:
+        model = Item
+        interfaces = (graphene.relay.Node,)
+        filterset_class = ItemFilter
 
 class ShippingType(graphene.ObjectType):
     sch = graphene.String()

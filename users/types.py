@@ -143,7 +143,7 @@ class StoreType(DjangoObjectType):
     store_phone_numbers = graphene.List(graphene.String)
     store_image = graphene.String()
     store_cover_image = graphene.String()
-    store_products = graphene.List("product.schema.ItemType")
+    store_products = graphene.List("product.types.ItemType")
 
     class Meta:
         model = Store
