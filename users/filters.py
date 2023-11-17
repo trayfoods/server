@@ -1,6 +1,6 @@
 from django.utils import timezone
 from django_filters import FilterSet, NumberFilter, CharFilter
-from users.models import Transaction
+from users.models import Transaction, Store
 
 DATE_FILTER_TYPES = ["today", "7days", "30days", "Alldays"]
 
@@ -46,4 +46,14 @@ class TransactionFilter(FilterSet):
             "desc": ["icontains"],
             "_type": ["exact"],
             "status": ["exact"],
+        }
+
+class StoreFilter(FilterSet):
+    store_category = CharFilter(field_name="store_categories", lookup_expr="icontains")
+    class Meta:
+        model = Store
+        fields = {
+            "store_name": ["exact", "icontains"],
+            "store_type": ["exact"],
+            "store_country": ["exact"],
         }

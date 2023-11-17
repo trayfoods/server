@@ -4,7 +4,7 @@ from graphql_auth.schema import UserNode
 
 from trayapp.utils import convert_time_to_ago
 
-from users.filters import TransactionFilter
+from users.filters import TransactionFilter, StoreFilter
 from .models import (
     UserAccount,
     School,
@@ -29,7 +29,7 @@ class SchoolType(DjangoObjectType):
 
 
 class ProfileType(DjangoObjectType):
-    store = graphene.Field("users.schema.StoreType")
+    store = graphene.Field("users.types.StoreType")
     gender = graphene.String()
     has_required_fields = graphene.Boolean()
 
@@ -198,3 +198,9 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return cover_image
+
+class StoreNode(StoreType, graphene.ObjectType):
+    class Meta:
+        model = Store
+        interfaces = (graphene.relay.Node,)
+        filterset_class = StoreFilter

@@ -1,12 +1,11 @@
 import graphene
 from django.contrib.auth import get_user_model
 from graphql_auth import mutations
-from django.db.models import Q
-from users.queries.transactions import TransactionQueries
+from users.queries.transaction import TransactionQueries
 from users.queries.wallet import WalletQueries
 from users.queries.school import SchoolQueries
+from users.queries.store import StoreQueries
 
-from trayapp.utils import paginate_queryset
 from .mutations import (
     CreateStoreMutation,
     UpdateStoreMutation,
@@ -19,10 +18,9 @@ from .mutations import (
     LoginMutation,
     RegisterMutation,
 )
-from .models import Student, Store
+from .models import Student
 from .types import (
     StudentType,
-    StoreType,
     UserNodeType,
 )
 from graphql_auth.models import UserStatus
@@ -32,7 +30,7 @@ from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 User = get_user_model()
 
 
-class Query(BankListQuery, WalletQueries, TransactionQueries, SchoolQueries, graphene.ObjectType):
+class Query(BankListQuery, WalletQueries, StoreQueries, TransactionQueries, SchoolQueries, graphene.ObjectType):
     me = graphene.Field(UserNodeType)
 
     check_email_verification = graphene.Field(
@@ -40,42 +38,7 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, SchoolQueries, gra
     )
 
     client = graphene.Field(StudentType, client_id=graphene.Int())
-    get_store = graphene.Field(StoreType, store_nickname=graphene.String())
-    search_stores = graphene.Field(
-        StoreType,
-        search_query=graphene.String(required=True),
-        count=graphene.Int(required=False),
-    )
 
-    get_trending_stores = graphene.List(
-        StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
-    )
-
-    def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
-        """
-        Resolve the get_trending_stores query.
-
-        Args:
-            info: The GraphQL ResolveInfo object.
-            page: The page number for pagination.
-            count: The maximum number of stores to return.
-            page_size: The number of stores to display per page.
-
-        Returns:
-            A paginated queryset of trending stores.
-        """
-        stores_list = Store.objects.all().order_by("-store_rank")
-        # check if each store products are up to 2
-        for store in stores_list:
-            if store.store_products.count() < 2:
-                stores_list = stores_list.exclude(pk=store.pk)
-        if count is not None:
-            if stores_list.count() >= count:
-                stores_list = stores_list[:count]
-        else:
-            stores_list = stores_list
-        paginated_queryset = paginate_queryset(stores_list, page_size, page)
-        return paginated_queryset
 
     def resolve_me(self, info):
         user = info.context.user
@@ -83,27 +46,8 @@ class Query(BankListQuery, WalletQueries, TransactionQueries, SchoolQueries, gra
             return user
         return None
 
-
     def resolve_client(self, info, client_id):
         return Student.objects.get(pk=client_id)
-
-    def resolve_get_store(self, info, store_nickname):
-        store = Store.objects.filter(store_nickname=store_nickname).first()
-        if not store is None:
-            store.store_rank += 0.5
-            store.save()
-        return store
-
-    def resolve_search_stores(self, info, search_query, count=None):
-        stores_list = Store.objects.filter(
-            Q(store_nickname__icontains=search_query)
-        ).first()
-        if count:
-            if stores_list.count() >= count:
-                stores_list = stores_list[:count]
-        else:
-            stores_list = stores_list[:20]
-        return stores_list
 
     def resolve_check_email_verification(self, info, email):
         data = {"success": False, "msg": None}
