@@ -74,35 +74,27 @@ class UserAccount(AbstractUser, models.Model):
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
     @property
-    def role(self):  # set user role
-        role = "client"
+    def role(self):
+        # check user's role
         profile = Profile.objects.filter(user=self).first()
         is_student = profile.is_student
         is_vendor = profile.is_vendor
         is_school = School.objects.filter(user=self).exists()
         is_delivery_person = DeliveryPerson.objects.filter(profile=profile).exists()
 
-        if (
-            not is_student
-            and not is_vendor
-            and not is_school
-            and not is_delivery_person
-        ):
-            role = "client"
+        if is_vendor:
+            return "VENDOR"
 
-        if is_student and not is_school and not is_vendor:
-            role = "student"
+        if is_delivery_person:
+            return "DELIVERY_PERSON"
 
-        if is_vendor and not is_school and not is_student:
-            role = "vendor"
+        if is_student:
+            return "STUDENT"
 
-        if is_school and not is_student and not is_vendor:
-            role = "school"
+        if is_school:
+            return "SCHOOL"
 
-        if is_delivery_person and not is_school and not is_student and not is_vendor:
-            role = "delivery_person"
-
-        return role.upper()  # DO NOT TOUCH THIS
+        return "CLIENT"
 
     def get_delivery_types(self):
         """
@@ -233,7 +225,7 @@ class Profile(models.Model):
 
     @property
     def is_vendor(self):
-        return hasattr(self, "vendor")
+        return Store.objects.filter(vendor=self).exists()
     
     @property
     def store(self):
