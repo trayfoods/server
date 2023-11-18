@@ -214,7 +214,6 @@ class Profile(models.Model):
 
         if self.is_student:
             student = self.student
-            print(student)
             if student.school is None or not student.campus or student.hostel is None or not student.room:
                 return False
 

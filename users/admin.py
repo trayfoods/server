@@ -29,7 +29,6 @@ class RoleFilter(admin.SimpleListFilter):
         return ROLE_CHOICES
 
     def queryset(self, request, queryset):
-        print(self.value())
         if self.value():
             users = UserAccount.objects.all()
             list_of_users = []
