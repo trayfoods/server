@@ -50,3 +50,4 @@ universities
 urllib3
 whitenoise
 python-restcountries==2.0.0
+twilio==8.10.2

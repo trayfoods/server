@@ -26,6 +26,8 @@ PAYSTACK_SECRET_KEY = os.environ.get(
 PAYSTACK_PUBLIC_KEY = os.environ.get(
     "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
 )
+TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_ACCOUNT_SID", "1234")
+TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_AUTH_TOKEN", "1234")
 
 X_CSCAPI_KEY = os.environ.get("X_CSCAPI_KEY", "1234")
 

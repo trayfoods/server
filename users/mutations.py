@@ -686,3 +686,31 @@ class UserDeviceMutation(Output, graphene.Mutation):
         else:
             error = "Device token already exists"
         return UserDeviceMutation(success=success, error=error)
+
+class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
+    class Arguments:
+        phone_number = graphene.String(required=True)
+
+    # The class attributes define the response of the mutation
+    error = graphene.String()
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, phone_number):
+        success = False
+        error = None
+        user = info.context.user
+        profile = user.profile
+        if profile is None:
+            raise GraphQLError("Profile does not exist")
+        if profile.phone_number != phone_number:
+            profile.phone_number = phone_number
+            profile.save()
+        if profile.phone_number_verified == True:
+            raise GraphQLError("Phone number already verified")
+        try:
+            profile.send_phone_verification_code()
+            success = True
+        except Exception as e:
+            error = str(e)
+        return SendPhoneVerificationCodeMutation(success=success, error=error)
