@@ -237,6 +237,7 @@ class ItemType(DjangoObjectType):
 
     def resolve_product_avaliable_in(self, info):
         return self.product_avaliable_in.all()
+
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:
         model = Item
