@@ -306,6 +306,7 @@ class StoreInfoInputType(graphene.InputObjectType):
 class OrderType(DjangoObjectType):
     shipping = graphene.Field(ShippingType, default_value=None)
     stores_infos = graphene.List(StoreInfoType, default_value=None)
+    linked_items = graphene.List(ItemType, default_value=None)
 
     class Meta:
         model = Order
@@ -337,3 +338,6 @@ class OrderType(DjangoObjectType):
         stores_infos = json.loads(self.stores_infos)
 
         return stores_infos
+    
+    def resolve_linked_items(self, info):
+        return self.linked_items.all()
