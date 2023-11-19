@@ -202,7 +202,7 @@ class Profile(models.Model):
     state = models.CharField(max_length=10, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
-    phone_number_verified = models.BooleanField(default=False)
+    phone_number_verified = models.BooleanField(default=False, editable=False)
 
     @property
     def has_required_fields(self):

@@ -713,7 +713,7 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
             # send the verification code through twilio
             success = profile.send_phone_number_verification_code(new_phone_number=phone, calling_code=calling_code)
         except Exception as e:
-            error = str(e)
+            error = "Issue sending the OTP code, please try again."
         
         return SendPhoneVerificationCodeMutation(success=success, error=error)
     

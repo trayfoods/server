@@ -4,12 +4,15 @@ import os
 from dotenv import load_dotenv
 import dj_database_url
 
+# import django secret key generator
+from django.core.management.utils import get_random_secret_key
+
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv("SECRET_KEY", "1234")
+SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
