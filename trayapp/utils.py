@@ -1,18 +1,7 @@
 from decimal import Decimal
 import os
-import PIL
-import blurhash
-import numpy
 import requests
 
-# Imaging and Filing
-from pathlib import Path
-import io
-import sys
-
-from PIL import Image
-
-# import blurhash
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -25,7 +14,15 @@ load_dotenv(BASE_DIR / ".env")
 
 
 def calculate_total_amount(item_price, currency="NGN"):
-
+    """
+    Calculate the total amount to be paid by the customer
+    ```python
+    item_price = 1000
+    currency = "NGN"
+    total_amount = calculate_total_amount(item_price, currency)
+    print(total_amount) # 1015
+    ```
+    """
     if currency == "NGN":
         # Define the transaction fee percentage and fixed fee
         transaction_fee_percentage = 1.5 / 100  # 1.5%
@@ -43,6 +40,15 @@ def calculate_total_amount(item_price, currency="NGN"):
 
 
 def calculate_tranfer_fee(amount: Decimal, currency="NGN") -> Decimal:
+    """
+    Calculate the transfer fee
+    ```python
+    amount = 1000
+    currency = "NGN"
+    transfer_fee = calculate_tranfer_fee(amount, currency)
+    print(transfer_fee) # 10
+    ```
+    """
     # Remove commas and convert the amount to a float
     float_amount = Decimal(amount)
 
@@ -79,6 +85,20 @@ IMAGE_TYPES = {
 
 
 def image_resized(image, w, h, format=None):
+    """
+    Resize an image
+    ```python
+    image = request.FILES["image"]
+    w = 200
+    h = 200
+    image_resized(image, w, h) # returns a tuple of (file, name, content_type, size)
+    ```
+    """
+
+    import io
+    import sys
+    from PIL import Image
+
     name = image.name
     _image = Image.open(image)
 
@@ -121,10 +141,19 @@ def get_banks_list(data):
     Get List Of Banks
     ```python
     data = {
-        "country": "NGN" # required
+        "use_cursor": False, # optional
+        "perPage": 50, # optional
+        "page": 1, # optional
+        "currency": "NGN"
     }
+
+    banks = get_banks_list(data) # returns a list of banks from the paystack api
+    print(banks)
     ```
     """
+    if "currency" not in data:
+        raise Exception("Currency is required")
+    
     if data["use_cursor"]:
         reqUrl = "https://api.paystack.co/bank?perPage={}&page={}&currency={}".format(
             data["perPage"], data["page"], data["currency"]
@@ -145,11 +174,19 @@ def get_bank_account_details(data):
     Get bank account details
     ```python
     data = {
-        "account_number": "0690000031", # required
-        "bank_code": "044" # required
+        "account_number": "1234567890",
+        "bank_code": "044"
     }
+
+    bank_details = get_bank_account_details(data) # returns a dict of bank details from the paystack api
+    print(bank_details)
     ```
     """
+    if "account_number" not in data:
+        raise Exception("Account number is required")
+    if "bank_code" not in data:
+        raise Exception("Bank code is required")
+    
     reqUrl = (
         "https://api.paystack.co/bank/resolve?account_number={}&bank_code={}".format(
             data["account_number"], data["bank_code"]
@@ -175,8 +212,6 @@ def get_dataframe_from_qs(queryset):
 
 
 import datetime
-
-
 def convert_time_to_ago(time: datetime.datetime):
     """
     Convert time to ago
@@ -225,11 +260,17 @@ def convert_time_to_ago(time: datetime.datetime):
     else:
         return str(int(time_difference_in_years)) + " years ago"
 
-
-from django.core.paginator import Paginator
-
-
 def paginate_queryset(queryset, page_size, page):
+    from django.core.paginator import Paginator
+    
+    # Paginate the queryset
     paginator = Paginator(queryset, page_size)
     paginated_queryset = paginator.get_page(page)
     return paginated_queryset
+
+def get_twilio_client():
+    from twilio.rest import Client
+
+    # Your Account Sid and Auth Token from twilio.com/console
+    # and set the environment variables. See http://twil.io/secure
+    return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)

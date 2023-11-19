@@ -17,6 +17,8 @@ from .mutations import (
     UserDeviceMutation,
     LoginMutation,
     RegisterMutation,
+    SendPhoneVerificationCodeMutation,
+    VerifyPhoneMutation
 )
 from .models import Student
 from .types import (
@@ -78,6 +80,9 @@ class AuthMutation(graphene.ObjectType):
     verify_token = mutations.VerifyToken.Field()
     refresh_token = mutations.RefreshToken.Field()
     revoke_token = mutations.RevokeToken.Field()
+
+    send_phone_verification_code = SendPhoneVerificationCodeMutation.Field()
+    verify_phone = VerifyPhoneMutation.Field()
 
 
 class Mutation(AuthMutation, graphene.ObjectType):

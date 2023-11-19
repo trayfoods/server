@@ -18,6 +18,9 @@ from product.models import Item, Order
 
 from django.conf import settings
 
+from trayapp.utils import get_twilio_client
+
+TWILIO_CLIENT = get_twilio_client()
 
 def profile_image_directory_path(instance, filename):
     """
@@ -235,12 +238,71 @@ class Profile(models.Model):
     def is_student(self):
         return hasattr(self, "student")
     
+    def send_phone_number_verification_code(self, new_phone_number, calling_code):
+        new_phone_number = new_phone_number.strip()
+
+        # check if the phone number has been used by another user
+        self.clean_phone_number(new_phone_number)
+
+        if "+" not in calling_code:
+            calling_code = f"+{calling_code}"
+
+        new_phone_number = f"{calling_code}{new_phone_number}"
+
+
+        verification = TWILIO_CLIENT.verify \
+                                .v2 \
+                                .services(settings.TWILIO_VERIFY_SERVICE_SID) \
+                                .verifications \
+                                .create(to=new_phone_number, channel='sms')
+        
+        success = True if verification.status == "pending" else False
+
+        if success:
+            self.phone_number = new_phone_number.replace(calling_code, "")
+            self.phone_number_verified = False
+            self.save()
+        
+        return success
+    
+    def verify_phone_number(self, code, calling_code):
+        if "+" not in calling_code:
+            calling_code = f"+{calling_code}"
+
+        phone_number = f"{calling_code}{self.phone_number}"
+
+        verification_check = TWILIO_CLIENT.verify \
+                                    .v2 \
+                                    .services(settings.TWILIO_VERIFY_SERVICE_SID) \
+                                    .verification_checks \
+                                    .create(to=phone_number, code=code)
+
+        success = True if verification_check.status == "approved" else False
+
+        if success:
+            self.phone_number_verified = True
+            self.save()
+        
+        return success
+    
     @property
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
 
     def __str__(self) -> str:
         return self.user.username
+    
+    def clean_phone_number(self, phone_number):
+        phone_number = phone_number.strip()
+
+        # replace spaces with empty string
+        phone_number = phone_number.replace(" ", "")
+        
+        # check if the phone number has been used by another user
+        user_with_phone = Profile.objects.filter(phone_number=phone_number)
+        if user_with_phone.exists() and user_with_phone.first().user != self.user:
+            raise Exception("Phone number already in use")
+        
 
     def save(self, *args, **kwargs):
         # Resize the image before saving
@@ -251,6 +313,9 @@ class Profile(models.Model):
                 if img_file:
                     img_name = self.image.name
                     self.image.save(img_name, img_file, save=False)
+
+        if self.phone_number:
+            self.clean_phone_number(self.phone_number)
 
         super().save(*args, **kwargs)
 

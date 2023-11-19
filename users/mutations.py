@@ -689,28 +689,61 @@ class UserDeviceMutation(Output, graphene.Mutation):
 
 class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
     class Arguments:
-        phone_number = graphene.String(required=True)
-
-    # The class attributes define the response of the mutation
-    error = graphene.String()
+        country = graphene.String(required=True, description="Country code in ISO 3166-1 alpha-2 format")
+        phone = graphene.String(required=True, description="Phone number in E.164 format")
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, phone_number):
+    def mutate(self, info, phone, country):
+        profile = info.context.user.profile
         success = False
         error = None
-        user = info.context.user
-        profile = user.profile
-        if profile is None:
-            raise GraphQLError("Profile does not exist")
-        if profile.phone_number != phone_number:
-            profile.phone_number = phone_number
-            profile.save()
-        if profile.phone_number_verified == True:
-            raise GraphQLError("Phone number already verified")
+        
+        from restcountries import RestCountryApiV2 as rapi
+        
+        get_country = rapi.get_country_by_country_code(country)
+
+        # check if the country was found
+        if get_country is None:
+            raise GraphQLError(f"Issue with the country: '{country}', please contact support.")
+
+        calling_code = get_country.calling_codes[0]
+
         try:
-            profile.send_phone_verification_code()
-            success = True
+            # send the verification code through twilio
+            success = profile.send_phone_number_verification_code(new_phone_number=phone, calling_code=calling_code)
         except Exception as e:
             error = str(e)
+        
         return SendPhoneVerificationCodeMutation(success=success, error=error)
+    
+class VerifyPhoneMutation(Output, graphene.Mutation):
+    class Arguments:
+        country = graphene.String(required=True, description="Country code in ISO 3166-1 alpha-2 format")
+        code = graphene.String(required=True, description="Verification code sent to the user's phone number")
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, code, country):
+        profile = info.context.user.profile
+        success = False
+        error = None
+
+        from restcountries import RestCountryApiV2 as rapi
+        
+        get_country = rapi.get_country_by_country_code(country)
+
+        # check if the country was found
+        if get_country is None:
+            raise GraphQLError(f"Issue with the country: '{country}', please contact support.")
+
+        calling_code = get_country.calling_codes[0]
+
+        try:
+            # verify the phone number
+            success = profile.verify_phone_number(code, calling_code)
+        except Exception as e:
+            error = "Incorrect OTP code, please try again."
+        
+        return VerifyPhoneMutation(success=success, error=error)
+    
