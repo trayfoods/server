@@ -80,10 +80,11 @@ class UserAccount(AbstractUser, models.Model):
     def role(self):
         # check user's role
         profile = Profile.objects.filter(user=self).first()
-        is_student = profile.is_student
-        is_vendor = profile.is_vendor
+        is_student = profile.is_student if profile else False
+        is_vendor = profile.is_vendor if profile else False
+        is_delivery_person = DeliveryPerson.objects.filter(profile=profile).exists() if profile else False
+
         is_school = School.objects.filter(user=self).exists()
-        is_delivery_person = DeliveryPerson.objects.filter(profile=profile).exists()
 
         if is_vendor:
             return "VENDOR"
