@@ -398,11 +398,11 @@ class CreateOrderMutation(graphene.Mutation):
                 order=None, success=False, unavailable_items=unavailable_items
             )
 
-        current_user = info.context.user
+        current_user_profile = info.context.user.profile
         order_payment_status = None
 
         create_order = Order.objects.create(
-            user=current_user,
+            user=current_user_profile,
             overall_price=overall_price,
             delivery_fee=delivery_fee,
             transaction_fee=transaction_fee,

@@ -215,7 +215,7 @@ class Order(models.Model):
         ),
         default="not-started",
     )
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
     overall_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
