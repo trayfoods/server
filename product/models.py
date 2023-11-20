@@ -264,15 +264,21 @@ class Order(models.Model):
     def __str__(self):
         return "Order #" + str(self.order_track_id)
     
-    def send_order_to(self, who):
-        allowed = ["user", "delivery_person"]
-        if who in allowed:
-            if who == "user":
-                self.order_status = "processing"
-            elif who == "delivery_person":
-                self.order_status = "shipped"
-            self.save()
-            return True
+    def send_order_to_delivery_person(self, delivery_person):
+        order_address = self.shipping.get("address")
+        msg = """
+        You have a new order to deliver.
+        Order ID: {}
+        Order Address: {}
+        Click on the link below to accept the order.
+        {}
+        """.format(
+            self.order_track_id,
+            order_address,
+            f"{FRONTEND_URL}/delivery/{self.order_track_id}",
+        )
+        delivery_person.profile.send_sms(msg)
+                
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
