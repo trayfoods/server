@@ -777,7 +777,13 @@ class DeliveryPerson(models.Model):
     # function to check if a order is able ti be delivered by a delivery person
     def can_deliver(self, order):
 
-        order_user_gender = order.user.gender.name
+        order_user = order.user
+
+        # check if the order user is same as the delivery person
+        if order_user == self.profile:
+            return False
+
+        order_user_gender = order_user.gender.name
         delivery_person_gender = self.profile.gender.name
 
         if order_user_gender != delivery_person_gender:
@@ -787,7 +793,6 @@ class DeliveryPerson(models.Model):
         sch = shipping.get("sch")
         address = shipping.get("address")
         bash = shipping.get("bash")
-
 
         # check if the delivery person is not allowed to deliver to the order bash
         if bash in self.not_allowed_bash:

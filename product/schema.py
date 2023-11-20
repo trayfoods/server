@@ -11,7 +11,7 @@ from product.mutations import (
     HelpfulReviewMutation,
     InitializeTransactionMutation,
 )
-from product.models import Item, ItemAttribute
+from product.models import Item, ItemAttribute, Order
 from trayapp.custom_model import ItemsAvalibilityNode
 
 from product.queries.item import ItemQueries
@@ -71,7 +71,21 @@ class Query(ItemQueries, graphene.ObjectType):
     def resolve_get_order(self, info, order_id):
         user = info.context.user
         if user.is_authenticated:
+            allowed_view_as_roles = ["DELIVERY_PERSON", "VENDOR"]
+            
             order = user.orders.filter(order_track_id=order_id).first()
+
+            if user.role in allowed_view_as_roles:
+                current_user_profile = user.profile
+                order_qs = Order.objects.filter(order_track_id=order_id).first()
+
+                if user.role == allowed_view_as_roles[0] and order_qs.delivery_person.profile == current_user_profile:
+                    pass
+                elif user.role == allowed_view_as_roles[1] and order_qs.linked_stores.filter(vendor=current_user_profile).exists():
+                    pass
+                else:
+                    order = None
+
             if order:
                 return order
             else:

@@ -307,6 +307,7 @@ class OrderType(DjangoObjectType):
     shipping = graphene.Field(ShippingType, default_value=None)
     stores_infos = graphene.List(StoreInfoType, default_value=None)
     linked_items = graphene.List(ItemType, default_value=None)
+    view_as = graphene.String(default_value=None)
 
     class Meta:
         model = Order
@@ -323,6 +324,7 @@ class OrderType(DjangoObjectType):
             "order_payment_status",
             "created_on",
             "updated_on",
+            "view_as",
         ]
 
     def resolve_id(self, info):
@@ -341,3 +343,8 @@ class OrderType(DjangoObjectType):
     
     def resolve_linked_items(self, info):
         return self.linked_items.all()
+    
+    def resolve_view_as(self, info):
+        current_user = info.context.user
+        if self.user != current_user.profile:
+            return current_user.role
