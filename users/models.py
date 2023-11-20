@@ -776,19 +776,30 @@ class DeliveryPerson(models.Model):
     
     # function to check if a order is able ti be delivered by a delivery person
     def can_deliver(self, order):
+
+        order_user_gender = order.user.gender.name
+        delivery_person_gender = self.profile.gender.name
+
+        if order_user_gender != delivery_person_gender:
+            return False
+
         shipping = order.shipping
         sch = shipping.get("sch")
         address = shipping.get("address")
         bash = shipping.get("bash")
 
 
-        # check if the delivery person is not allowed to deliver the order
+        # check if the delivery person is not allowed to deliver to the order bash
         if bash in self.not_allowed_bash:
             return False
+        
         # check if the delivery person is not allowed to deliver to the order location
-        delivery_location = f"{sch} {address}"
-        if delivery_location in self.not_allowed_locations:
+        if address in self.not_allowed_locations:
             return False
+        
+        if sch in self.not_allowed_locations:
+            return False
+        
         return True
     
     # function to get delivery people that can deliver a order
