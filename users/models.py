@@ -286,6 +286,14 @@ class Profile(models.Model):
         
         return success
     
+    def send_sms(self, message):
+        if self.phone_number_verified:
+            TWILIO_CLIENT.messages.create(
+                from_=settings.TWILIO_PHONE_NUMBER,
+                body=message,
+                to=self.phone_number
+            )
+    
     @property
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
