@@ -123,7 +123,7 @@ class UserAccount(AbstractUser, models.Model):
     # get user's orders
     @property
     def orders(self):
-        return Order.objects.filter(user=self)
+        return Order.objects.filter(user=self.profile)
 
     # get user's devices
     @property

@@ -317,9 +317,9 @@ class Order(models.Model):
 
         callback_url = f"{FRONTEND_URL}/checkout/{order_track_id}"
         data = {
-            "email": self.user.email
-            if self.user.email
-            else f"{self.user.username}@gmail.com",
+            "email": self.user.user.email
+            if self.user.user.email
+            else f"{self.user.user.username}@gmail.com",
             "currency": self.order_payment_currency,
             "amount": Decimal(amount),
             "reference": f"{order_track_id}",
