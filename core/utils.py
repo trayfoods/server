@@ -127,8 +127,7 @@ class ProcessPayment:
                     }
                     store_qs.credit_wallet(**kwargs)
                     store_qs.save()
-                    store_qs.vendor.send_sms(f"""New Order of {order.order_payment_currency} {store['credit']} was made, 
-                                             please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/""")
+                    store_qs.vendor.send_sms(f"New Order of {order.order_payment_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/")
                 else:
                     stores_with_issues.append(store_id)
             print("stores_with_issues: ", stores_with_issues)
@@ -143,7 +142,7 @@ class ProcessPayment:
             # send the order to the delivery_person
             delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(order)
             for delivery_person in delivery_people:
-                order.send_order_to_delivery_people(who="delivery_person", delivery_person=delivery_person)
+                order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
 
         return HttpResponse("Payment successful", status=200)
         # except Order.DoesNotExist:
