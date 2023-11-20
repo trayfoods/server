@@ -343,7 +343,7 @@ class Transaction(models.Model):
     )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
     order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, null=True, blank=True, editable=False
+        Order, on_delete=models.SET_NULL, null=True, blank=True, editable=False
     )
     currency = models.CharField(max_length=4, default="NGN", editable=False)
     title = models.CharField(max_length=50)
