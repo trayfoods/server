@@ -200,7 +200,7 @@ class ItemAttribute(models.Model):
 
 class Order(models.Model):
     order_track_id = models.CharField(
-        max_length=17,
+        max_length=24,
         unique=True,
         editable=False,
     )
@@ -255,11 +255,24 @@ class Order(models.Model):
     def save(self, *args, **kwargs):
         if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
-            self.order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
+            order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
+            while Order.objects.filter(order_track_id=order_track_id).exists():
+                order_track_id = "order_" + str(uuid.uuid4().hex)[:17]
+            self.order_track_id = order_track_id
         super().save(*args, **kwargs)
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
+    
+    def send_order_to(self, who):
+        allowed = ["user", "delivery_person"]
+        if who in allowed:
+            if who == "user":
+                self.order_status = "processing"
+            elif who == "delivery_person":
+                self.order_status = "shipped"
+            self.save()
+            return True
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
