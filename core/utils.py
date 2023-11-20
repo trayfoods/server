@@ -141,6 +141,7 @@ class ProcessPayment:
 
             # send the order to the delivery_person
             delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(order)
+            print("delivery_people: ", delivery_people)
             for delivery_person in delivery_people:
                 order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
 
