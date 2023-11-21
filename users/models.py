@@ -202,6 +202,7 @@ class Profile(models.Model):
     city = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=10, null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
+    calling_code = models.CharField(max_length=5, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
     phone_number_verified = models.BooleanField(default=False, editable=False)
 
@@ -266,17 +267,6 @@ class Profile(models.Model):
         
         return success
     
-    @property
-    def calling_code(self):
-        # from restcountries import RestCountryApiV2 as rapi
-        # if self.country:
-        #     country = rapi.get_country_by_country_code(self.country.code)
-        #     calling_code = country.calling_codes[0]
-        #     if "+" not in calling_code:
-        #         calling_code = f"+{calling_code}"
-        #     return calling_code
-        return None
-    
     def verify_phone_number(self, code, calling_code):
         if "+" not in calling_code:
             calling_code = f"+{calling_code}"
@@ -293,14 +283,14 @@ class Profile(models.Model):
 
         if success:
             self.phone_number_verified = True
+            self.calling_code = calling_code
             self.save()
         
         return success
     
     def send_sms(self, message):
-        calling_code = self.calling_code
-        if calling_code and self.phone_number_verified:
-            phone_number = f"{calling_code}{self.phone_number}"
+        if self.calling_code and self.phone_number_verified:
+            phone_number = f"{self.calling_code}{self.phone_number}"
             TWILIO_CLIENT.messages.create(
                 from_=settings.TWILIO_PHONE_NUMBER,
                 body=message,
@@ -312,7 +302,6 @@ class Profile(models.Model):
         return hasattr(self, "delivery_person")
 
     def __str__(self) -> str:
-        print(self.calling_code)
         return self.user.username
     
     def clean_phone_number(self, phone_number):

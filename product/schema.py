@@ -78,16 +78,14 @@ class Query(ItemQueries, graphene.ObjectType):
             if user.role in allowed_view_as_roles:
                 current_user_profile = user.profile
                 order_qs = Order.objects.filter(order_track_id=order_id).first()
-
-                print(order_qs, current_user_profile)
-                
                 if order_qs is None:
                     raise GraphQLError("Order Not Found")
+                
+                is_delivery_person = order_qs.delivery_person and order_qs.delivery_person.profile == current_user_profile
+                is_vendor = order_qs.linked_stores.filter(vendor=current_user_profile).exists()
 
-                if user.role == allowed_view_as_roles[0] and order_qs.delivery_person.profile == current_user_profile or order_qs.linked_stores.filter(vendor=current_user_profile).exists():
-                    order = order_qs
-                else:
-                    order = None
+                if is_delivery_person or is_vendor:
+                    return order_qs
 
             if order:
                 return order

@@ -251,7 +251,7 @@ class ShippingType(graphene.ObjectType):
 
 
 class ShippingInputType(graphene.InputObjectType):
-    sch = graphene.String()
+    sch = graphene.String(default_value=None)
     address = graphene.String()
     batch = graphene.String()
 
@@ -304,9 +304,9 @@ class StoreInfoInputType(graphene.InputObjectType):
 
 
 class OrderType(DjangoObjectType):
-    shipping = graphene.Field(ShippingType, default_value=None)
-    stores_infos = graphene.List(StoreInfoType, default_value=None)
-    linked_items = graphene.List(ItemType, default_value=None)
+    shipping = graphene.Field(ShippingType)
+    stores_infos = graphene.List(StoreInfoType)
+    linked_items = graphene.List(ItemType)
     view_as = graphene.String(default_value=None)
 
     class Meta:
