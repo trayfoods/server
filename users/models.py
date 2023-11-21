@@ -206,6 +206,37 @@ class Profile(models.Model):
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
     phone_number_verified = models.BooleanField(default=False, editable=False)
 
+    
+    def __str__(self) -> str:
+        return self.user.username
+
+    def save(self, *args, **kwargs):
+        # Resize the image before saving
+        if self.image:
+            w, h = 300, 300  # Set the desired width and height for the resized image
+            if image_exists(self.image.name):
+                img_file, _, _, _ = image_resized(self.image, w, h)
+                if img_file:
+                    img_name = self.image.name
+                    self.image.save(img_name, img_file, save=False)
+
+        if self.phone_number:
+            self.clean_phone_number(self.phone_number)
+
+        super().save(*args, **kwargs)
+
+    @property
+    def calling_code(self):
+        if not self.calling_code and self.country:
+            # get the calling code from the country
+            from restcountries import RestCountryApiV2 as rapi
+
+            country = rapi.get_country_by_country_code(self.country.code).first()
+            calling_code = country.callingCodes[0]
+            self.calling_code = calling_code
+            self.save()
+        return self.calling_code
+
     @property
     def has_required_fields(self):
         """
@@ -300,9 +331,6 @@ class Profile(models.Model):
     @property
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
-
-    def __str__(self) -> str:
-        return self.user.username
     
     def clean_phone_number(self, phone_number):
         phone_number = phone_number.strip()
@@ -315,21 +343,6 @@ class Profile(models.Model):
         if user_with_phone.exists() and user_with_phone.first().user != self.user:
             raise Exception("Phone number already in use")
         
-
-    def save(self, *args, **kwargs):
-        # Resize the image before saving
-        if self.image:
-            w, h = 300, 300  # Set the desired width and height for the resized image
-            if image_exists(self.image.name):
-                img_file, _, _, _ = image_resized(self.image, w, h)
-                if img_file:
-                    img_name = self.image.name
-                    self.image.save(img_name, img_file, save=False)
-
-        if self.phone_number:
-            self.clean_phone_number(self.phone_number)
-
-        super().save(*args, **kwargs)
 
 
 class Transaction(models.Model):
@@ -771,12 +784,15 @@ class DeliveryPerson(models.Model):
         # check if the order user is same as the delivery person
         if order_user == self.profile:
             return False
+        
+        # check if the delivery person is a student and the order user is a student
+        if self.profile.is_student and order_user.is_student:
+            order_user_gender = order_user.gender.name
+            delivery_person_gender = self.profile.gender.name
 
-        order_user_gender = order_user.gender.name
-        delivery_person_gender = self.profile.gender.name
+            if order_user_gender != delivery_person_gender:
+                return False
 
-        if order_user_gender != delivery_person_gender:
-            return False
 
         shipping = order.shipping
         sch = shipping.get("sch")
