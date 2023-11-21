@@ -226,7 +226,7 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
 
     @property
-    def calling_code(self):
+    def has_calling_code(self):
         if not self.calling_code and self.country:
             # get the calling code from the country
             from restcountries import RestCountryApiV2 as rapi
@@ -320,8 +320,8 @@ class Profile(models.Model):
         return success
     
     def send_sms(self, message):
-        if self.calling_code and self.phone_number_verified:
-            phone_number = f"{self.calling_code}{self.phone_number}"
+        if self.has_calling_code and self.phone_number_verified:
+            phone_number = f"{self.has_calling_code}{self.phone_number}"
             TWILIO_CLIENT.messages.create(
                 from_=settings.TWILIO_PHONE_NUMBER,
                 body=message,
@@ -666,6 +666,10 @@ class Store(models.Model):
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
     store_rank = models.FloatField(default=0)
+
+    store_open_hours = models.JSONField(
+        default=list, null=True, blank=True, editable=False
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
