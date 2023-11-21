@@ -268,13 +268,13 @@ class Profile(models.Model):
     
     @property
     def calling_code(self):
-        from restcountries import RestCountryApiV2 as rapi
-        if self.country:
-            country = rapi.get_country_by_country_code(self.country.code)
-            calling_code = country.calling_codes[0]
-            if "+" not in calling_code:
-                calling_code = f"+{calling_code}"
-            return calling_code
+        # from restcountries import RestCountryApiV2 as rapi
+        # if self.country:
+        #     country = rapi.get_country_by_country_code(self.country.code)
+        #     calling_code = country.calling_codes[0]
+        #     if "+" not in calling_code:
+        #         calling_code = f"+{calling_code}"
+        #     return calling_code
         return None
     
     def verify_phone_number(self, code, calling_code):
