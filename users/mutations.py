@@ -358,8 +358,15 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         if gender:
             gender = gender.upper().strip()
             gender = Gender.objects.filter(name=gender).first()
+
+            if not profile.gender:
+                gender.rank += 1
+            else:
+                gender.rank -= 1
             
             profile.gender = gender
+            
+            gender.save()
 
         if country:
             profile.country = country
