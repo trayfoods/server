@@ -57,7 +57,11 @@ class ProcessPayment:
         # get the values from event_data
         order_id = self.event_data["reference"]
         order_payment_status = self.event_data["status"]
-        order_payment_method = self.event_data["authorization"]["channel"]
+        try:
+            order_payment_method = self.event_data["authorization"]["channel"]
+        except KeyError:
+            order_payment_method = "unknown"
+
         order_price = self.event_data["amount"]
         order_price = Decimal(order_price) / 100
 
@@ -121,7 +125,7 @@ class ProcessPayment:
                 if store_qs:
                     kwargs = {
                         "amount": Decimal(store["credit"]),
-                        "description": f"Order Payment From {order.user.username} with order id {order.order_track_id} was successful",
+                        "description": f"Order Payment From {order.user.user.first_name} {order.user.user.last_name} with order id {order.order_track_id} was successful",
                         "unclear": False,
                         "order": order,
                     }
@@ -139,11 +143,17 @@ class ProcessPayment:
             order.order_message = "Your Order Payment Was Successful"
             order.save()
 
-            # send the order to the delivery_person
-            delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(order)
-            print("delivery_people: ", delivery_people)
-            for delivery_person in delivery_people:
-                order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
+            shipping_address = json.loads(order.shipping)
+            shipping_address = shipping_address.get("address", "pickup")
+
+            print("shipping_address: ", shipping_address)
+
+            if shipping_address != "pickup":
+                # send the order to the delivery_person
+                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(order)
+                print("delivery_people: ", delivery_people)
+                for delivery_person in delivery_people:
+                    order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
 
         return HttpResponse("Payment successful", status=200)
         # except Order.DoesNotExist:
