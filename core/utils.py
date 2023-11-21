@@ -154,6 +154,9 @@ class ProcessPayment:
                 print("delivery_people: ", delivery_people)
                 for delivery_person in delivery_people:
                     order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
+            else:
+                # send sms to user to pick up order
+                order.user.send_sms(f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup. Thank you for using TrayFoods")
 
         return HttpResponse("Payment successful", status=200)
         # except Order.DoesNotExist:
