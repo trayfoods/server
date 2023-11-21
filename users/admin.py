@@ -39,6 +39,11 @@ class RoleFilter(admin.SimpleListFilter):
         else:
             return queryset
 
+class ProfileInline(admin.TabularInline):
+    model = Profile
+    extra = 0
+    readonly_fields = ("gender", "country", "address", "school", "hostel", "phone_number")
+
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "username", "role")
     search_fields = ("username", "first_name", "last_name", "email")
@@ -50,9 +55,15 @@ class StoreInline(admin.TabularInline):
     extra = 0
     readonly_fields = ("store_name", "store_country", "store_address", "store_school")
 
+class UserInline(admin.TabularInline):
+    model = UserAccount
+    extra = 0
+    readonly_fields = ("email", "first_name", "last_name", "username", "role")
+
 
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [StoreInline]
+    list_filter = (RoleFilter,)
 
 
 class TransactionInline(admin.TabularInline):
