@@ -18,7 +18,8 @@ from .mutations import (
     LoginMutation,
     RegisterMutation,
     SendPhoneVerificationCodeMutation,
-    VerifyPhoneMutation
+    VerifyPhoneMutation,
+    AcceptDeliveryMutation
 )
 from .models import Student
 from .types import (
@@ -94,6 +95,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     user_device = UserDeviceMutation.Field()
     withdraw_from_wallet = WithdrawFromWalletMutation.Field()
     change_pin = ChangePinMutation.Field()
+    accept_delivery = AcceptDeliveryMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

@@ -1,4 +1,3 @@
-from decimal import Decimal
 import requests
 import json
 
@@ -14,7 +13,7 @@ from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import UserNodeType, ProfileType
+from .types import UserNodeType
 from .models import (
     Transaction,
     Store,
@@ -26,6 +25,7 @@ from .models import (
     UserAccount,
     Wallet,
 )
+from product.models import Order
 from django.conf import settings
 from core.utils import get_paystack_balance
 import uuid
@@ -761,3 +761,39 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
         
         return VerifyPhoneMutation(success=success, error=error)
     
+class AcceptDeliveryMutation(Output, graphene.Mutation):
+    class Arguments:
+        order_track_id = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, order_track_id):
+        user = info.context.user
+        user_profile = user.profile
+        delivery_person = user_profile.delivery_person
+
+        if user.role != "DELIVERY_PERSON" or delivery_person is None:
+            raise GraphQLError("You are not a delivery personnal")
+        
+        order = Order.objects.filter(order_track_id=order_track_id).first()
+
+        if order is None:
+            raise GraphQLError("This order Does not exists")
+        
+        if order.order_status == "canceled" or order.order_payment_status == "failed":
+            raise GraphQLError("Order did not go through")
+        
+        if order.order_status == "delivered":
+            raise GraphQLError("Order is already delivered")
+        
+        if order.delivery_person is None and (order.order_payment_status == "success" or settings.DEBUG):
+            order.delivery_person = delivery_person
+            order.order_status = "shipped"
+            # check if delivery person has more than 5 active orders
+            active_orders_count = Order.objects.filter(delivery_person=delivery_person, order_status="shipped").count()
+            if active_orders_count > 4:
+                delivery_person.is_on_delivery = True
+                delivery_person.save()
+            order.save()
+            return AcceptDeliveryMutation(success=True)
+        else:
+            raise GraphQLError("This order is taken")
