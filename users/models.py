@@ -830,18 +830,18 @@ class DeliveryPerson(models.Model):
         return delivery_people_that_can_deliver
 
 
-ACTIVITY_TYPES = (
-    ("view", "view"),
-    ("click", "click"),
-    ("purchase", "purchase"),
-    ("add_to_items", "add_to_items"),
-    ("remove_from_order", "remove_from_order"),
-    ("add_to_order", "add_to_order"),
-    ("remove_from_items", "remove_from_items"),
-)
 
 
 class UserActivity(models.Model):
+    ACTIVITY_TYPES = (
+        ("view", "view"),
+        ("click", "click"),
+        ("purchase", "purchase"),
+        ("add_to_items", "add_to_items"),
+        ("remove_from_order", "remove_from_order"),
+        ("add_to_order", "add_to_order"),
+        ("remove_from_items", "remove_from_items"),
+    )
     user_id = models.PositiveIntegerField()
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
