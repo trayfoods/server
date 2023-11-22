@@ -268,6 +268,10 @@ class Profile(models.Model):
         return Store.objects.filter(vendor=self).first()
     
     @property
+    def delivery_person(self):
+         return DeliveryPerson.objects.filter(profile=self).first()
+    
+    @property
     def is_student(self):
         return hasattr(self, "student")
     
@@ -343,7 +347,6 @@ class Profile(models.Model):
         if user_with_phone.exists() and user_with_phone.first().user != self.user:
             raise Exception("Phone number already in use")
         
-
 
 class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
