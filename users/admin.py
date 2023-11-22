@@ -97,13 +97,15 @@ class TransactionAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "_type")
     readonly_fields = ("wallet", "amount", "transaction_id", "gateway_transfer_id", "_type", "created_at")
 
+class DeliveryPersonAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "is_on_delivery", "is_verified", "is_available")
 
 admin.site.register(Gender)
 admin.site.register(Profile, ProfileAdmin)
 admin.site.register(Store)
 admin.site.register(Student)
 admin.site.register(Hostel)
-admin.site.register(DeliveryPerson)
+admin.site.register(DeliveryPerson, DeliveryPersonAdmin)
 
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Wallet, WalletAdmin)
