@@ -772,20 +772,20 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         delivery_person = user_profile.delivery_person
 
         if user.role != "DELIVERY_PERSON" or delivery_person is None:
-            raise GraphQLError("You are not a delivery personnal")
+            return AcceptDeliveryMutation(error="You are not a delivery personnal")
         
         order = Order.objects.filter(order_track_id=order_track_id).first()
 
         if order is None:
-            raise GraphQLError("This order Does not exists")
+            return AcceptDeliveryMutation(error="This order Does not exists")
         
         if order.order_status == "canceled" or order.order_payment_status == "failed":
-            raise GraphQLError("Order did not go through")
+            return AcceptDeliveryMutation(error="Order did not go through")
         
         if order.order_status == "delivered":
-            raise GraphQLError("Order is already delivered")
+            return AcceptDeliveryMutation(error="Order is already delivered")
         
-        if order.delivery_person is None and (order.order_payment_status == "success" or settings.DEBUG):
+        if (order.delivery_person is None and order.order_payment_status == "success") or settings.DEBUG:
             order.delivery_person = delivery_person
             order.order_status = "shipped"
             # check if delivery person has more than 5 active orders
@@ -796,4 +796,4 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order.save()
             return AcceptDeliveryMutation(success=True)
         else:
-            raise GraphQLError("This order is taken")
+            return AcceptDeliveryMutation(error="This order was taken")
