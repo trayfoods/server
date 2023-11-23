@@ -779,7 +779,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order is None:
             return AcceptDeliveryMutation(error="This order Does not exists")
         
-        if order.order_status == "canceled" or order.order_payment_status == "failed":
+        if order.order_status == "cancelled" or order.order_payment_status == "failed":
             return AcceptDeliveryMutation(error="Order did not go through")
         
         if order.order_status == "delivered":

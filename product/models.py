@@ -211,7 +211,7 @@ class Order(models.Model):
             ("processing", "processing"),
             ("shipped", "shipped"),
             ("delivered", "delivered"),
-            ("canceled", "canceled"),
+            ("cancelled", "cancelled"),
         ),
         default="not-started",
     )
