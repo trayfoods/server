@@ -760,9 +760,9 @@ class Student(models.Model):
 
 class DeliveryPerson(models.Model):
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
-    wallet = models.OneToOneField(
-        Wallet, on_delete=models.CASCADE, null=True, blank=True, unique=True
-    )
+    # wallet = models.OneToOneField(
+    #     Wallet, on_delete=models.CASCADE, null=True, blank=True, unique=True
+    # )
     is_verified = models.BooleanField(default=False)
     is_available = models.BooleanField(default=False)
     is_on_delivery = models.BooleanField(default=False)
@@ -771,6 +771,10 @@ class DeliveryPerson(models.Model):
 
     def __str__(self) -> str:
         return self.profile.user.username
+    
+    @property
+    def wallet(self):
+        return Wallet.objects.filter(user=self.profile).filter()
 
     class Meta:
         ordering = ["-is_available"]
