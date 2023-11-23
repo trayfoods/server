@@ -111,7 +111,8 @@ class UserAccount(AbstractUser, models.Model):
         ```
         """
         VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
-        if self.role == "VENDOR":
+
+        if self.profile.is_student is False:
             # remove hostels from delivery types
             VALID_DELIVERY_TYPES = [
                 delivery_type
@@ -220,8 +221,8 @@ class Profile(models.Model):
                     img_name = self.image.name
                     self.image.save(img_name, img_file, save=False)
 
-        if self.phone_number:
-            self.clean_phone_number(self.phone_number)
+        # if self.phone_number:
+        #     self.clean_phone_number(self.phone_number)
 
         super().save(*args, **kwargs)
 
@@ -883,9 +884,9 @@ def update_delivery_person_wallet_signal(sender, instance, created, **kwargs):
         # check if wallet exists
         if not instance.wallet:
             # check if user has a wallet
-            wallet = Wallet.objects.filter(user=instance.user).first()
+            wallet = Wallet.objects.filter(profile=instance.profile).first()
             if not wallet:
-                wallet = Wallet.objects.create(user=instance.user)
+                wallet = Wallet.objects.create(profile=instance.user)
                 wallet.save()
             instance.wallet = wallet
             instance.wallet.save()
