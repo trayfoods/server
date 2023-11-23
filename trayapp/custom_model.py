@@ -1,11 +1,8 @@
 import graphene
-import graphql
 from graphql import GraphQLError
 
 from trayapp.utils import get_banks_list, get_bank_account_details
-from users.types import StoreType, TransactionType
-
-from users.models import Wallet, Transaction
+from users.types import StoreType
 
 from graphene.types import Scalar
 import json
