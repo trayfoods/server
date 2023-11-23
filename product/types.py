@@ -5,7 +5,7 @@ from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store
 from users.types import StoreType
-from .filters import ItemFilter
+from .filters import ItemFilter, OrderFilter
 
 from trayapp.custom_model import JSONField
 
@@ -339,6 +339,17 @@ class OrderType(DjangoObjectType):
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
 
+        # check if view_as is set to vendor, then return only the store that the vendor is linked to
+        if self.view_as and self.view_as == "VENDOR":
+            current_user = info.context.user
+            if current_user.role == "VENDOR":
+                current_user_profile = current_user.profile
+                stores_infos = [
+                    store_info
+                    for store_info in stores_infos
+                    if store_info["storeId"] == current_user_profile.store.store_nickname
+                ] # filter the stores_infos to only the store that the vendor is linked to
+
         return stores_infos
     
     def resolve_linked_items(self, info):
@@ -348,3 +359,9 @@ class OrderType(DjangoObjectType):
         current_user = info.context.user
         if self.user != current_user.profile:
             return current_user.role
+
+class OrderNode(OrderType, DjangoObjectType):
+    class Meta:
+        model = Order
+        interfaces = (graphene.relay.Node,)
+        filterset_class = OrderFilter
