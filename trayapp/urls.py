@@ -4,14 +4,15 @@ from django.contrib import admin
 from django.urls import include, path
 from graphene_file_upload.django import FileUploadGraphQLView
 
-# from graphene_django.views import GraphQLView
 from django.views.decorators.csrf import csrf_exempt
 from .views import index_view
 from core.views import order_redirect_share_view
 
-# from users.views import get_bank_list
+def trigger_error(request):
+    division_by_zero = 1 / 0
 
 urlpatterns = [
+    path('sentry-debug/', trigger_error),
     path("admin/", admin.site.urls, name="admin"),
     path("", index_view, name="index"),
     path("api/", include("core.urls"), name="rest-api"),

@@ -11,6 +11,19 @@ from django.core.management.utils import get_random_secret_key
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+import sentry_sdk
+
+sentry_sdk.init(
+    dsn="https://5d2f9bd6b5edff68cfe4d9d412b6e507@o4506274783756288.ingest.sentry.io/4506274786443279",
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
+)
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
 APP_VERSION = os.getenv("APP_VERSION")
