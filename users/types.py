@@ -58,7 +58,7 @@ class ProfileType(DjangoObjectType):
 
 class UserNodeType(UserNode, graphene.ObjectType):
     profile = graphene.Field(ProfileType)
-    orders = graphene.List("product.schema.OrderType")
+    orders = graphene.List("product.types.OrderType")
     role = graphene.String()
 
     class Meta:

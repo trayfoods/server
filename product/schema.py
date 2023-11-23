@@ -1,6 +1,6 @@
 import graphene
 from graphql import GraphQLError
-from product.types import ItemType, ItemAttributeType, OrderType
+from product.types import ItemType, ItemAttributeType
 from product.mutations import (
     AddAvaliableProductMutation,
     AddMultipleAvaliableProductsMutation,
@@ -11,16 +11,14 @@ from product.mutations import (
     HelpfulReviewMutation,
     InitializeTransactionMutation,
 )
-from product.models import Item, ItemAttribute, Order
+from product.models import Item, ItemAttribute
 from trayapp.custom_model import ItemsAvalibilityNode
 
 from product.queries.item import ItemQueries
-
-# basic searching
-from django.db.models import Q
+from product.queries.order import OrderQueries
 
 
-class Query(ItemQueries, graphene.ObjectType):
+class Query(ItemQueries, OrderQueries, graphene.ObjectType):
     hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
 
     all_item_attributes = graphene.List(ItemAttributeType)
