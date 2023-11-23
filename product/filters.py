@@ -22,6 +22,6 @@ class ItemFilter(FilterSet):
 class OrderFilter(FilterSet):
     class Meta:
         model = Order
-        field = {
+        fields = {
             "order_status":["exact"]
         }
