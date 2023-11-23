@@ -221,8 +221,8 @@ class Profile(models.Model):
                     img_name = self.image.name
                     self.image.save(img_name, img_file, save=False)
 
-        # if self.phone_number:
-        #     self.clean_phone_number(self.phone_number)
+        if self.phone_number:
+            self.clean_phone_number(self.phone_number)
 
         super().save(*args, **kwargs)
 
