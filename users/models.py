@@ -111,7 +111,7 @@ class UserAccount(AbstractUser, models.Model):
         ```
         """
         VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
-
+        
         if self.profile.is_student is False:
             # remove hostels from delivery types
             VALID_DELIVERY_TYPES = [
@@ -884,9 +884,9 @@ def update_delivery_person_wallet_signal(sender, instance, created, **kwargs):
         # check if wallet exists
         if not instance.wallet:
             # check if user has a wallet
-            wallet = Wallet.objects.filter(profile=instance.profile).first()
+            wallet = Wallet.objects.filter(user=instance.profile).first()
             if not wallet:
-                wallet = Wallet.objects.create(profile=instance.user)
+                wallet = Wallet.objects.create(user=instance.profile)
                 wallet.save()
             instance.wallet = wallet
             instance.wallet.save()
