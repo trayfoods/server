@@ -316,6 +316,7 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         user = User.objects.get(username=user.username)
         return UpdateAccountMutation(user=user)
 
+
 class UpdateProfileMutation(Output, graphene.Mutation):
     class Arguments:
         gender = graphene.String()
@@ -330,9 +331,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         hostel_floor = graphene.String()
         hostel_room = graphene.String()
 
-
     user = graphene.Field(UserNodeType)
-
 
     @permission_checker([IsAuthenticated])
     def mutate(
@@ -354,7 +353,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         profile = user.profile
         if profile is None:
             raise GraphQLError("Profile does not exist")
-        
+
         if gender:
             gender = gender.upper().strip()
             gender = Gender.objects.filter(name=gender).first()
@@ -363,9 +362,9 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 gender.rank += 1
             else:
                 gender.rank -= 1
-            
+
             profile.gender = gender
-            
+
             gender.save()
 
         if country:
@@ -383,7 +382,7 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         if is_student and is_student.lower().strip() == "yes":
             if profile.is_vendor:
                 return GraphQLError("You are a vendor, you cannot be a student")
-            
+
             student = Student.objects.get_or_create(user=profile)
             student = student[0]
 
@@ -411,7 +410,10 @@ class UpdateProfileMutation(Output, graphene.Mutation):
                 student = student.first()
                 student.delete()
         profile.save()
-        return UpdateProfileMutation(user=info.context.user, success=profile.has_required_fields)
+        return UpdateProfileMutation(
+            user=info.context.user, success=profile.has_required_fields
+        )
+
 
 class EmailVerifiedCheckerMutation(graphene.Mutation):
     class Arguments:
@@ -696,10 +698,15 @@ class UserDeviceMutation(Output, graphene.Mutation):
             error = "Device token already exists"
         return UserDeviceMutation(success=success, error=error)
 
+
 class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
     class Arguments:
-        country = graphene.String(required=True, description="Country code in ISO 3166-1 alpha-2 format")
-        phone = graphene.String(required=True, description="Phone number in E.164 format")
+        country = graphene.String(
+            required=True, description="Country code in ISO 3166-1 alpha-2 format"
+        )
+        phone = graphene.String(
+            required=True, description="Phone number in E.164 format"
+        )
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -707,33 +714,47 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
         profile = info.context.user.profile
         success = False
         error = None
-        
+
         from restcountries import RestCountryApiV2 as rapi
-        
+
         get_country = rapi.get_country_by_country_code(country)
 
         # check if the country was found
         if get_country is None:
-            raise GraphQLError(f"Issue with the country: '{country}', please contact support.")
+            raise GraphQLError(
+                f"Issue with the country: '{country}', please contact support."
+            )
 
         calling_code = get_country.calling_codes[0]
 
+        if settings.DEBUG:
+            success = True
+            return SendPhoneVerificationCodeMutation(success=success, error=error)
+
         try:
             # send the verification code through twilio
-            success = profile.send_phone_number_verification_code(new_phone_number=phone, calling_code=calling_code)
+            success = profile.send_phone_number_verification_code(
+                new_phone_number=phone, calling_code=calling_code
+            )
         except Exception as e:
             if "use" in str(e):
                 error = "Phone number already in use, please try another."
             else:
                 error = "Issue sending the OTP code, please try again."
             print(e)
-        
+
         return SendPhoneVerificationCodeMutation(success=success, error=error)
-    
+
+
 class VerifyPhoneMutation(Output, graphene.Mutation):
     class Arguments:
-        country = graphene.String(required=True, description="Country code in ISO 3166-1 alpha-2 format")
-        code = graphene.String(required=True, description="Verification code sent to the user's phone number")
+        country = graphene.String(
+            required=True, description="Country code in ISO 3166-1 alpha-2 format"
+        )
+        code = graphene.String(
+            required=True,
+            description="Verification code sent to the user's phone number",
+        )
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -743,14 +764,20 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
         error = None
 
         from restcountries import RestCountryApiV2 as rapi
-        
+
         get_country = rapi.get_country_by_country_code(country)
 
         # check if the country was found
         if get_country is None:
-            raise GraphQLError(f"Issue with the country: '{country}', please contact support.")
+            raise GraphQLError(
+                f"Issue with the country: '{country}', please contact support."
+            )
 
         calling_code = get_country.calling_codes[0]
+
+        if settings.DEBUG:
+            success = True
+            return VerifyPhoneMutation(success=success, error=error)
 
         try:
             # verify the phone number
@@ -758,9 +785,10 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
         except Exception as e:
             error = "Incorrect OTP code, please try again."
             print(e)
-        
+
         return VerifyPhoneMutation(success=success, error=error)
-    
+
+
 class AcceptDeliveryMutation(Output, graphene.Mutation):
     class Arguments:
         order_track_id = graphene.String(required=True)
@@ -773,23 +801,27 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
         if user.role != "DELIVERY_PERSON" or delivery_person is None:
             return AcceptDeliveryMutation(error="You are not a delivery personnal")
-        
+
         order = Order.objects.filter(order_track_id=order_track_id).first()
 
         if order is None:
             return AcceptDeliveryMutation(error="This order Does not exists")
-        
+
         if order.order_status == "cancelled" or order.order_payment_status == "failed":
             return AcceptDeliveryMutation(error="Order did not go through")
-        
+
         if order.order_status == "delivered":
             return AcceptDeliveryMutation(error="Order is already delivered")
-        
-        if (order.delivery_person is None and order.order_payment_status == "success") or settings.DEBUG:
+
+        if (
+            order.delivery_person is None and order.order_payment_status == "success"
+        ) or settings.DEBUG:
             order.delivery_person = delivery_person
             order.order_status = "shipped"
             # check if delivery person has more than 5 active orders
-            active_orders_count = Order.objects.filter(delivery_person=delivery_person, order_status="shipped").count()
+            active_orders_count = Order.objects.filter(
+                delivery_person=delivery_person, order_status="shipped"
+            ).count()
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True
                 delivery_person.save()

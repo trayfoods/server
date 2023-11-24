@@ -8,6 +8,7 @@ from ..types import OrderNode, OrderType
 
 class OrderQueries(graphene.ObjectType):
     orders = DjangoFilterConnectionField(OrderNode)
+    store_orders = DjangoFilterConnectionField(OrderNode)
 
     deliveries = DjangoFilterConnectionField(OrderNode)
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
@@ -44,6 +45,12 @@ class OrderQueries(graphene.ObjectType):
     @permission_checker([IsAuthenticated])
     def resolve_orders(self, info):
         return info.context.user.orders.all()
+
+    @permission_checker([IsAuthenticated])
+    def resolve_store_orders(self, info):
+        user = info.context.user
+        if user.role == "VENDOR":
+            return user.profile.store.orders.all()
 
     @permission_checker([IsAuthenticated])
     def resolve_deliveries(self, info):

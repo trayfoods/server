@@ -130,8 +130,13 @@ class ItemType(DjangoObjectType):
         editable = False
 
         # check if other stored have added this item
-        if (user and user.is_authenticated and user.profile.store and 
-            self.product_creator and user.profile.store == self.product_creator.store):
+        if (
+            user
+            and user.is_authenticated
+            and user.profile.store
+            and self.product_creator
+            and user.profile.store == self.product_creator.store
+        ):
             # get all the stores that have this item and exclude the current store
             stores = self.product_avaliable_in.exclude(
                 store_nickname=self.product_creator.store
@@ -238,11 +243,13 @@ class ItemType(DjangoObjectType):
     def resolve_product_avaliable_in(self, info):
         return self.product_avaliable_in.all()
 
+
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:
         model = Item
         interfaces = (graphene.relay.Node,)
         filterset_class = ItemFilter
+
 
 class ShippingType(graphene.ObjectType):
     sch = graphene.String()
@@ -313,6 +320,7 @@ class OrderType(DjangoObjectType):
         model = Order
         fields = [
             "id",
+            "user",
             "overall_price",
             "delivery_fee",
             "transaction_fee",
@@ -330,35 +338,50 @@ class OrderType(DjangoObjectType):
     def resolve_id(self, info):
         return self.order_track_id
 
+    def resolve_user(self, info):
+        current_user = info.context.user
+        if self.user != current_user.profile:
+            return self.user
+
     def resolve_shipping(self, info):
         shipping = json.loads(self.shipping)
+        sch = None
+        if shipping["sch"]:
+            sch = shipping["sch"]
         return ShippingType(
-            sch=shipping["sch"], address=shipping["address"], batch=shipping["batch"]
+            sch=sch, address=shipping["address"], batch=shipping["batch"]
         )
 
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
 
+        view_as = None
+        current_user = info.context.user
+        if self.user != current_user.profile:
+            view_as = current_user.role
+
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if self.view_as and self.view_as == "VENDOR":
+        if view_as and view_as == "VENDOR":
             current_user = info.context.user
             if current_user.role == "VENDOR":
                 current_user_profile = current_user.profile
                 stores_infos = [
                     store_info
                     for store_info in stores_infos
-                    if store_info["storeId"] == current_user_profile.store.store_nickname
-                ] # filter the stores_infos to only the store that the vendor is linked to
+                    if store_info["storeId"]
+                    == current_user_profile.store.store_nickname
+                ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos
-    
+
     def resolve_linked_items(self, info):
         return self.linked_items.all()
-    
+
     def resolve_view_as(self, info):
         current_user = info.context.user
         if self.user != current_user.profile:
             return current_user.role
+
 
 class OrderNode(OrderType, DjangoObjectType):
     class Meta:
