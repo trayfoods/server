@@ -240,7 +240,7 @@ class Profile(models.Model):
             calling_code = country.callingCodes[0]
             self.calling_code = calling_code
             self.save()
-        return self.calling_code
+        return True if self.calling_code else False
 
     @property
     def has_required_fields(self):
@@ -337,7 +337,7 @@ class Profile(models.Model):
     def send_sms(self, message):
         try:
             if self.has_calling_code and self.phone_number_verified:
-                phone_number = f"{self.has_calling_code}{self.phone_number}"
+                phone_number = f"{self.calling_code}{self.phone_number}"
                 TWILIO_CLIENT.messages.create(
                     from_=settings.TWILIO_PHONE_NUMBER, body=message, to=phone_number
                 )
