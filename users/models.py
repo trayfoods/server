@@ -22,6 +22,7 @@ from trayapp.utils import get_twilio_client
 
 TWILIO_CLIENT = get_twilio_client()
 
+
 def profile_image_directory_path(instance, filename):
     """
     Create a directory path to upload the Profile Image.
@@ -82,7 +83,11 @@ class UserAccount(AbstractUser, models.Model):
         profile = Profile.objects.filter(user=self).first()
         is_student = profile.is_student if profile else False
         is_vendor = profile.is_vendor if profile else False
-        is_delivery_person = DeliveryPerson.objects.filter(profile=profile).exists() if profile else False
+        is_delivery_person = (
+            DeliveryPerson.objects.filter(profile=profile).exists()
+            if profile
+            else False
+        )
 
         is_school = School.objects.filter(user=self).exists()
 
@@ -111,7 +116,7 @@ class UserAccount(AbstractUser, models.Model):
         ```
         """
         VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
-        
+
         if self.profile.is_student is False:
             # remove hostels from delivery types
             VALID_DELIVERY_TYPES = [
@@ -207,7 +212,6 @@ class Profile(models.Model):
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
     phone_number_verified = models.BooleanField(default=False, editable=False)
 
-    
     def __str__(self) -> str:
         return self.user.username
 
@@ -252,10 +256,21 @@ class Profile(models.Model):
 
         if self.is_student:
             student = self.student
-            if student.school is None or not student.campus or student.hostel is None or not student.room:
+            if (
+                student.school is None
+                or not student.campus
+                or student.hostel is None
+                or not student.room
+            ):
                 return False
 
-        if self.gender is None or self.country is None or self.state is None or self.city is None or self.phone_number is None:
+        if (
+            self.gender is None
+            or self.country is None
+            or self.state is None
+            or self.city is None
+            or self.phone_number is None
+        ):
             return False
 
         return True
@@ -263,19 +278,19 @@ class Profile(models.Model):
     @property
     def is_vendor(self):
         return Store.objects.filter(vendor=self).exists()
-    
+
     @property
     def store(self):
         return Store.objects.filter(vendor=self).first()
-    
+
     @property
     def delivery_person(self):
-         return DeliveryPerson.objects.filter(profile=self).first()
-    
+        return DeliveryPerson.objects.filter(profile=self).first()
+
     @property
     def is_student(self):
         return hasattr(self, "student")
-    
+
     def send_phone_number_verification_code(self, new_phone_number, calling_code):
         new_phone_number = new_phone_number.strip()
 
@@ -287,33 +302,28 @@ class Profile(models.Model):
 
         new_phone_number = f"{calling_code}{new_phone_number}"
 
+        verification = TWILIO_CLIENT.verify.v2.services(
+            settings.TWILIO_VERIFY_SERVICE_SID
+        ).verifications.create(to=new_phone_number, channel="sms")
 
-        verification = TWILIO_CLIENT.verify \
-                                .v2 \
-                                .services(settings.TWILIO_VERIFY_SERVICE_SID) \
-                                .verifications \
-                                .create(to=new_phone_number, channel='sms')
-        
         success = True if verification.status == "pending" else False
 
         if success:
             self.phone_number = new_phone_number.replace(calling_code, "")
             self.phone_number_verified = False
             self.save()
-        
+
         return success
-    
+
     def verify_phone_number(self, code, calling_code):
         if "+" not in calling_code:
             calling_code = f"+{calling_code}"
 
         phone_number = f"{calling_code}{self.phone_number}"
 
-        verification_check = TWILIO_CLIENT.verify \
-                                    .v2 \
-                                    .services(settings.TWILIO_VERIFY_SERVICE_SID) \
-                                    .verification_checks \
-                                    .create(to=phone_number, code=code)
+        verification_check = TWILIO_CLIENT.verify.v2.services(
+            settings.TWILIO_VERIFY_SERVICE_SID
+        ).verification_checks.create(to=phone_number, code=code)
 
         success = True if verification_check.status == "approved" else False
 
@@ -321,33 +331,34 @@ class Profile(models.Model):
             self.phone_number_verified = True
             self.calling_code = calling_code
             self.save()
-        
+
         return success
-    
+
     def send_sms(self, message):
-        if self.has_calling_code and self.phone_number_verified:
-            phone_number = f"{self.has_calling_code}{self.phone_number}"
-            TWILIO_CLIENT.messages.create(
-                from_=settings.TWILIO_PHONE_NUMBER,
-                body=message,
-                to=phone_number
-            )
-    
+        try:
+            if self.has_calling_code and self.phone_number_verified:
+                phone_number = f"{self.has_calling_code}{self.phone_number}"
+                TWILIO_CLIENT.messages.create(
+                    from_=settings.TWILIO_PHONE_NUMBER, body=message, to=phone_number
+                )
+        except Exception as e:
+            print(e)
+
     @property
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
-    
+
     def clean_phone_number(self, phone_number):
         phone_number = phone_number.strip()
 
         # replace spaces with empty string
         phone_number = phone_number.replace(" ", "")
-        
+
         # check if the phone number has been used by another user
         user_with_phone = Profile.objects.filter(phone_number=phone_number)
         if user_with_phone.exists() and user_with_phone.first().user != self.user:
             raise Exception("Phone number already in use")
-        
+
 
 class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
@@ -725,7 +736,7 @@ class Hostel(models.Model):
 
     def __str__(self) -> str:
         return self.name
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.slug:
@@ -747,11 +758,10 @@ class Hostel(models.Model):
                 floors.append(f"floor {chr(64 + i)}")
             return floors
 
+
 class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
-    school = models.ForeignKey(
-        School, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
     floor = models.CharField(max_length=50, null=True, blank=True)
@@ -771,7 +781,7 @@ class DeliveryPerson(models.Model):
 
     def __str__(self) -> str:
         return self.profile.user.username
-    
+
     @property
     def wallet(self):
         return Wallet.objects.filter(user=self.profile).filter()
@@ -787,16 +797,15 @@ class DeliveryPerson(models.Model):
     @property
     def orders(self):
         return Order.get_orders_by_delivery_person(delivery_person=self)
-    
+
     # function to check if a order is able ti be delivered by a delivery person
     def can_deliver(self, order):
-
         order_user = order.user
 
         # check if the order user is same as the delivery person
         if order_user == self.profile:
             return False
-        
+
         # check if the delivery person is a student and the order user is a student
         if self.profile.is_student and order_user.is_student:
             order_user_gender = order_user.gender.name
@@ -804,7 +813,6 @@ class DeliveryPerson(models.Model):
 
             if order_user_gender != delivery_person_gender:
                 return False
-
 
         shipping = order.shipping
         sch = shipping.get("sch")
@@ -814,27 +822,27 @@ class DeliveryPerson(models.Model):
         # check if the delivery person is not allowed to deliver to the order bash
         if bash in self.not_allowed_bash:
             return False
-        
+
         # check if the delivery person is not allowed to deliver to the order location
         if address in self.not_allowed_locations:
             return False
-        
+
         if sch in self.not_allowed_locations:
             return False
-        
+
         return True
-    
+
     # function to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order):
-        delivery_people = DeliveryPerson.objects.filter(is_available=True, is_on_delivery=False)
+        delivery_people = DeliveryPerson.objects.filter(
+            is_available=True, is_on_delivery=False
+        )
         delivery_people_that_can_deliver = []
         for delivery_person in delivery_people:
             if delivery_person.can_deliver(order):
                 delivery_people_that_can_deliver.append(delivery_person)
         return delivery_people_that_can_deliver
-
-
 
 
 class UserActivity(models.Model):

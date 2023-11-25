@@ -82,11 +82,10 @@ class ProcessPayment:
         stores = order.stores_infos
         stores = json.loads(stores)
 
-        delivery_fee = Decimal(order.delivery_fee)
+        # delivery_fee = Decimal(order.delivery_fee)
 
         # get the overall price of the order
         overall_price = Decimal(order.overall_price)
-        order_price = order_price - delivery_fee - Decimal(order.transaction_fee)
 
         # calculate the total price of the stores
         # and compare it with the overall price
@@ -103,6 +102,7 @@ class ProcessPayment:
         # if the stores_total_price is greater than the overall_price or
         # if the order_price is not equal to the overall_price
         # then the order is not valid
+        print(stores_total_price, overall_price, order_price)
         if stores_total_price > overall_price or order_price != overall_price:
             order.order_payment_status = "failed"
             order.order_status = "cancelled"
@@ -131,14 +131,16 @@ class ProcessPayment:
                     }
                     store_qs.credit_wallet(**kwargs)
                     store_qs.save()
-                    store_qs.vendor.send_sms(f"New Order of {order.order_payment_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/")
+                    store_qs.vendor.send_sms(
+                        f"New Order of {order.order_payment_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/"
+                    )
                 else:
                     stores_with_issues.append(store_id)
             print("stores_with_issues: ", stores_with_issues)
             # update the order payment status
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
-            order.delivery_fee = delivery_fee
+            # order.delivery_fee = delivery_fee
             order.order_status = "processing"
             order.order_message = "Your Order Payment Was Successful"
             order.save()
@@ -146,17 +148,21 @@ class ProcessPayment:
             shipping_address = json.loads(order.shipping)
             shipping_address = shipping_address.get("address", "pickup")
 
-            print("shipping_address: ", shipping_address)
-
             if shipping_address != "pickup":
                 # send the order to the delivery_person
-                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(order)
+                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
+                    order
+                )
                 print("delivery_people: ", delivery_people)
                 for delivery_person in delivery_people:
-                    order.send_order_to_delivery_person(who="delivery_person", delivery_person=delivery_person)
+                    order.send_order_to_delivery_person(
+                        who="delivery_person", delivery_person=delivery_person
+                    )
             else:
                 # send sms to user to pick up order
-                order.user.send_sms(f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup. Thank you for using TrayFoods")
+                order.user.send_sms(
+                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup. Thank you for using TrayFoods"
+                )
 
         return HttpResponse("Payment successful", status=200)
         # except Order.DoesNotExist:
