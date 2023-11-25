@@ -315,6 +315,7 @@ class OrderType(DjangoObjectType):
     stores_infos = graphene.List(StoreInfoType)
     linked_items = graphene.List(ItemType)
     view_as = graphene.String(default_value=None)
+    user = graphene.Field("users.types.ProfileType", default_value=None)
 
     class Meta:
         model = Order
