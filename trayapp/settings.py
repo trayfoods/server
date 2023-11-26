@@ -348,5 +348,6 @@ CORS_ALLOW_HEADERS = (
     "origin",
     "user-agent",
     "x-csrftoken",
+    "baggage",
     "x-requested-with",
 )
