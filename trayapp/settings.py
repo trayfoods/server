@@ -349,5 +349,6 @@ CORS_ALLOW_HEADERS = (
     "user-agent",
     "x-csrftoken",
     "baggage",
+    "sentry-trace",
     "x-requested-with",
 )
