@@ -9,10 +9,6 @@ class StoreQueries(graphene.ObjectType):
         StoreNode
     )
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
-
-    get_trending_stores = graphene.List(
-        StoreType, count=graphene.Int(required=False), page=graphene.Int(required=True)
-    )
     
     def resolve_get_store(self, info, store_nickname):
         store = Store.objects.filter(store_nickname=store_nickname).first()
