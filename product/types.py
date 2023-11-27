@@ -331,8 +331,8 @@ class OrderType(DjangoObjectType):
             "order_status",
             "order_payment_currency",
             "order_payment_status",
-            "created_on",
-            "updated_on",
+            "created_at",
+            "updated_at",
             "view_as",
         ]
 
