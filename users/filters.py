@@ -1,33 +1,10 @@
-from django.utils import timezone
 from django_filters import FilterSet, NumberFilter, CharFilter
 from users.models import Transaction, Store
 
-DATE_FILTER_TYPES = ["today", "7days", "30days", "Alldays"]
-
-
-class DateTypeFilter(CharFilter):
-    def filter(self, qs, value):
-        # check if the value is not in the list of filter types
-        if value not in DATE_FILTER_TYPES:
-            raise ValueError("Invalid Date Type")
-
-        if value in DATE_FILTER_TYPES:
-            if value == "today":
-                return qs.filter(created_at__date=timezone.now())
-            elif value == "7days":
-                return qs.filter(
-                    created_at__date__gte=timezone.now().date()
-                    - timezone.timedelta(days=7)
-                )
-            elif value == "30days":
-                return qs.filter(
-                    created_at__date__gte=timezone.now().date()
-                    - timezone.timedelta(days=30)
-                )
-        return qs
-
 
 class TransactionFilter(FilterSet):
+    from trayapp.base_filters import DateTypeFilter
+
     # add custom filters
     year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021
     month = NumberFilter(
@@ -48,8 +25,10 @@ class TransactionFilter(FilterSet):
             "status": ["exact"],
         }
 
+
 class StoreFilter(FilterSet):
     store_category = CharFilter(field_name="store_categories", lookup_expr="icontains")
+
     class Meta:
         model = Store
         fields = {
