@@ -19,7 +19,6 @@ from product.queries.order import OrderQueries
 
 
 class Query(ItemQueries, OrderQueries, graphene.ObjectType):
-    hero_data = graphene.List(ItemType, count=graphene.Int(required=False))
 
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
@@ -61,17 +60,7 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
                             list_of_items.append(new_item)
         return list_of_items
 
-    def resolve_hero_data(self, info, count=None):
-        items = (
-            Item.objects.filter(product_type__urlParamName__icontains="dish")
-            .exclude(product_type__urlParamName__icontains="not")
-            .order_by("-product_clicks")
-        )
-        if count:
-            count = count + 1
-            if items.count() >= count:
-                items = items[:count]
-        return items
+
 
     def resolve_all_item_attributes(self, info, **kwargs):
         food_categories = [

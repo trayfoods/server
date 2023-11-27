@@ -6,20 +6,28 @@ from ..types import ItemNode, ItemType
 from users.models import UserActivity
 from graphene_django.filter import DjangoFilterConnectionField
 
+
 class ItemQueries(graphene.ObjectType):
-    items = DjangoFilterConnectionField(
-        ItemNode
-    )
+    items = DjangoFilterConnectionField(ItemNode)
 
     item = graphene.Field(
         ItemType,
         item_slug=graphene.String(required=True),
         store_nickname=graphene.String(required=False),
     )
+    hero_data = graphene.List(ItemType)
+
+    def resolve_hero_data(self, info):
+        items = (
+            Item.objects.filter(product_type__urlParamName__icontains="dish")
+            .exclude(product_type__urlParamName__icontains="not")
+            .order_by("-product_clicks")[:4]
+        )
+        return items
 
     def resolve_item(self, info, item_slug, store_nickname=None):
         from django.utils import timezone
-        
+
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
             # check if item is avaliable in the store if store_nickname is provided
