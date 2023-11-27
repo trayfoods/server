@@ -43,17 +43,17 @@ class OrderQueries(graphene.ObjectType):
             raise GraphQLError("Order Not Found")
 
     @permission_checker([IsAuthenticated])
-    def resolve_orders(self, info):
+    def resolve_orders(self, info, **kwargs):
         return info.context.user.orders.all()
 
     @permission_checker([IsAuthenticated])
-    def resolve_store_orders(self, info):
+    def resolve_store_orders(self, info, **kwargs):
         user = info.context.user
         if user.role == "VENDOR":
             return user.profile.store.orders.all()
 
     @permission_checker([IsAuthenticated])
-    def resolve_deliveries(self, info):
+    def resolve_deliveries(self, info, **kwargs):
         user = info.context.user
         if user.role == "DELIVERY_PERSON":
             return user.profile.delivery_person.orders.all()

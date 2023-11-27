@@ -316,24 +316,32 @@ class OrderType(DjangoObjectType):
     linked_items = graphene.List(ItemType)
     view_as = graphene.String(default_value=None)
     user = graphene.Field("users.types.ProfileType", default_value=None)
+    items_count = graphene.Int()
+    items_images_urls = graphene.List(graphene.String)
+    display_date = graphene.String()
 
     class Meta:
         model = Order
         fields = [
             "id",
             "user",
-            "overall_price",
-            "delivery_fee",
-            "transaction_fee",
+            "view_as",
             "shipping",
+            "updated_at",
+            "created_at",
+            "items_count",
             "stores_infos",
+            "order_track_id",
+            "delivery_fee",
             "linked_items",
             "order_status",
+            "display_date",
+            "overall_price",
+            "transaction_fee",
             "order_payment_currency",
             "order_payment_status",
-            "created_at",
-            "updated_at",
-            "view_as",
+            "order_payment_url",
+            "items_images_urls",
         ]
 
     def resolve_id(self, info):
@@ -343,6 +351,24 @@ class OrderType(DjangoObjectType):
         current_user = info.context.user
         if self.user != current_user.profile:
             return self.user
+
+    def resolve_display_date(self, info):
+        from trayapp.utils import convert_time_to_ago
+
+        return convert_time_to_ago(self.created_at)
+
+    def resolve_items_count(self, info):
+        return self.linked_items.count()
+
+    def resolve_items_images_urls(self, info):
+        images_urls = []
+        for item in self.linked_items.all():
+            images_urls.append(
+                info.context.build_absolute_uri(
+                    item.product_images.first().item_image.url
+                )
+            )
+        return images_urls
 
     def resolve_shipping(self, info):
         shipping = json.loads(self.shipping)
