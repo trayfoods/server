@@ -173,7 +173,12 @@ class StoreType(DjangoObjectType):
         return self.store_categories
 
     def resolve_store_menu(self, info):
-        return self.store_menu
+        store_menu = self.store_menu
+        if store_menu is None:
+            return []
+        # arrange the menu json list from last to first
+        store_menu.reverse()
+        return store_menu
 
     def resolve_store_phone_numbers(self, info):
         try:
