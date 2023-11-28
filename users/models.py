@@ -680,15 +680,26 @@ class Store(models.Model):
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
-    store_rank = models.FloatField(default=0)
+    store_rank = models.FloatField(default=0, editable=False)
 
-    store_open_hours = models.JSONField(
-        default=list, null=True, blank=True, editable=False
-    )
+    store_open_hours = models.JSONField(default=list, null=True, blank=True)
+
+    store_menu = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
+        # check if all is not in store menu
+        all_exists = False
+        for menu in self.store_menu:
+            name = menu.lower()
+            if name == "all":
+                all_exists = True
+                break
+        if not all_exists:
+            self.store_menu.append("All")
+            self.save()
+
         return f"{self.store_nickname}"
 
     class Meta:

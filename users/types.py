@@ -43,15 +43,15 @@ class ProfileType(DjangoObjectType):
         else:
             image = None
         return image
-    
+
     def resolve_store(self, info, *args, **kwargs):
         # check if the user role is student
         return self.store
-    
+
     def resolve_gender(self, info, *args, **kwargs):
         if self.gender:
             return self.gender.name
-    
+
     def resolve_has_required_fields(self, info, *args, **kwargs):
         return self.has_required_fields
 
@@ -144,6 +144,7 @@ class StoreType(DjangoObjectType):
     store_image = graphene.String()
     store_cover_image = graphene.String()
     store_products = graphene.List("product.types.ItemType")
+    store_menu = graphene.List(graphene.String)
 
     class Meta:
         model = Store
@@ -153,6 +154,7 @@ class StoreType(DjangoObjectType):
             "store_country",
             "store_type",
             "store_categories",
+            "store_menu",
             "store_phone_numbers",
             "store_bio",
             "store_address",
@@ -169,6 +171,9 @@ class StoreType(DjangoObjectType):
 
     def resolve_store_categories(self, info):
         return self.store_categories
+
+    def resolve_store_menu(self, info):
+        return self.store_menu
 
     def resolve_store_phone_numbers(self, info):
         try:
@@ -198,6 +203,7 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return cover_image
+
 
 class StoreNode(StoreType, graphene.ObjectType):
     class Meta:

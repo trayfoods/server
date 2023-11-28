@@ -829,3 +829,49 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             return AcceptDeliveryMutation(success=True)
         else:
             return AcceptDeliveryMutation(error="This order was taken")
+
+
+class UpdateStoreMenuMutation(Output, graphene.Mutation):
+    class Arguments:
+        name = graphene.String(required=True)
+        action = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, name, action):
+        user = info.context.user
+        user_profile = user.profile
+        store = user_profile.store
+
+        name = name.strip()
+
+        if user.role != "VENDOR" or store is None:
+            return UpdateStoreMenuMutation(error="You are not a vendor")
+
+        # check if the name exists in the store menu json list
+        exist_name = False
+
+        name_in_lower_case = name.strip().lower()
+        for menu in store.store_menu:
+            menu = menu.strip().lower()
+            if menu == name_in_lower_case:
+                exist_name = True
+                break
+
+        if action == "add":
+            if exist_name:
+                return UpdateStoreMenuMutation(error="This menu already exists")
+            store.store_menu.append(name)
+            store.save()
+            return UpdateStoreMenuMutation(success=True)
+        elif action == "remove":
+            # check of the name is 'all', then don't allow it
+            if name_in_lower_case == "all":
+                return UpdateStoreMenuMutation(error="You cannot remove 'all' menu")
+            
+            if not exist_name:
+                return UpdateStoreMenuMutation(error="This menu does not exist")
+            store.store_menu.remove(name)
+            store.save()
+            return UpdateStoreMenuMutation(success=True)
+        else:
+            return UpdateStoreMenuMutation(error="Invalid action")

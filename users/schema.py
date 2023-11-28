@@ -19,7 +19,8 @@ from .mutations import (
     RegisterMutation,
     SendPhoneVerificationCodeMutation,
     VerifyPhoneMutation,
-    AcceptDeliveryMutation
+    AcceptDeliveryMutation,
+    UpdateStoreMenuMutation,
 )
 from .models import Student
 from .types import (
@@ -89,13 +90,15 @@ class AuthMutation(graphene.ObjectType):
 class Mutation(AuthMutation, graphene.ObjectType):
     update_account = UpdateAccountMutation.Field()
     update_profile = UpdateProfileMutation.Field()
-    create_store = CreateStoreMutation.Field()
-    update_store = UpdateStoreMutation.Field()
     create_transfer_recipient = CreateTransferRecipient.Field()
     user_device = UserDeviceMutation.Field()
     withdraw_from_wallet = WithdrawFromWalletMutation.Field()
     change_pin = ChangePinMutation.Field()
     accept_delivery = AcceptDeliveryMutation.Field()
+
+    create_store = CreateStoreMutation.Field()
+    update_store = UpdateStoreMutation.Field()
+    update_store_menu = UpdateStoreMenuMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
