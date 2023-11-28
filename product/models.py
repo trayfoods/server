@@ -85,6 +85,11 @@ class Item(models.Model):
         default="public",
         editable=False,
     )
+    store_menu_name = models.CharField(
+        max_length=30,
+        default="All",
+        blank=True,
+    )
     product_category = models.ForeignKey(
         "ItemAttribute",
         related_name="product_category",
@@ -152,8 +157,10 @@ class Item(models.Model):
     @property
     # check if the current user is the creator of the product
     def is_creator(self):
-        return self.product_creator and (self.product_creator == self.request.user.profile)
-    
+        return self.product_creator and (
+            self.product_creator == self.request.user.profile
+        )
+
     @property
     # get the creator of the product country
     def product_country(self):
@@ -263,7 +270,7 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
-    
+
     def send_order_to_delivery_person(self, delivery_person):
         order_address = self.shipping.get("address")
         msg = """
@@ -278,7 +285,6 @@ class Order(models.Model):
             f"{FRONTEND_URL}/delivery/{self.order_track_id}",
         )
         delivery_person.profile.send_sms(msg)
-                
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod

@@ -109,6 +109,7 @@ class ItemType(DjangoObjectType):
             "product_creator",
             "product_created_on",
             "is_avaliable",
+            "store_menu_name",
         ]
 
     def resolve_current_user_review(self, info):
