@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 from product.types import ItemAttributeType
 from product.mutations import (
-    AddAvaliableProductMutation,
+    ItemCopyDeleteMutation,
     AddProductMutation,
     AddProductClickMutation,
     CreateOrderMutation,
@@ -11,7 +11,7 @@ from product.mutations import (
     InitializeTransactionMutation,
     UpdateItemMenuMutation,
 )
-from product.models import Item, ItemAttribute
+from product.models import ItemAttribute
 
 from product.queries.item import ItemQueries
 from product.queries.order import OrderQueries
@@ -80,13 +80,20 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
 
 
 class Mutation(graphene.ObjectType):
+    # product
     add_product = AddProductMutation.Field()
     add_product_click = AddProductClickMutation.Field()
-    add_available_product = AddAvaliableProductMutation.Field()
+    copy_delete_item = ItemCopyDeleteMutation.Field()
+
+    # store menu
     update_item_menu = UpdateItemMenuMutation.Field()
-    create_order = CreateOrderMutation.Field()
+
+    # rating
     rate_item = RateItemMutation.Field()
     helpful_review = HelpfulReviewMutation.Field()
+
+    # order
+    create_order = CreateOrderMutation.Field()
     initialize_transaction = InitializeTransactionMutation.Field()
 
 

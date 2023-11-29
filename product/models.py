@@ -107,7 +107,7 @@ class Item(models.Model):
 
     product_status = models.CharField(
         max_length=20,
-        choices=(("active", "active"), ("inactive", "inactive")),
+        choices=(("active", "active"), ("inactive", "inactive"), ("deleted", "deleted")),
         default="active",
     )
 

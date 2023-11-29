@@ -137,7 +137,8 @@ class AddProductMutation(Output, graphene.Mutation):
                         )
                         for image, is_primary in zip(
                             # convert to list to avoid multiple iteration
-                            product_images, [True] + [False] * (len(product_images) - 1)
+                            product_images,
+                            [True] + [False] * (len(product_images) - 1),
                         )
                     ]
                     ItemImage.objects.bulk_create(item_images)
@@ -154,69 +155,48 @@ class AddProductMutation(Output, graphene.Mutation):
 
 
 # This Mutation Only Add One Product to the storeProducts as available
-class AddAvaliableProductMutation(graphene.Mutation):
+class ItemCopyDeleteMutation(Output, graphene.Mutation):
     class Arguments:
         # The input arguments for this mutation
-        product_slug = graphene.String(required=True)
+        slug = graphene.String(required=True)
         action = graphene.String(required=True)
 
-    # The class attributes define the response of the mutation
-    product = graphene.Field(ItemType)
-    success = graphene.Boolean()
-
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, product_slug, action):
-        success = False
-        product = Item.objects.filter(product_slug=product_slug.strip()).first()
+    def mutate(self, info, slug, action):
+        product_slug = slug.strip()
+        product = Item.objects.filter(product_slug=product_slug).first()
         user = info.context.user
         profile = user.profile
+
+        if product is None:
+            return ItemCopyDeleteMutation(error="Item does not exist")
+
+        if not profile.is_vendor:
+            return ItemCopyDeleteMutation(error="You are not a vendor")
+
+        is_owner = product.product_creator == profile.store
+        is_public = product.product_share_visibility == "public"
+
         # Checking if the current user is equals to the store vendor
         # Then add 0.5 to the store_rank
-        if not product is None and profile.is_vendor:
-            if (
-                product.product_creator != profile.store
-                and product.product_share_visibility == "private"
-            ):  # then check if the user is a vendor
-                raise GraphQLError(
-                    "You are not allowed to add this product to your store."
-                )
-            try:
-                if not product.product_creator is None:
-                    if product.product_creator != profile:
-                        store = Store.objects.filter(
-                            store_nickname=product.product_creator.store_nickname
-                        ).first()
-                        if not store is None:
-                            store.store_rank += 0.5
-                            store.save()
-            except:
-                pass
-            store = profile.store
-            if action == "add":
-                new_activity = UserActivity.objects.create(
-                    user_id=info.context.user.id,
-                    activity_message=f"Added {product.product_name} as avaliable product",
-                    activity_type="add_to_items",
-                    item=product,
-                    timestamp=timezone.now(),
-                )
-                product.save()
-                new_activity.save()
-            elif action == "remove":
-                new_activity = UserActivity.objects.create(
-                    user_id=info.context.user.id,
-                    activity_message=f"Removed {product.product_name} as avaliable product",
-                    activity_type="remove_from_items",
-                    item=product,
-                    timestamp=timezone.now(),
-                )
-                product.save()
-                new_activity.save()
-            else:
-                raise GraphQLError("Enter either `add/remove` for actions.")
-            success = True
-        # Notice we return an instance of this mutation
-        return AddAvaliableProductMutation(product=product, success=success)
+        if not is_owner and not is_public:  # then check if the user is a vendor
+            return ItemCopyDeleteMutation(
+                error=f"You are not allowed to {action} this item"
+            )
+
+        if (is_public or is_owner) and action == "copy":
+            # increase the rank of the creator store by 0.5
+            store = product.product_creator
+            store.store_rank += 0.5
+            store.save()
+            return ItemCopyDeleteMutation(success=True)
+
+        elif is_owner and action == "delete":
+            product.product_status = "deleted"
+            product.save()
+            return ItemCopyDeleteMutation(success=True)
+        else:
+            raise GraphQLError("Enter either `copy` or ``delete for actions.")
 
 
 class UpdateItemMenuMutation(Output, graphene.Mutation):
@@ -268,7 +248,7 @@ class AddProductClickMutation(graphene.Mutation):
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
                 activity_message=None,
-                activity_type="click",
+                activity_type="added_to_cart",
                 item=item,
                 timestamp=timezone.now(),
             )
