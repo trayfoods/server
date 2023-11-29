@@ -24,7 +24,7 @@ class ItemImageType(DjangoObjectType):
 
     def resolve_product_image_webp(self, info, *args, **kwargs):
         product_image_webp = info.context.build_absolute_uri(self.item_image_webp.url)
-        return product_image_webp
+        return product_image_webp if self.item_image_webp else None
 
 
 class ItemAttributeType(DjangoObjectType):
@@ -182,6 +182,7 @@ class ItemType(DjangoObjectType):
 
     def resolve_is_avaliable(self, info):
         return self.product_status == "active"
+
 
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:

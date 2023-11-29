@@ -28,32 +28,29 @@ class Output:
     error = graphene.String(default_value=None)
 
 
+from django.db import transaction, IntegrityError
+
+
 class AddProductMutation(Output, graphene.Mutation):
     class Arguments:
-        # The input arguments for this mutation
-        product_slug = graphene.String(required=True)
+        product_qty = graphene.Int()
+        product_desc = graphene.String()
+        is_groupable = graphene.Boolean()
+        product_calories = graphene.Float()
+        product_qty_unit = graphene.String()
+        product_images = Upload(required=True)
         product_name = graphene.String(required=True)
-        product_price = graphene.Decimal(required=True)
+        product_slug = graphene.String(required=True)
         product_type = graphene.String(required=True)
+        product_price = graphene.Decimal(required=True)
+        # store_menu_name = graphene.String(required=True)
         product_category = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
-        product_calories = graphene.Float()
-        product_desc = graphene.String()
-        product_qty = graphene.Int()
-        product_qty_unit = graphene.String()
-        is_groupable = graphene.Boolean()
 
-        product_images = Upload(required=True)
-
-    # The class attributes define the response of the mutation
     product = graphene.Field(ItemType)
 
     @permission_checker([IsAuthenticated])
-    def mutate(
-        self,
-        info,
-        **kwargs,
-    ):
+    def mutate(self, info, **kwargs):
         list_of_required_fields = [
             "product_slug",
             "product_name",
@@ -62,19 +59,20 @@ class AddProductMutation(Output, graphene.Mutation):
             "product_category",
             "product_share_visibility",
             "product_images",
+            # "store_menu_name",
         ]
 
         if not kwargs.get("product_qty") is None:
             list_of_required_fields.append("product_qty_unit")
 
-        # check if all the required fields are present
+        # Check if all the required fields are present
         for field in list_of_required_fields:
             if field not in kwargs:
                 raise GraphQLError(f"{field} is required.")
 
         kwargs = {
             k: v for k, v in kwargs.items() if v is not None
-        }  # remove all None values from kwargs
+        }  # Remove None values from kwargs
 
         product_slug = kwargs.get("product_slug")
         product_name = kwargs.get("product_name")
@@ -82,7 +80,7 @@ class AddProductMutation(Output, graphene.Mutation):
         product_category_val = kwargs.get("product_category")
         product_type_val = kwargs.get("product_type")
 
-        # remove category, type and images from kwargs
+        # Remove category, type and images from kwargs
         kwargs.pop("product_category")
         kwargs.pop("product_type")
         kwargs.pop("product_images")
@@ -102,87 +100,65 @@ class AddProductMutation(Output, graphene.Mutation):
             success = False
             raise GraphQLError("Item Already Exists")
 
-        try:
-            product_category = ItemAttribute.objects.filter(
-                urlParamName=product_category_val
-            ).first()
-            product_type = ItemAttribute.objects.filter(
-                urlParamName=product_type_val
-            ).first()
-            if product is None and not profile is None:
-                # spread the kwargs
-                save_data = {
-                    **kwargs,
-                    # "product_slug": product_slug.strip(),
-                    # "product_name": product_name.strip(),
-                    "product_category": product_category,
-                    "product_type": product_type,
-                    "product_creator": profile.store,
-                }
+        with transaction.atomic():
+            try:
+                product_category = ItemAttribute.objects.get(
+                    urlParamName=product_category_val
+                )
+                product_type = ItemAttribute.objects.get(urlParamName=product_type_val)
 
-                # Checking if slug already exists
-                if not Item.objects.filter(product_slug=product_slug.strip()).exists():
-                    product = Item.objects.create(
-                        **save_data,
-                    )
-                    product.save()
-                else:
-                    save_data.pop("product_slug")
-                    # if slug already exists, add a random string to the slug
-                    new_slug = kwargs.get("product_slug").strip() + str(
-                        timezone.now().timestamp()
-                    )
-                    product = Item.objects.create(
-                        **save_data,
-                        product_slug=new_slug,
-                    )
-                    product.save()
+                if product is None and not profile is None:
+                    # Spread the kwargs
+                    save_data = {
+                        **kwargs,
+                        "product_creator": profile.store,
+                        "product_category": product_category,
+                        "product_type": product_type,
+                    }
 
-                # check if the product has been created
-                if product is None:
-                    raise GraphQLError("Item Not Created")
+                    # Checking if slug already exists
+                    if not Item.objects.filter(
+                        product_slug=product_slug.strip()
+                    ).exists():
+                        product = Item.objects.create(**save_data)
+                        product.save()
+                    else:
+                        save_data.pop("product_slug")
+                        new_slug = kwargs.get("product_slug").strip() + str(
+                            timezone.now().timestamp()
+                        )
+                        product = Item.objects.create(
+                            **save_data, product_slug=new_slug
+                        )
+                        product.save()
 
-                # Adding the product images
-                for product_image in product_images:
-                    qs = ItemImage.objects.filter(product=product).first()
-                    is_primary = True
-                    if not qs is None:
-                        is_primary = False
-                    productImage = ItemImage.objects.create(
-                        product=product,
-                        item_image=product_image,
-                        is_primary=is_primary,
-                    )
-                    productImage.save()
-                    product.product_images.add(productImage)
-                    product.save()
-        except Exception as e:
-            raise GraphQLError(e)
-        # Notice we return an instance of this mutation
+                    # Check if the product has been created
+                    if product is None:
+                        raise GraphQLError("Item Not Created")
+
+                    # Optimize Image Handling
+                    item_images = [
+                        ItemImage(
+                            product=product, item_image=image, is_primary=is_primary
+                        )
+                        for image, is_primary in zip(
+                            product_images, [True] + [False] * (len(product_images) - 1)
+                        )
+                    ]
+                    ItemImage.objects.bulk_create(item_images)
+
+                # product.save()  # Not needed as product.save() is already called in the `create()` method
+                success = True
+            except IntegrityError as e:
+                raise GraphQLError(e)
+
+            except ItemAttribute.DoesNotExist:
+                raise GraphQLError("Invalid Category or Type")
+
+            except Exception as e:
+                raise GraphQLError(e)
+
         return AddProductMutation(product=product, success=success)
-
-    # @verification_required
-    def resolve_mutation(cls, root, info, **kwargs):
-        # get the product slug
-        product_slug = kwargs.get("product_slug")
-        # get the product
-        product = Item.objects.filter(product_slug=product_slug).first()
-        # check if product have all the required fields
-
-        if (
-            product.product_name is None
-            and product.product_price is None
-            and product.product_category is None
-            and product.product_type is None
-            and product.product_share_visibility is None
-            and product.product_creator is None
-            # check if the product have at least one image
-            and product.product_images.all().count() <= 0
-        ):
-            product.delete()
-            raise GraphQLError("Product Not Created")
-
-        return cls(product=product, success=True)
 
 
 # This Mutation Only Add One Product to the storeProducts as available

@@ -103,9 +103,6 @@ class Item(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    product_images = models.ManyToManyField(
-        "ItemImage", related_name="product_image", blank=True, editable=False
-    )
     product_creator = models.ForeignKey(
         "users.Store", null=True, on_delete=models.CASCADE, blank=True
     )
@@ -133,6 +130,10 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
+    
+    @property
+    def product_images(self):
+        return ItemImage.objects.filter(product=self)
 
     # filter the product available in a store
     @classmethod
