@@ -869,7 +869,6 @@ class UserActivity(models.Model):
     user_id = models.PositiveIntegerField()
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPES)
-    activity_message = models.TextField(null=True, blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
