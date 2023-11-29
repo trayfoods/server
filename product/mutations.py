@@ -13,8 +13,6 @@ from trayapp.permissions import IsAuthenticated, permission_checker
 
 import json
 
-from graphql_auth.decorators import verification_required
-
 PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
 
@@ -43,11 +41,11 @@ class AddProductMutation(Output, graphene.Mutation):
         product_slug = graphene.String(required=True)
         product_type = graphene.String(required=True)
         product_price = graphene.Decimal(required=True)
-        # store_menu_name = graphene.String(required=True)
+        store_menu_name = graphene.String(required=True)
         product_category = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
 
-    product = graphene.Field(ItemType)
+    product = graphene.Field(ItemType, default_value=None)
 
     @permission_checker([IsAuthenticated])
     def mutate(self, info, **kwargs):
@@ -59,7 +57,7 @@ class AddProductMutation(Output, graphene.Mutation):
             "product_category",
             "product_share_visibility",
             "product_images",
-            # "store_menu_name",
+            "store_menu_name",
         ]
 
         if not kwargs.get("product_qty") is None:
@@ -85,20 +83,16 @@ class AddProductMutation(Output, graphene.Mutation):
         kwargs.pop("product_type")
         kwargs.pop("product_images")
 
-        success = False
-        product = None
         profile = info.context.user.profile
-        if profile is None:
-            success = False
-            raise GraphQLError("You Need To Become A Vendor To Add New Item")
+        if profile.store is None:
+            return AddProductMutation(error="You are not a vendor")
 
         product = Item.objects.filter(
             product_slug=product_slug.strip(), product_name=product_name.strip()
         ).first()
 
         if not product is None:
-            success = False
-            raise GraphQLError("Item Already Exists")
+            return AddProductMutation(error="Product Already Exists")
 
         with transaction.atomic():
             try:
@@ -134,7 +128,7 @@ class AddProductMutation(Output, graphene.Mutation):
 
                     # Check if the product has been created
                     if product is None:
-                        raise GraphQLError("Item Not Created")
+                        raise GraphQLError("An error occured while creating product")
 
                     # Optimize Image Handling
                     item_images = [
@@ -142,13 +136,13 @@ class AddProductMutation(Output, graphene.Mutation):
                             product=product, item_image=image, is_primary=is_primary
                         )
                         for image, is_primary in zip(
+                            # convert to list to avoid multiple iteration
                             product_images, [True] + [False] * (len(product_images) - 1)
                         )
                     ]
                     ItemImage.objects.bulk_create(item_images)
 
-                # product.save()  # Not needed as product.save() is already called in the `create()` method
-                success = True
+                return AddProductMutation(product=product, success=True)
             except IntegrityError as e:
                 raise GraphQLError(e)
 
@@ -157,8 +151,6 @@ class AddProductMutation(Output, graphene.Mutation):
 
             except Exception as e:
                 raise GraphQLError(e)
-
-        return AddProductMutation(product=product, success=success)
 
 
 # This Mutation Only Add One Product to the storeProducts as available
