@@ -125,7 +125,7 @@ class ItemType(DjangoObjectType):
             return product_share_visibility
         
         # check if the user is the creator of the product
-        if user.profile.store and self.product_creator and (user.profile.store == self.product_creator.store):
+        if user.profile.store and self.product_creator and (user.profile.store == self.product_creator):
             product_share_visibility = "PUBLIC"
         return product_share_visibility
 
