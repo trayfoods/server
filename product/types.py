@@ -120,15 +120,13 @@ class ItemType(DjangoObjectType):
     def resolve_product_share_visibility(self, info):
         user = info.context.user
         product_share_visibility = self.product_share_visibility
-        if user.is_authenticated is False:
-            return product_share_visibility
         # check if the user is authenticated
-        if not user.profile is None and self.product_creator is not None:
-            # check if the user is a vendor
-            vendor = user.profile
-            # check if the vendor is the creator of the product
-            if vendor.store == self.product_creator:
-                product_share_visibility = "PUBLIC"
+        if not user.is_authenticated:
+            return product_share_visibility
+        
+        # check if the user is the creator of the product
+        if user.profile.store and self.product_creator and (user.profile.store == self.product_creator.store):
+            product_share_visibility = "PUBLIC"
         return product_share_visibility
 
     def resolve_product_qty(self, info):
