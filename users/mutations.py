@@ -870,6 +870,10 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
             
             if not exist_name:
                 return UpdateStoreMenuMutation(error="This menu does not exist")
+            
+            # check if store_products are already using the menu as store_menu_name
+            store.store_products.filter(store_menu_name=name).update(store_menu_name="All")
+
             store.store_menu.remove(name)
             store.save()
             return UpdateStoreMenuMutation(success=True)

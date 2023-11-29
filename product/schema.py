@@ -1,15 +1,15 @@
 import graphene
 from graphql import GraphQLError
-from product.types import ItemType, ItemAttributeType
+from product.types import ItemAttributeType
 from product.mutations import (
     AddAvaliableProductMutation,
-    AddMultipleAvaliableProductsMutation,
     AddProductMutation,
     AddProductClickMutation,
     CreateOrderMutation,
     RateItemMutation,
     HelpfulReviewMutation,
     InitializeTransactionMutation,
+    UpdateItemMenuMutation,
 )
 from product.models import Item, ItemAttribute
 from trayapp.custom_model import ItemsAvalibilityNode
@@ -19,7 +19,6 @@ from product.queries.order import OrderQueries
 
 
 class Query(ItemQueries, OrderQueries, graphene.ObjectType):
-
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, urlParamName=graphene.String())
@@ -59,8 +58,6 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
                                 }
                             list_of_items.append(new_item)
         return list_of_items
-
-
 
     def resolve_all_item_attributes(self, info, **kwargs):
         food_categories = [
@@ -123,7 +120,7 @@ class Mutation(graphene.ObjectType):
     add_product = AddProductMutation.Field()
     add_product_click = AddProductClickMutation.Field()
     add_available_product = AddAvaliableProductMutation.Field()
-    add_available_products = AddMultipleAvaliableProductsMutation.Field()
+    update_item_menu = UpdateItemMenuMutation.Field()
     create_order = CreateOrderMutation.Field()
     rate_item = RateItemMutation.Field()
     helpful_review = HelpfulReviewMutation.Field()

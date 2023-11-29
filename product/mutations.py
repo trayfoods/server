@@ -186,57 +186,6 @@ class AddProductMutation(Output, graphene.Mutation):
         return cls(product=product, success=True)
 
 
-# Allowing Vendors to Select Multiple Product As Avaliable Products
-class AddMultipleAvaliableProductsMutation(graphene.Mutation):
-    class Arguments:
-        # The input arguments for this mutation
-        products = graphene.String(required=True)
-        action = graphene.String(required=True)
-
-    # The class attributes define the response of the mutation
-    product = graphene.List(ItemType)
-    success = graphene.Boolean()
-
-    @permission_checker([IsAuthenticated])
-    def mutate(self, info, products, action):
-        success = False
-        product_list = None
-        if info.context.user.is_authenticated:
-            products = products.split(",")
-            for item in products:
-                product = Item.objects.filter(product_slug=item.strip()).first()
-                product_list.append(product)
-                profile = info.context.user.profile
-                # Checking if the current user is equals to the store vendor
-                # Then add 0.5 to the store_rank
-                try:
-                    if not product.product_creator is None:
-                        if product.product_creator != profile:
-                            store = Store.objects.filter(
-                                store_nickname=product.product_creator.store.store_nickname
-                            ).first()
-                            if not store is None:
-                                store.store_rank += 0.5
-                                store.save()
-                except:
-                    pass
-                if not product is None and not profile is None:
-                    if action == "add":
-                        product.product_avaliable_in.add(profile.store)
-                    elif action == "remove":
-                        product.product_avaliable_in.remove(profile.store)
-                    else:
-                        raise GraphQLError("Enter either `add/remove` for actions.")
-                    product.save()
-                    success = True
-        else:
-            raise GraphQLError("Login required.")
-        # Notice we return an instance of this mutation
-        return AddMultipleAvaliableProductsMutation(
-            product=product_list, success=success
-        )
-
-
 # This Mutation Only Add One Product to the storeProducts as available
 class AddAvaliableProductMutation(graphene.Mutation):
     class Arguments:
@@ -303,6 +252,39 @@ class AddAvaliableProductMutation(graphene.Mutation):
             success = True
         # Notice we return an instance of this mutation
         return AddAvaliableProductMutation(product=product, success=success)
+
+
+class UpdateItemMenuMutation(Output, graphene.Mutation):
+    class Arguments:
+        slug = graphene.String(required=True)
+        menu = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, slug, menu):
+        user = info.context.user
+
+        if user.role != "VENDOR":
+            return UpdateItemMenuMutation(error="You are not a vendor")
+
+        item = Item.objects.filter(product_slug=slug)
+
+        if not item.exists():
+            return UpdateItemMenuMutation(error="Item does not exist")
+
+        item = item.first()
+
+        profile = user.profile
+        if item.product_creator != profile:
+            return UpdateItemMenuMutation(error="You are not allowed to edit this item")
+
+        if not menu in profile.store.store_menu:
+            return UpdateItemMenuMutation(
+                error="'{}' is not part of your menu".format(menu)
+            )
+
+        item.store_menu_name = menu
+        item.save()
+        return UpdateItemMenuMutation(success=True)
 
 
 # This Mutation adds +1 to the product_clicks value,
