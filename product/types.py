@@ -68,23 +68,17 @@ class ItemType(DjangoObjectType):
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     has_qty = graphene.Boolean()
-    editable = graphene.Boolean()
     average_rating = graphene.Float()
     reviews = graphene.List(ReviewsType)
     reviews_count = graphene.Int()
     current_user_review = graphene.Field(ReviewsType)
     is_avaliable_for_store = graphene.String()
-    avaliable_store = graphene.Field(
-        StoreType, store_nickname=graphene.String(required=False)
-    )
-    product_avaliable_in = graphene.List(StoreType)
 
     class Meta:
         model = Item
         fields = [
             "id",
             "product_name",
-            "avaliable_store",
             "is_avaliable_for_store",
             "product_clicks",
             "product_views",
@@ -99,7 +93,6 @@ class ItemType(DjangoObjectType):
             "product_images",
             "product_desc",
             "product_price",
-            "product_avaliable_in",
             "has_qty",
             "editable",
             "average_rating",
@@ -126,28 +119,6 @@ class ItemType(DjangoObjectType):
     def resolve_reviews_count(self, info):
         return Rating.objects.filter(item=self).count()
 
-    def resolve_editable(self, info):
-        user = info.context.user
-        editable = False
-
-        # check if other stored have added this item
-        if (
-            user
-            and user.is_authenticated
-            and user.profile.store
-            and self.product_creator
-            and user.profile.store == self.product_creator.store
-        ):
-            # get all the stores that have this item and exclude the current store
-            stores = self.product_avaliable_in.exclude(
-                store_nickname=self.product_creator.store
-            )
-            editable = True
-            if stores.count() > 0:
-                editable = False
-
-        return editable
-
     def resolve_average_rating(self, info):
         return self.average_rating
 
@@ -161,7 +132,7 @@ class ItemType(DjangoObjectType):
             # check if the user is a vendor
             vendor = user.profile
             # check if the vendor is the creator of the product
-            if vendor.store == self.product_creator.store:
+            if vendor.store == self.product_creator:
                 product_share_visibility = "PUBLIC"
         return product_share_visibility
 
@@ -210,40 +181,7 @@ class ItemType(DjangoObjectType):
         return images
 
     def resolve_is_avaliable(self, info):
-        if len(self.product_avaliable_in.all()) > 0:
-            is_avaliable = True
-        else:
-            is_avaliable = False
-        return is_avaliable
-
-    def resolve_avaliable_store(self, info, store_nickname=None):
-        store = None
-        if store_nickname:
-            store = self.product_avaliable_in.filter(
-                store_nickname=store_nickname
-            ).first()
-        if store is None:
-            is_avaliable = self.product_avaliable_in.count() > 0
-            if self.product_creator is None:
-                if is_avaliable:
-                    store = self.product_avaliable_in.first()
-            else:
-                isStore = False
-                store_qs = self.product_avaliable_in.filter(
-                    store_nickname=self.product_creator.store
-                ).first()
-                if not store_qs is None:
-                    isStore = True
-                if isStore == True:
-                    store = self.product_creator.store
-                else:
-                    if is_avaliable:
-                        store = self.product_avaliable_in.first()
-        return store
-
-    def resolve_product_avaliable_in(self, info):
-        return self.product_avaliable_in.all()
-
+        return self.product_status == "active"
 
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:

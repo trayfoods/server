@@ -117,7 +117,7 @@ class AddProductMutation(Output, graphene.Mutation):
                     # "product_name": product_name.strip(),
                     "product_category": product_category,
                     "product_type": product_type,
-                    "product_creator": profile,
+                    "product_creator": profile.store,
                 }
 
                 # Checking if slug already exists
@@ -154,7 +154,6 @@ class AddProductMutation(Output, graphene.Mutation):
                         is_primary=is_primary,
                     )
                     productImage.save()
-                    product.product_avaliable_in.add(profile.store)
                     product.product_images.add(productImage)
                     product.save()
         except Exception as e:
@@ -207,7 +206,7 @@ class AddAvaliableProductMutation(graphene.Mutation):
         # Then add 0.5 to the store_rank
         if not product is None and profile.is_vendor:
             if (
-                product.product_creator != profile
+                product.product_creator != profile.store
                 and product.product_share_visibility == "private"
             ):  # then check if the user is a vendor
                 raise GraphQLError(
@@ -217,7 +216,7 @@ class AddAvaliableProductMutation(graphene.Mutation):
                 if not product.product_creator is None:
                     if product.product_creator != profile:
                         store = Store.objects.filter(
-                            store_nickname=product.product_creator.store.store_nickname
+                            store_nickname=product.product_creator.store_nickname
                         ).first()
                         if not store is None:
                             store.store_rank += 0.5
@@ -233,7 +232,6 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     item=product,
                     timestamp=timezone.now(),
                 )
-                product.product_avaliable_in.add(store)
                 product.save()
                 new_activity.save()
             elif action == "remove":
@@ -244,7 +242,6 @@ class AddAvaliableProductMutation(graphene.Mutation):
                     item=product,
                     timestamp=timezone.now(),
                 )
-                product.product_avaliable_in.remove(store)
                 product.save()
                 new_activity.save()
             else:
@@ -274,7 +271,7 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
         item = item.first()
 
         profile = user.profile
-        if item.product_creator != profile:
+        if item.product_creator != profile.store:
             return UpdateItemMenuMutation(error="You are not allowed to edit this item")
 
         if not menu in profile.store.store_menu:
@@ -309,7 +306,7 @@ class AddProductClickMutation(graphene.Mutation):
             )
             if item.product_creator:
                 store = Store.objects.filter(
-                    store_nickname=item.product_creator.store.store_nickname
+                    store_nickname=item.product_creator.store_nickname
                 ).first()
                 if not store is None:
                     store.store_rank += 0.5
@@ -359,7 +356,7 @@ class CreateOrderMutation(graphene.Mutation):
                 raise GraphQLError(
                     "Order contains invalid items, clear cart and retry."
                 )
-            if item.product_avaliable_in.count() <= 0:
+            if item.product_status != "active":
                 unavailable_items.append(item.product_slug)
 
             available_items.append(item)

@@ -13,7 +13,6 @@ class ItemQueries(graphene.ObjectType):
     item = graphene.Field(
         ItemType,
         item_slug=graphene.String(required=True),
-        store_nickname=graphene.String(required=False),
     )
     hero_data = graphene.List(ItemType)
 
@@ -25,21 +24,11 @@ class ItemQueries(graphene.ObjectType):
         )
         return items
 
-    def resolve_item(self, info, item_slug, store_nickname=None):
+    def resolve_item(self, info, item_slug):
         from django.utils import timezone
 
         item = Item.objects.filter(product_slug=item_slug).first()
         if not item is None:
-            # check if item is avaliable in the store if store_nickname is provided
-            if (
-                not store_nickname is None
-                and not item.product_avaliable_in.filter(
-                    store_nickname=store_nickname
-                ).count()
-                > 0
-            ):
-                raise GraphQLError("404: Item Not Avaliable in Store")
-
             item.product_views += 1
             item.save()
             if info.context.user.is_authenticated:

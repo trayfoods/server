@@ -9,16 +9,16 @@ class ItemFilter(FilterSet):
     )
 
     store_nickname = CharFilter(
-        field_name="product_avaliable_in__store_nickname", lookup_expr="exact"
+        field_name="product_creator__store_nickname", lookup_expr="exact"
     )
     school = CharFilter(
-        field_name="product_avaliable_in__store_school__slug", lookup_expr="exact"
+        field_name="product_creator__store_school__slug", lookup_expr="exact"
     )
     country = CharFilter(
-        field_name="product_avaliable_in__store_country", lookup_expr="icontains"
+        field_name="product_creator__store_country", lookup_expr="icontains"
     )
     location = CharFilter(
-        field_name="product_avaliable_in__store_address", lookup_expr="icontains"
+        field_name="product_creator__store_address", lookup_expr="icontains"
     )
 
     class Meta:

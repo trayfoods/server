@@ -77,13 +77,6 @@ class EmailVerifiedNode(Output, graphene.ObjectType):
     pass
 
 
-class ItemsAvalibilityNode(graphene.ObjectType):
-    product_slug = graphene.String()
-    store_avaliable_in = graphene.List(StoreType)
-    is_avaliable = graphene.Boolean()
-    avaliable_store = graphene.String()
-
-
 class BankNode(Output, graphene.ObjectType):
     banks = graphene.List(SubBankNode)
 

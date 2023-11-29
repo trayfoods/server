@@ -106,17 +106,20 @@ class Item(models.Model):
     product_images = models.ManyToManyField(
         "ItemImage", related_name="product_image", blank=True, editable=False
     )
-    product_avaliable_in = models.ManyToManyField(
-        "users.Store", related_name="avaliable_in_store", blank=True
-    )
     product_creator = models.ForeignKey(
-        "users.Profile", null=True, on_delete=models.SET_NULL, blank=True
+        "users.Store", null=True, on_delete=models.CASCADE, blank=True
     )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
     product_currency = models.CharField(max_length=20, default="NGN")
+
+    product_status = models.CharField(
+        max_length=20,
+        choices=(("active", "active"), ("inactive", "inactive")),
+        default="active",
+    )
 
     is_groupable = models.BooleanField(default=False)
 
@@ -137,7 +140,7 @@ class Item(models.Model):
         """
         eg: Item.get_items_by_store(store)
         """
-        return cls.objects.filter(product_avaliable_in=store)
+        return cls.objects.filter(product_creator=store)
 
     @property
     def total_ratings(self):
@@ -158,13 +161,13 @@ class Item(models.Model):
     # check if the current user is the creator of the product
     def is_creator(self):
         return self.product_creator and (
-            self.product_creator == self.request.user.profile
+            self.product_creator == self.request.user.profile.store
         )
 
     @property
     # get the creator of the product country
     def product_country(self):
-        return self.product_creator and self.product_creator.country
+        return self.product_creator and self.product_creator.user.country
 
 
 class Rating(models.Model):
