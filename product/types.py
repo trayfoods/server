@@ -12,19 +12,14 @@ from trayapp.custom_model import JSONField
 
 class ItemImageType(DjangoObjectType):
     product_image = graphene.String()
-    product_image_webp = graphene.String()
 
     class Meta:
         model = ItemImage
-        fields = ["id", "product_image", "product_image_webp", "is_primary"]
+        fields = ["id", "product_image", "is_primary"]
 
     def resolve_product_image(self, info, *args, **kwargs):
         product_image = info.context.build_absolute_uri(self.item_image.url)
         return product_image
-
-    def resolve_product_image_webp(self, info, *args, **kwargs):
-        product_image_webp = info.context.build_absolute_uri(self.item_image_webp.url)
-        return product_image_webp if self.item_image_webp else None
 
 
 class ItemAttributeType(DjangoObjectType):

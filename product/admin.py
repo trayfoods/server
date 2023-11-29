@@ -51,22 +51,6 @@ get_item_original_image.short_description = "Original Image"
 get_item_original_image.allow_tags = True
 
 
-# ItemImage Webp
-def get_item_webp_image(obj):
-    src = (
-        obj.item_image_webp.url
-        if obj.item_image_webp and hasattr(obj.item_image_webp, "url")
-        else os.path.join(settings.STATIC_URL, "img/item/default.jpg")
-    )
-    return mark_safe(
-        '<img src="{}" height="500" style="border:1px solid #ccc">'.format(src)
-    )
-
-
-get_item_webp_image.short_description = "Webp Image"
-get_item_webp_image.allow_tags = True
-
-
 class ItemImageAdmin(admin.ModelAdmin):
     list_display = ("__str__", "item_image", "is_primary", "item_image_hash")
     search_fields = ["product__product_name", "item_image", "product__product_slug"]
@@ -74,10 +58,9 @@ class ItemImageAdmin(admin.ModelAdmin):
         "product",
         "is_primary",
         get_item_original_image,
-        get_item_webp_image,
         "item_image",
     )
-    readonly_fields = ("item_image_hash", get_item_original_image, get_item_webp_image)
+    readonly_fields = ("item_image_hash", "item_image", get_item_original_image)
 
 
 class RatingAdmin(admin.ModelAdmin):

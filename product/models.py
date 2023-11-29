@@ -52,13 +52,6 @@ class ItemImage(models.Model):
         blank=False,
         help_text=_("Upload Item Image."),
     )
-    item_image_webp = models.ImageField(
-        "Webp Item Image",
-        upload_to=item_directory_path,
-        null=True,
-        blank=True,
-        help_text=_("Upload Item Image In Webp Format."),
-    )
     item_image_hash = models.CharField(
         "Item Image Hash", editable=False, max_length=32, null=True, blank=True
     )
