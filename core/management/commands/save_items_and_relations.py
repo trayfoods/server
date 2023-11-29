@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     @superuser_and_admin_required(email_subject=help)
     def handle(self, *args, **options):
-        items = Item.objects.all().values()
+        items = Item.get_items().all().values()
         item_images = ItemImage.objects.all().values()
         vendors = Vendor.objects.all().values()
         stores = Store.objects.all().values()

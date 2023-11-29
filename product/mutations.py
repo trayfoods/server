@@ -87,7 +87,7 @@ class AddProductMutation(Output, graphene.Mutation):
         if profile.store is None:
             return AddProductMutation(error="You are not a vendor")
 
-        product = Item.objects.filter(
+        product = Item.get_items().filter(
             product_slug=product_slug.strip(), product_name=product_name.strip()
         ).first()
 
@@ -111,7 +111,7 @@ class AddProductMutation(Output, graphene.Mutation):
                     }
 
                     # Checking if slug already exists
-                    if not Item.objects.filter(
+                    if not Item.get_items().filter(
                         product_slug=product_slug.strip()
                     ).exists():
                         product = Item.objects.create(**save_data)
@@ -164,7 +164,7 @@ class ItemCopyDeleteMutation(Output, graphene.Mutation):
     @permission_checker([IsAuthenticated])
     def mutate(self, info, slug, action):
         product_slug = slug.strip()
-        product = Item.objects.filter(product_slug=product_slug).first()
+        product = Item.get_items().filter(product_slug=product_slug).first()
         user = info.context.user
         profile = user.profile
 
@@ -211,7 +211,7 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
         if user.role != "VENDOR":
             return UpdateItemMenuMutation(error="You are not a vendor")
 
-        item = Item.objects.filter(product_slug=slug)
+        item = Item.get_items().filter(product_slug=slug)
 
         if not item.exists():
             return UpdateItemMenuMutation(error="Item does not exist")
@@ -243,7 +243,7 @@ class AddProductClickMutation(graphene.Mutation):
 
     def mutate(self, info, slug):
         success = False
-        item = Item.objects.filter(product_slug=slug).first()
+        item = Item.get_items().filter(product_slug=slug).first()
         if not item is None and info.context.user.is_authenticated:
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
@@ -299,7 +299,7 @@ class CreateOrderMutation(graphene.Mutation):
         unavailable_items = []
         available_items = []
         for item in linked_items:
-            item = Item.objects.filter(product_slug=item).first()
+            item = Item.get_items().filter(product_slug=item).first()
             if item is None:
                 raise GraphQLError(
                     "Order contains invalid items, clear cart and retry."
@@ -357,7 +357,7 @@ class RateItemMutation(graphene.Mutation):
     def mutate(root, info, item_slug, rating):
         user = info.context.user
         try:
-            item = Item.objects.get(product_slug=item_slug)
+            item = Item.get_items().get(product_slug=item_slug)
             try:
                 rating_qs = Rating.objects.get(user=user, item=item)
                 rating_qs.stars = rating.stars
@@ -385,7 +385,7 @@ class DeleteRatingMutation(graphene.Mutation):
     def mutate(root, info, item_slug):
         user = info.context.user
         try:
-            item = Item.objects.get(product_slug=item_slug)
+            item = Item.get_items().get(product_slug=item_slug)
             try:
                 rating_qs = Rating.objects.get(user=user, item=item)
                 rating_qs.delete()

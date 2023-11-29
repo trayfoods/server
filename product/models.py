@@ -107,7 +107,11 @@ class Item(models.Model):
 
     product_status = models.CharField(
         max_length=20,
-        choices=(("active", "active"), ("inactive", "inactive"), ("deleted", "deleted")),
+        choices=(
+            ("active", "active"),
+            ("inactive", "inactive"),
+            ("deleted", "deleted"),
+        ),
         default="active",
     )
 
@@ -123,10 +127,18 @@ class Item(models.Model):
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
         return super().save(*args, **kwargs)
-    
+
     @property
     def product_images(self):
         return ItemImage.objects.filter(product=self)
+
+    # exclude the item that is deleted from the objects
+    @classmethod
+    def get_items(cls):
+        """
+        eg: Item.get_items()
+        """
+        return cls.objects.exclude(product_status="deleted")
 
     # filter the product available in a store
     @classmethod
@@ -134,7 +146,7 @@ class Item(models.Model):
         """
         eg: Item.get_items_by_store(store)
         """
-        return cls.objects.filter(product_creator=store)
+        return cls.get_items().filter(product_creator=store)
 
     @property
     def total_ratings(self):

@@ -82,7 +82,7 @@ def recommend_items(user_id, n=10, min_interactions=5):
     update_cache("global", perform_collaborative_filtering(ratings_df, n))
 
     # Fetch the recommended items
-    recommended_items = Item.objects.filter(id__in=item_ids)
+    recommended_items = Item.get_items().filter(id__in=item_ids)
 
     # Get popularity of items
     item_popularity = {

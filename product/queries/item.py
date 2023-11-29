@@ -16,9 +16,12 @@ class ItemQueries(graphene.ObjectType):
     )
     hero_data = graphene.List(ItemType)
 
+    def resolve_items(self, info, **kwargs):
+        return Item.get_items()
+
     def resolve_hero_data(self, info):
         items = (
-            Item.objects.filter(product_type__urlParamName__icontains="dish")
+            Item.get_items().filter(product_type__urlParamName__icontains="dish")
             .exclude(product_type__urlParamName__icontains="not")
             .order_by("-product_clicks")[:4]
         )
@@ -27,7 +30,7 @@ class ItemQueries(graphene.ObjectType):
     def resolve_item(self, info, item_slug):
         from django.utils import timezone
 
-        item = Item.objects.filter(product_slug=item_slug).first()
+        item = Item.get_items().filter(product_slug=item_slug).first()
         if not item is None:
             item.product_views += 1
             item.save()

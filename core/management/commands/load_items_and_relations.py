@@ -20,7 +20,7 @@ class Command(BaseCommand):
             data = json.load(file)
 
         # Clear existing data from tables
-        Item.objects.all().delete()
+        Item.get_items().all().delete()
         ItemImage.objects.all().delete()
         # Vendor.objects.all().delete()
         # Store.objects.all().delete()
@@ -28,7 +28,7 @@ class Command(BaseCommand):
         # Gender.objects.all().delete()
 
         # Bulk create objects
-        # Item.objects.bulk_create([Item(**item) for item in data['items']])
+        # Item.get_items().bulk_create([Item(**item) for item in data['items']])
         # ItemImage.objects.bulk_create([ItemImage(**image) for image in data['item_images']])
         # Vendor.objects.bulk_create([Vendor(**vendor) for vendor in data['vendors']])
         # Store.objects.bulk_create([Store(**store) for store in data['stores']])
