@@ -123,9 +123,13 @@ class ItemType(DjangoObjectType):
         # check if the user is authenticated
         if not user.is_authenticated:
             return product_share_visibility
-        
+
         # check if the user is the creator of the product
-        if user.profile.store and self.product_creator and (user.profile.store == self.product_creator):
+        if (
+            user.profile.store
+            and self.product_creator
+            and (user.profile.store == self.product_creator)
+        ):
             product_share_visibility = "PUBLIC"
         return product_share_visibility
 
@@ -247,7 +251,7 @@ class OrderType(DjangoObjectType):
     shipping = graphene.Field(ShippingType)
     stores_infos = graphene.List(StoreInfoType)
     linked_items = graphene.List(ItemType)
-    view_as = graphene.String(default_value=None)
+    view_as = graphene.List(graphene.String)
     user = graphene.Field("users.types.ProfileType", default_value=None)
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
@@ -315,15 +319,15 @@ class OrderType(DjangoObjectType):
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
 
-        view_as = None
+        view_as = []
         current_user = info.context.user
         if self.user != current_user.profile:
-            view_as = current_user.role
+            view_as = current_user.roles
 
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if view_as and view_as == "VENDOR":
+        if "VENDOR" in view_as:
             current_user = info.context.user
-            if current_user.role == "VENDOR":
+            if "VENDOR" in current_user.roles:
                 current_user_profile = current_user.profile
                 stores_infos = [
                     store_info
@@ -340,7 +344,8 @@ class OrderType(DjangoObjectType):
     def resolve_view_as(self, info):
         current_user = info.context.user
         if self.user != current_user.profile:
-            return current_user.role
+            return current_user.roles
+        return []
 
 
 class OrderNode(OrderType, DjangoObjectType):

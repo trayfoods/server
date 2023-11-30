@@ -380,8 +380,6 @@ class UpdateProfileMutation(Output, graphene.Mutation):
             profile.city = city
 
         if is_student and is_student.lower().strip() == "yes":
-            if profile.is_vendor:
-                return GraphQLError("You are a vendor, you cannot be a student")
 
             student = Student.objects.get_or_create(user=profile)
             student = student[0]
@@ -456,7 +454,7 @@ class CreateTransferRecipient(Output, graphene.Mutation):
         success = False
         error = None
         user = info.context.user
-        if user.role == "VENDOR":
+        if "VENDOR" in user.roles:
             url = "https://api.paystack.co/transferrecipient"
             headers = {
                 "Authorization": "Bearer " + PAYSTACK_SECRET_KEY,
@@ -799,7 +797,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         user_profile = user.profile
         delivery_person = user_profile.delivery_person
 
-        if user.role != "DELIVERY_PERSON" or delivery_person is None:
+        if not "DELIVERY_PERSON" in user.roles or delivery_person is None:
             return AcceptDeliveryMutation(error="You are not a delivery personnal")
 
         order = Order.objects.filter(order_track_id=order_track_id).first()
@@ -844,7 +842,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         name = name.strip()
 
-        if user.role != "VENDOR" or store is None:
+        if not "VENDOR" in user.roles  or store is None:
             return UpdateStoreMenuMutation(error="You are not a vendor")
 
         # check if the name exists in the store menu json list

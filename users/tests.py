@@ -18,7 +18,7 @@ class TestUser(TestCase):
         self.store = Store.objects.create(
             store_nickname="Test Store", vendor=self.vendor, wallet=self.wallet
         )
-        if self.user.role == "vendor":
+        if "vendor" in self.user.roles:
             self.user.profile.vendor = self.vendor
             self.user.profile.vendor.store = self.store
             self.user.profile.wallet = self.wallet

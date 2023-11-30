@@ -21,9 +21,9 @@ ROLE_CHOICES = (
 )
 
 
-class RoleFilter(admin.SimpleListFilter):
-    title = "Role"
-    parameter_name = "role"
+class RolesFilter(admin.SimpleListFilter):
+    title = "Roles"
+    parameter_name = "roles"
 
     def lookups(self, request, model_admin):
         return ROLE_CHOICES
@@ -33,11 +33,9 @@ class RoleFilter(admin.SimpleListFilter):
             users = UserAccount.objects.all()
             list_of_users = []
             for user in users:
-                if user.role == self.value():
+                if self.value() in user.roles:
                     list_of_users.append(user.id)
             return queryset.filter(id__in=list_of_users)
-        else:
-            return queryset
 
 class ProfileInline(admin.TabularInline):
     model = Profile
@@ -45,9 +43,9 @@ class ProfileInline(admin.TabularInline):
     readonly_fields = ("gender", "country", "address", "school", "hostel", "phone_number")
 
 class UserAccountAdmin(admin.ModelAdmin):
-    list_display = ("email", "first_name", "last_name", "username", "role")
+    list_display = ("email", "first_name", "last_name", "username", "roles")
     search_fields = ("username", "first_name", "last_name", "email")
-    list_filter = (RoleFilter,)
+    list_filter = (RolesFilter,)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -62,12 +60,12 @@ class StoreInline(admin.TabularInline):
 class UserInline(admin.TabularInline):
     model = UserAccount
     extra = 0
-    readonly_fields = ("email", "first_name", "last_name", "username", "role")
+    readonly_fields = ("email", "first_name", "last_name", "username", "roles")
 
 
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [StoreInline]
-    list_filter = (RoleFilter,)
+    list_filter = (RolesFilter,)
 
 
 class TransactionInline(admin.TabularInline):

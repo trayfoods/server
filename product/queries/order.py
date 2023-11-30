@@ -20,7 +20,11 @@ class OrderQueries(graphene.ObjectType):
 
         order = user.orders.filter(order_track_id=order_id).first()
 
-        if user.role in allowed_view_as_roles:
+        # check if allowed_view_as_roles is in user.roles
+        is_allowed_view_as_roles = any(
+            role in user.roles for role in allowed_view_as_roles
+        )
+        if is_allowed_view_as_roles:
             current_user_profile = user.profile
             order_qs = Order.objects.filter(order_track_id=order_id).first()
             if order_qs is None:
@@ -49,13 +53,13 @@ class OrderQueries(graphene.ObjectType):
     @permission_checker([IsAuthenticated])
     def resolve_store_orders(self, info, **kwargs):
         user = info.context.user
-        if user.role == "VENDOR":
+        if "VENDOR" in user.roles:
             return user.profile.store.orders.all()
 
     @permission_checker([IsAuthenticated])
     def resolve_deliveries(self, info, **kwargs):
         user = info.context.user
-        if user.role == "DELIVERY_PERSON":
+        if "DELIVERY_PERSON" in user.roles:
             return user.profile.delivery_person.orders.all()
         else:
             raise GraphQLError("You are not a delivery person")

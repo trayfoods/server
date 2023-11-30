@@ -78,8 +78,8 @@ class UserAccount(AbstractUser, models.Model):
     REQUIRED_FIELDS = ["email", "first_name", "last_name"]
 
     @property
-    def role(self):
-        # check user's role
+    def roles(self):
+        # check user's roles
         profile = Profile.objects.filter(user=self).first()
         is_student = profile.is_student if profile else False
         is_vendor = profile.is_vendor if profile else False
@@ -91,19 +91,24 @@ class UserAccount(AbstractUser, models.Model):
 
         is_school = School.objects.filter(user=self).exists()
 
+        roles = []
+
         if is_vendor:
-            return "VENDOR"
+            roles.append("VENDOR")
 
         if is_delivery_person:
-            return "DELIVERY_PERSON"
+            roles.append("DELIVERY_PERSON")
 
         if is_student:
-            return "STUDENT"
+            roles.append("STUDENT")
 
         if is_school:
-            return "SCHOOL"
+            roles.append("SCHOOL")
 
-        return "CLIENT"
+        if not roles:
+            roles.append("CLIENT")
+
+        return roles
 
     def get_delivery_types(self):
         """
@@ -117,7 +122,8 @@ class UserAccount(AbstractUser, models.Model):
         """
         VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
 
-        if self.profile.is_student is False:
+        # check if user is not a student
+        if not "STUDENT" in self.roles:
             # remove hostels from delivery types
             VALID_DELIVERY_TYPES = [
                 delivery_type
@@ -246,7 +252,7 @@ class Profile(models.Model):
     def has_required_fields(self):
         """
         Checking if user has the required fields, which are:
-        - School if the user role is equals to 'student'
+        - School if the user roles is equals to 'student'
         - gender
         - country
         - state

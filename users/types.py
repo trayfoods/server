@@ -45,7 +45,7 @@ class ProfileType(DjangoObjectType):
         return image
 
     def resolve_store(self, info, *args, **kwargs):
-        # check if the user role is student
+        # check if the user roles is student
         return self.store
 
     def resolve_gender(self, info, *args, **kwargs):
@@ -59,7 +59,7 @@ class ProfileType(DjangoObjectType):
 class UserNodeType(UserNode, graphene.ObjectType):
     profile = graphene.Field(ProfileType)
     orders = graphene.List("product.types.OrderType")
-    role = graphene.String()
+    roles = graphene.List(graphene.String)
 
     class Meta:
         model = UserAccount
@@ -70,13 +70,13 @@ class UserNodeType(UserNode, graphene.ObjectType):
             "last_name",
             "email",
             "is_active",
-            "role",
+            "roles",
             "profile",
             "orders",
         ]
 
-    def resolve_role(self, info):
-        return self.role
+    def resolve_roles(self, info):
+        return self.roles
 
     def resolve_orders(self, info):
         return self.orders.all()
