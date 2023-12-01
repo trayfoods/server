@@ -865,8 +865,8 @@ class DeliveryPerson(models.Model):
 class UserActivity(models.Model):
     ACTIVITY_TYPES = (
         ("view", "view"),
-        ("click", "click"),
-        ("purchase", "purchase"),
+        ("added_to_cart", "added_to_cart"),
+        ("purchased", "purchased"),
         ("add_to_items", "add_to_items"),
         ("remove_from_order", "remove_from_order"),
         ("add_to_order", "add_to_order"),

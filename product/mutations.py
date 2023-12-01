@@ -257,7 +257,6 @@ class AddProductClickMutation(graphene.Mutation):
         if not item is None and info.context.user.is_authenticated:
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
-                activity_message=None,
                 activity_type="added_to_cart",
                 item=item,
                 timestamp=timezone.now(),

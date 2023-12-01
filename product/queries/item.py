@@ -37,7 +37,6 @@ class ItemQueries(graphene.ObjectType):
             if info.context.user.is_authenticated:
                 new_activity = UserActivity.objects.create(
                     user_id=info.context.user.id,
-                    activity_message=None,
                     activity_type="view",
                     item=item,
                     timestamp=timezone.now(),
