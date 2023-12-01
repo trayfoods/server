@@ -317,14 +317,15 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         return UpdateAccountMutation(user=user)
 
 
-class UpdateProfileMutation(Output, graphene.Mutation):
+class UpdateProfileMutation(graphene.Mutation):
     class Arguments:
-        gender = graphene.String()
-        country = graphene.String()
-        phone_number = graphene.String()
-        state = graphene.String()
-        city = graphene.String()
-        is_student = graphene.String()
+        gender = graphene.String(required=True)
+        country = graphene.String(required=True)
+        phone_number = graphene.String(required=True)
+        state = graphene.String(required=True)
+        city = graphene.String(required=True)
+        roles = graphene.List(graphene.String, required=True)
+
         school = graphene.String()
         campus = graphene.String()
         hostel = graphene.String()
@@ -332,23 +333,26 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         hostel_room = graphene.String()
 
     user = graphene.Field(UserNodeType)
+    is_profile_completed = graphene.Boolean()
+    need_verification = graphene.Boolean()
 
     @permission_checker([IsAuthenticated])
     def mutate(
         self,
         info,
-        gender=None,
-        country=None,
-        phone_number=None,
-        state=None,
-        city=None,
-        is_student=None,
+        gender,
+        country,
+        phone_number,
+        state,
+        city,
+        roles,
         school=None,
         campus=None,
         hostel=None,
         hostel_floor=None,
         hostel_room=None,
     ):
+        need_verification = False
         user = info.context.user
         profile = user.profile
         if profile is None:
@@ -379,37 +383,40 @@ class UpdateProfileMutation(Output, graphene.Mutation):
         if city:
             profile.city = city
 
-        if is_student and is_student.lower().strip() == "yes":
+        if roles:
+            is_student = "STUDENT" in roles
+            if is_student:
+                student = Student.objects.get_or_create(user=profile)
+                student = student[0]
 
-            student = Student.objects.get_or_create(user=profile)
-            student = student[0]
-
-            if school:
-                school = School.objects.filter(slug=school.strip()).first()
-                if not school:
-                    raise GraphQLError("School does not exist")
-                student.school = school
-            if campus:
-                student.campus = campus
-            if hostel:
-                hostel = Hostel.objects.filter(slug=hostel.strip()).first()
-                if not hostel:
-                    raise GraphQLError("Hostel does not exist")
-                student.hostel = hostel
-            if hostel_floor:
-                student.floor = hostel_floor
-            if hostel_room:
-                student.room = hostel_room
-            student.save()
-
-        else:
-            student = Student.objects.filter(user=profile)
-            if student.exists():
-                student = student.first()
-                student.delete()
+                if school:
+                    school = School.objects.filter(slug=school.strip()).first()
+                    if not school:
+                        raise GraphQLError("School does not exist")
+                    student.school = school
+                if campus:
+                    student.campus = campus
+                if hostel:
+                    hostel = Hostel.objects.filter(slug=hostel.strip()).first()
+                    if not hostel:
+                        raise GraphQLError("Hostel does not exist")
+                    student.hostel = hostel
+                if hostel_floor:
+                    student.floor = hostel_floor
+                if hostel_room:
+                    student.room = hostel_room
+                student.save()
+            else:
+                need_verification = True
+                student = Student.objects.filter(user=profile)
+                if student.exists():
+                    student = student.first()
+                    student.delete()
         profile.save()
         return UpdateProfileMutation(
-            user=info.context.user, success=profile.has_required_fields
+            user=info.context.user,
+            is_profile_completed=profile.has_required_fields,
+            need_verification=need_verification,
         )
 
 
@@ -842,7 +849,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         name = name.strip()
 
-        if not "VENDOR" in user.roles  or store is None:
+        if not "VENDOR" in user.roles or store is None:
             return UpdateStoreMenuMutation(error="You are not a vendor")
 
         # check if the name exists in the store menu json list
@@ -865,12 +872,14 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
             # check of the name is 'all', then don't allow it
             if name_in_lower_case == "all":
                 return UpdateStoreMenuMutation(error="You cannot remove 'all' menu")
-            
+
             if not exist_name:
                 return UpdateStoreMenuMutation(error="This menu does not exist")
-            
+
             # check if store_products are already using the menu as store_menu_name
-            store.store_products.filter(store_menu_name=name).update(store_menu_name="All")
+            store.store_products.filter(store_menu_name=name).update(
+                store_menu_name="Others"
+            )
 
             store.store_menu.remove(name)
             store.save()
