@@ -80,7 +80,7 @@ class Item(models.Model):
     )
     store_menu_name = models.CharField(
         max_length=30,
-        default="All",
+        default="Others",
         blank=True,
     )
     product_category = models.ForeignKey(

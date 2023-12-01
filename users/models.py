@@ -703,7 +703,7 @@ class Store(models.Model):
                 all_exists = True
                 break
         if not all_exists:
-            self.store_menu.append("All")
+            self.store_menu.append("Others")
             self.save()
 
         return f"{self.store_nickname}"
