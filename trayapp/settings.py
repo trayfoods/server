@@ -306,7 +306,7 @@ if USE_S3:
 
     # s3 public media settings
     PUBLIC_MEDIA_LOCATION = "media"
-    MEDIA_URL = f"https://ik.imagekit.io/trayfoods/"
+    MEDIA_URL = f"https://ik.imagekit.io/trayfoods"
     DEFAULT_FILE_STORAGE = 'trayapp.storage_backends.AzureMediaStorage'
 
 elif not USE_S3:
