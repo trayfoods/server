@@ -10,9 +10,11 @@ class AzureMediaStorage(AzureStorage):
     expiration_secs = None
 
     def url(self, name):
-        ret = super(AzureMediaStorage, self).url(name)
-        _ret = re.sub("//[a-z.0-9A-Z]*/", settings.MEDIA_URL, ret)
-        return _ret
+        blob_url = super(AzureMediaStorage, self).url(name)
+        imagekit_url = re.sub(
+            r"https://[a-z.0-9A-Z]*", settings.MEDIA_URL, blob_url.replace("media", "")
+        )
+        return imagekit_url
 
 
 class AzureStaticStorage(AzureStorage):
