@@ -87,9 +87,17 @@ class AddProductMutation(Output, graphene.Mutation):
         if profile.store is None:
             return AddProductMutation(error="You are not a vendor")
 
-        product = Item.get_items().filter(
-            product_slug=product_slug.strip(), product_name=product_name.strip()
-        ).first()
+        proudct_menu_name = kwargs.get("store_menu_name", "Others")
+        if not proudct_menu_name in profile.store.store_menu:
+            return AddProductMutation(error="Invalid Menu Name")
+
+        product = (
+            Item.get_items()
+            .filter(
+                product_slug=product_slug.strip(), product_name=product_name.strip()
+            )
+            .first()
+        )
 
         if not product is None:
             return AddProductMutation(error="Product Already Exists")
@@ -111,9 +119,11 @@ class AddProductMutation(Output, graphene.Mutation):
                     }
 
                     # Checking if slug already exists
-                    if not Item.get_items().filter(
-                        product_slug=product_slug.strip()
-                    ).exists():
+                    if (
+                        not Item.get_items()
+                        .filter(product_slug=product_slug.strip())
+                        .exists()
+                    ):
                         product = Item.objects.create(**save_data)
                         product.save()
                     else:
