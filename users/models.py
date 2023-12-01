@@ -699,7 +699,7 @@ class Store(models.Model):
         all_exists = False
         for menu in self.store_menu:
             name = menu.lower()
-            if name == "all":
+            if name == "others":
                 all_exists = True
                 break
         if not all_exists:

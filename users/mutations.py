@@ -870,7 +870,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
             return UpdateStoreMenuMutation(success=True)
         elif action == "remove":
             # check of the name is 'all', then don't allow it
-            if name_in_lower_case == "all":
+            if name_in_lower_case == "others":
                 return UpdateStoreMenuMutation(error="You cannot remove 'all' menu")
 
             if not exist_name:
