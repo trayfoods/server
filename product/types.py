@@ -89,7 +89,6 @@ class ItemType(DjangoObjectType):
             "product_desc",
             "product_price",
             "has_qty",
-            "editable",
             "average_rating",
             "reviews",
             "reviews_count",
