@@ -218,7 +218,7 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
     def mutate(self, info, slug, menu):
         user = info.context.user
 
-        if "VENDOR" in user.roles:
+        if not "VENDOR" in user.roles:
             return UpdateItemMenuMutation(error="You are not a vendor")
 
         item = Item.get_items().filter(product_slug=slug)
