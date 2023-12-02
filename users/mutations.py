@@ -24,6 +24,7 @@ from .models import (
     Profile,
     UserAccount,
     Wallet,
+    DeliveryPerson,
 )
 from product.models import Order
 from django.conf import settings
@@ -385,6 +386,18 @@ class UpdateProfileMutation(graphene.Mutation):
 
         if roles:
             is_student = "STUDENT" in roles
+            is_vendor = "VENDOR" in roles
+            is_delivery_person = "DELIVERY_PERSON" in roles
+            need_verification = is_vendor or is_delivery_person
+            if is_delivery_person:
+                delivery_person = DeliveryPerson.objects.get_or_create(profile=profile)
+                delivery_person = delivery_person[0]
+                delivery_person.save()
+            else:
+                delivery_person = DeliveryPerson.objects.filter(profile=profile)
+                if delivery_person.exists():
+                    delivery_person = delivery_person.first()
+                    delivery_person.delete()
             if is_student:
                 student = Student.objects.get_or_create(user=profile)
                 student = student[0]
@@ -407,7 +420,6 @@ class UpdateProfileMutation(graphene.Mutation):
                     student.room = hostel_room
                 student.save()
             else:
-                need_verification = True
                 student = Student.objects.filter(user=profile)
                 if student.exists():
                     student = student.first()

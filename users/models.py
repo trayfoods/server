@@ -206,7 +206,7 @@ class Gender(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to=profile_image_directory_path, null=True)
+    image = models.ImageField(upload_to=profile_image_directory_path, null=True, blank=True)
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
     )
@@ -664,9 +664,6 @@ class Wallet(models.Model):
 
 
 class Store(models.Model):
-    wallet = models.OneToOneField(
-        Wallet, on_delete=models.CASCADE, null=True, blank=True
-    )
     vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
@@ -722,6 +719,11 @@ class Store(models.Model):
                     self.store_cover_image.save(img_name, img_file, save=False)
 
         super().save(*args, **kwargs)
+
+    # store's wallet
+    @property
+    def store_wallet(self):
+        return Wallet.objects.filter(user=self.vendor).first()
 
     # is store a school store
     @property
@@ -787,9 +789,6 @@ class Student(models.Model):
 
 class DeliveryPerson(models.Model):
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
-    # wallet = models.OneToOneField(
-    #     Wallet, on_delete=models.CASCADE, null=True, blank=True, unique=True
-    # )
     is_verified = models.BooleanField(default=False)
     is_available = models.BooleanField(default=False)
     is_on_delivery = models.BooleanField(default=False)
@@ -832,6 +831,7 @@ class DeliveryPerson(models.Model):
                 return False
 
         shipping = order.shipping
+        print()
         sch = shipping.get("sch")
         address = shipping.get("address")
         bash = shipping.get("bash")
