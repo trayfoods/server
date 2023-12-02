@@ -716,7 +716,7 @@ class Store(models.Model):
 
     # store's wallet
     @property
-    def store_wallet(self):
+    def wallet(self):
         return Wallet.objects.filter(user=self.vendor).first()
 
     # is store a school store
