@@ -825,7 +825,7 @@ class DeliveryPerson(models.Model):
                 return False
 
         shipping = order.shipping
-        print()
+        print("shipping")
         sch = shipping.get("sch")
         address = shipping.get("address")
         bash = shipping.get("bash")
@@ -910,8 +910,6 @@ def update_delivery_person_wallet_signal(sender, instance, created, **kwargs):
             if not wallet:
                 wallet = Wallet.objects.create(user=instance.profile)
                 wallet.save()
-            instance.wallet = wallet
-            instance.wallet.save()
 
 
 @receiver(post_save, sender=Store)
@@ -924,8 +922,6 @@ def update_store_wallet_signal(sender, instance, created, **kwargs):
             if not wallet:
                 wallet = Wallet.objects.create(user=instance.vendor)
                 wallet.save()
-            instance.wallet = wallet
-            instance.wallet.save()
 
 
 @receiver(models.signals.post_delete, sender=Profile)
