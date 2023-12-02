@@ -89,8 +89,6 @@ class UserAccount(AbstractUser, models.Model):
             else False
         )
 
-        is_school = School.objects.filter(user=self).exists()
-
         roles = []
 
         if is_vendor:
@@ -101,9 +99,6 @@ class UserAccount(AbstractUser, models.Model):
 
         if is_student:
             roles.append("STUDENT")
-
-        if is_school:
-            roles.append("SCHOOL")
 
         if not roles:
             roles.append("CLIENT")
@@ -165,7 +160,6 @@ class UserDevice(models.Model):
 
 
 class School(models.Model):
-    user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
     name = models.CharField(max_length=50)
     email = models.EmailField(null=True, blank=True)
     country = CountryField(default="NG")
