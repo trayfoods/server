@@ -307,8 +307,54 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
             #         "Error trying to send confirmation mail to %s" % email
             #     )
         user.save()
-        user = User.objects.get(username=user.username)
-        return UpdatePersonalInfoMutation(user=user)
+        return UpdatePersonalInfoMutation(user=info.context.user)
+
+
+class UpdateSchoolInfoMutation(Output, graphene.Mutation):
+    class Arguments:
+        school = graphene.String()
+        campus = graphene.String()
+        hostel = graphene.String()
+        floor = graphene.String()
+        room = graphene.String()
+
+    user = graphene.Field(UserNodeType, default_value=None)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(
+        self,
+        info,
+        school=None,
+        campus=None,
+        hostel=None,
+        floor=None,
+        room=None,
+    ):
+        user = info.context.user
+
+        if not "STUDENT" in user.roles:
+            return UpdateSchoolInfoMutation(error="You are not a student")
+
+        student = user.profile.student
+
+        if school:
+            school = School.objects.filter(slug=school.strip()).first()
+            if not school:
+                return UpdateSchoolInfoMutation(error="School does not exist")
+            student.school = school
+        if campus:
+            student.campus = campus
+        if hostel:
+            hostel = Hostel.objects.filter(slug=hostel.strip()).first()
+            if not hostel:
+                return UpdateSchoolInfoMutation(error="Hostel does not exist")
+            student.hostel = hostel
+        if floor:
+            student.floor = floor
+        if room:
+            student.room = room
+        student.save()
+        return UpdateSchoolInfoMutation(user=info.context.user, success=True)
 
 
 class UpdateProfileMutation(graphene.Mutation):

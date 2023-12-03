@@ -21,6 +21,7 @@ from .mutations import (
     VerifyPhoneMutation,
     AcceptDeliveryMutation,
     UpdateStoreMenuMutation,
+    UpdateSchoolInfoMutation
 )
 from .models import Student
 from .types import (
@@ -89,6 +90,7 @@ class AuthMutation(graphene.ObjectType):
 
 class Mutation(AuthMutation, graphene.ObjectType):
     update_personal_info = UpdatePersonalInfoMutation.Field()
+    update_school_info = UpdateSchoolInfoMutation.Field()
     update_profile = UpdateProfileMutation.Field()
     create_transfer_recipient = CreateTransferRecipient.Field()
     user_device = UserDeviceMutation.Field()
