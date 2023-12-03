@@ -12,7 +12,7 @@ from .mutations import (
     CreateTransferRecipient,
     WithdrawFromWalletMutation,
     ChangePinMutation,
-    UpdateAccountMutation,
+    UpdatePersonalInfoMutation,
     UpdateProfileMutation,
     UserDeviceMutation,
     LoginMutation,
@@ -88,7 +88,7 @@ class AuthMutation(graphene.ObjectType):
 
 
 class Mutation(AuthMutation, graphene.ObjectType):
-    update_account = UpdateAccountMutation.Field()
+    update_personal_info = UpdatePersonalInfoMutation.Field()
     update_profile = UpdateProfileMutation.Field()
     create_transfer_recipient = CreateTransferRecipient.Field()
     user_device = UserDeviceMutation.Field()

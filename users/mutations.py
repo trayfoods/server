@@ -239,18 +239,15 @@ class UpdateStoreMutation(Output, graphene.Mutation):
             return cls(success=False, user=user)
 
 
-class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
+class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
     class Arguments:
         first_name = graphene.String()
         last_name = graphene.String()
         email = graphene.String()
-        phone_number = graphene.String()
         profile_image = Upload()
         country = graphene.String()
         state = graphene.String()
         city = graphene.String()
-
-        is_student = graphene.Boolean()
 
     user = graphene.Field(UserNodeType)
 
@@ -265,14 +262,13 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         email=None,
         last_name=None,
         country=None,
-        phone_number=None,
         profile_image=None,
         state=None,
         city=None,
     ):
         user = info.context.user
         send_email = False
-        profile = Profile.objects.get(user__username=user.username)
+        profile = user.profile
 
         if first_name:
             user.first_name = first_name
@@ -283,9 +279,6 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
         # update the profile values
         if country:
             profile.country = country
-
-        if phone_number:
-            profile.phone_number = phone_number
 
         if profile_image:
             profile.image = profile_image
@@ -315,7 +308,7 @@ class UpdateAccountMutation(UpdateAccountMixin, graphene.Mutation):
             #     )
         user.save()
         user = User.objects.get(username=user.username)
-        return UpdateAccountMutation(user=user)
+        return UpdatePersonalInfoMutation(user=user)
 
 
 class UpdateProfileMutation(graphene.Mutation):
