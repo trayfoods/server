@@ -141,6 +141,12 @@ class StoreOpenHours(graphene.ObjectType):
     open_time = graphene.String()
     close_time = graphene.String()
 
+# store open hours input
+class StoreOpenHoursInput(graphene.InputObjectType):
+    day = graphene.String()
+    open_time = graphene.String()
+    close_time = graphene.String()
+
 class StoreType(DjangoObjectType):
     store_country = graphene.String()
     store_categories = graphene.List(graphene.String)

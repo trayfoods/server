@@ -200,7 +200,9 @@ class Gender(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(UserAccount, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to=profile_image_directory_path, null=True, blank=True)
+    image = models.ImageField(
+        upload_to=profile_image_directory_path, null=True, blank=True
+    )
     image_hash = models.CharField(
         "Image Hash", editable=False, max_length=32, null=True, blank=True
     )
@@ -670,6 +672,7 @@ class Store(models.Model):
     )
     store_bio = models.CharField(null=True, blank=True, max_length=150)
     store_address = models.CharField(max_length=60, null=True, blank=True)
+    store_campus = models.CharField(max_length=50, null=True, blank=True)
     store_nickname = models.CharField(max_length=50, null=True, blank=True)
     store_school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True
@@ -684,6 +687,9 @@ class Store(models.Model):
     store_menu = models.JSONField(default=list, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+    has_physical_store = models.BooleanField(default=False)
+
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         # check if all is not in store menu

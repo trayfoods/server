@@ -13,7 +13,7 @@ from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import UserNodeType
+from .types import UserNodeType, StoreOpenHoursInput
 from .models import (
     Transaction,
     Store,
@@ -21,7 +21,6 @@ from .models import (
     Student,
     Hostel,
     Gender,
-    Profile,
     UserAccount,
     Wallet,
     DeliveryPerson,
@@ -86,13 +85,17 @@ class CreateStoreMutation(Output, graphene.Mutation):
         # The input arguments for this mutation
         store_name = graphene.String(required=True)
         store_country = graphene.String(required=True)
-        store_address = graphene.String(required=True)
         store_type = graphene.String(required=True)
         store_categories = graphene.List(graphene.String, required=True)
         store_phone_numbers = graphene.List(graphene.String, required=True)
-        store_bio = graphene.String(required=False)
         store_nickname = graphene.String(required=True)
-        store_school = graphene.String(required=True)
+        store_open_hours = graphene.List(StoreOpenHoursInput, required=True)
+        has_physical_store = graphene.Boolean(required=True)
+
+        store_bio = graphene.String(required=False)
+        store_school = graphene.String(required=False)
+        store_campus = graphene.String(required=False)
+        store_address = graphene.String(required=False)
 
     user = graphene.Field(UserNodeType)
 
@@ -103,54 +106,55 @@ class CreateStoreMutation(Output, graphene.Mutation):
         info,
         store_name,
         store_country,
-        store_address,
         store_type,
         store_categories,
         store_phone_numbers,
-        store_bio,
         store_nickname,
-        store_school,
+        store_open_hours,
+        has_physical_store,
+        store_bio=None,
+        store_school=None,
+        store_campus=None,
+        store_address=None,
     ):
-        success = False
         user = info.context.user
 
-        user = User.objects.get(username=user.username)
-        profile = user.profile
-        if profile.store is None:
-            store_check = Store.objects.filter(
-                store_nickname=store_nickname.strip()
-            ).first()  # check if the store nickname is already taken
-            if store_check is None:  # if not taken
-                store_school_qs = School.objects.filter(slug=store_school.strip())
-                if not store_school_qs.exists():
-                    raise GraphQLError("School does not exist, please try again")
-                store = Store.objects.create(
-                    store_name=store_name,
-                    store_country=store_country,
-                    store_address=store_address,
-                    store_type=store_type,
-                    store_categories=store_categories,
-                    store_phone_numbers=store_phone_numbers,
-                    store_bio=store_bio,
-                    store_nickname=store_nickname,
-                    store_school=store_school_qs.first(),
-                    vendor=profile,
-                )  # create the store
-                store.save()
+        # check if the user is a vendor
+        if "VENDOR" in user.roles:
+            return CreateStoreMutation(error="You already have a store")
 
-                success = True
+        # check if the store nickname is already taken
+        if Store.objects.filter(
+            store_nickname=store_nickname.strip()
+        ).exists():  # if not taken
+            return CreateStoreMutation(
+                error="Store Nickname Already Exists, Please use a unique name"
+            )
+        if store_school:
+            store_school = School.objects.filter(slug=store_school.strip())
+            if not store_school.exists():
+                return CreateStoreMutation(
+                    error="School does not exist, please try again"
+                )
+        store = Store.objects.create(
+            store_name=store_name,
+            store_country=store_country,
+            store_address=store_address,
+            store_type=store_type,
+            store_categories=store_categories,
+            store_phone_numbers=store_phone_numbers,
+            store_open_hours=store_open_hours,
+            has_physical_store=has_physical_store,
+            store_campus=store_campus,
+            store_bio=store_bio,
+            store_nickname=store_nickname,
+            store_school=store_school.first(),
+            vendor=user.profile,
+        )  # create the store
+        store.save()
 
-                user = User.objects.get(username=user.username)
-
-                # return the vendor and user
-                return CreateStoreMutation(success=success, user=user)
-            else:  # if taken
-                raise GraphQLError(
-                    "Store Nickname Already Exists, Please use a unique name"
-                )  # raise error
-        else:  # if vendor already exists
-            success = False
-            raise GraphQLError("You Already A Vendor")  # raise error
+        # return the vendor and user
+        return CreateStoreMutation(success=True, user=info.context.user)
 
     @verification_required
     def resolve_mutation(cls, root, info, **kwargs):
