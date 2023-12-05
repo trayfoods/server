@@ -66,7 +66,7 @@ class AddProductMutation(Output, graphene.Mutation):
         # Check if all the required fields are present
         for field in list_of_required_fields:
             if field not in kwargs or kwargs.get(field) is None or kwargs.get(field) == "":
-                raise GraphQLError(f"{field.replace("_", " ")} is required.")
+                raise GraphQLError(f"{field} is required.")
 
         kwargs = {
             k: v for k, v in kwargs.items() if v is not None
