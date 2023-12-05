@@ -68,6 +68,7 @@ class ItemImage(models.Model):
 class Item(models.Model):
     product_name = models.CharField(max_length=100)
     product_qty = models.IntegerField(default=0)
+    has_qty = models.BooleanField(default=False)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     product_calories = models.FloatField(default=0.0)
@@ -138,7 +139,9 @@ class Item(models.Model):
         """
         eg: Item.get_items()
         """
-        return cls.objects.exclude(product_status="deleted")
+        return cls.objects.exclude(product_status="deleted").exclude(
+            product_creator__is_active=False
+        )
 
     # filter the product available in a store
     @classmethod
@@ -146,7 +149,9 @@ class Item(models.Model):
         """
         eg: Item.get_items_by_store(store)
         """
-        return cls.get_items().filter(product_creator=store)
+        return cls.objects.exclude(product_status="deleted").filter(
+            product_creator=store
+        )
 
     @property
     def total_ratings(self):
@@ -174,6 +179,17 @@ class Item(models.Model):
     # get the creator of the product country
     def product_country(self):
         return self.product_creator and self.product_creator.user.country
+
+    @property
+    def is_avaliable_for_pickup(self):
+        return self.is_avaliable and self.product_creator.has_physical_store
+
+    @property
+    def is_avaliable(self):
+        if self.product_creator:
+            if not self.product_creator.is_active:
+                return False
+        return self.product_status == "active"
 
 
 class Rating(models.Model):

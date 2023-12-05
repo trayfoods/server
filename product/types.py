@@ -62,7 +62,6 @@ class ReviewsType(DjangoObjectType):
 class ItemType(DjangoObjectType):
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
-    has_qty = graphene.Boolean()
     average_rating = graphene.Float()
     reviews = graphene.List(ReviewsType)
     reviews_count = graphene.Int()
@@ -138,12 +137,6 @@ class ItemType(DjangoObjectType):
             product_qty = 1
         return product_qty
 
-    def resolve_has_qty(self, info):
-        has_qty = False
-        if self.product_qty > 0:
-            has_qty = True
-        return has_qty
-
     def resolve_is_avaliable_for_store(self, info):
         user = info.context.user
         store_item = "not_login"
@@ -177,7 +170,7 @@ class ItemType(DjangoObjectType):
         return images
 
     def resolve_is_avaliable(self, info):
-        return self.product_status == "active"
+        return self.is_avaliable
 
 
 class ItemNode(ItemType, DjangoObjectType):
