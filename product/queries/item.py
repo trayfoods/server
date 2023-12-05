@@ -17,11 +17,11 @@ class ItemQueries(graphene.ObjectType):
     hero_data = graphene.List(ItemType)
 
     def resolve_items(self, info, **kwargs):
-        return Item.get_items()
+        return Item.get_items().exclude(product_creator__is_active=False)
 
     def resolve_hero_data(self, info):
         items = (
-            Item.get_items()
+            Item.get_items().exclude(product_creator__is_active=False)
             .filter(product_type__urlParamName__icontains="dish")
             .exclude(product_type__urlParamName__icontains="not")
             .order_by("-product_clicks")[:4]
@@ -34,9 +34,11 @@ class ItemQueries(graphene.ObjectType):
         user = info.context.user
         item = Item.get_items().filter(product_slug=item_slug).first()
         if user.is_authenticated and "VENDOR" in user.roles:
-            item = Item.objects.filter(
+            item_by_store = Item.objects.filter(
                 product_slug=item_slug, product_creator=user.profile.store
-            ).first()
+            )
+            if item_by_store.exists():
+                item = item_by_store.first()
 
         if not item is None:
             item.product_views += 1
