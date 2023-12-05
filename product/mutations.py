@@ -60,13 +60,13 @@ class AddProductMutation(Output, graphene.Mutation):
             "store_menu_name",
         ]
 
-        if not kwargs.get("product_qty") is None:
+        if not kwargs.get("product_qty") is None and kwargs.get("product_qty") > 0:
             list_of_required_fields.append("product_qty_unit")
 
         # Check if all the required fields are present
         for field in list_of_required_fields:
-            if field not in kwargs:
-                raise GraphQLError(f"{field} is required.")
+            if field not in kwargs or kwargs.get(field) is None or kwargs.get(field) == "":
+                raise GraphQLError(f"{field.replace("_", " ")} is required.")
 
         kwargs = {
             k: v for k, v in kwargs.items() if v is not None
@@ -116,6 +116,7 @@ class AddProductMutation(Output, graphene.Mutation):
                         "product_creator": profile.store,
                         "product_category": product_category,
                         "product_type": product_type,
+                        "has_qty": kwargs.get("product_qty") and kwargs.get("product_qty", 0) > 0,
                     }
 
                     # Checking if slug already exists

@@ -21,7 +21,8 @@ class ItemQueries(graphene.ObjectType):
 
     def resolve_hero_data(self, info):
         items = (
-            Item.get_items().filter(product_type__urlParamName__icontains="dish")
+            Item.get_items()
+            .filter(product_type__urlParamName__icontains="dish")
             .exclude(product_type__urlParamName__icontains="not")
             .order_by("-product_clicks")[:4]
         )
@@ -30,7 +31,13 @@ class ItemQueries(graphene.ObjectType):
     def resolve_item(self, info, item_slug):
         from django.utils import timezone
 
+        user = info.context.user
         item = Item.get_items().filter(product_slug=item_slug).first()
+        if user.is_authenticated and "VENDOR" in user.roles:
+            item = Item.objects.filter(
+                product_slug=item_slug, product_creator=user.profile.store
+            ).first()
+
         if not item is None:
             item.product_views += 1
             item.save()
