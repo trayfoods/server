@@ -155,44 +155,47 @@ class CreateStoreMutation(Output, graphene.Mutation):
 
         # get all admin users email and send them a plain text email
         # to verify the store
-        admin_users = User.objects.filter(is_superuser=True)
-        for admin_user in admin_users:
-            if admin_user.email:
-                if async_email_func:
-                    async_email_func(
-                        subject="New Store Created",
-                        message="""A new store has been created, please verify it.
-                        Store Name: {}
-                        Store Nickname: {}
-                        Store Type: {}
-                        Store Country: {}
-                        Link to store: https://api.trayfoods.com/admin/users/store/{}/
-                        """.format(
-                            store.store_name,
-                            store.store_nickname,
-                            store.store_type,
-                            store.store_country.code,
-                            store.pk,
-                        ),
-                        recipient=admin_user.email,
-                    )
-                else:
-                    admin_user.email_user(
-                        subject="New Store Created",
-                        message="""A new store has been created, please verify it.
-                        Store Name: {}
-                        Store Nickname: {}
-                        Store Type: {}
-                        Store Country: {}
-                        Link to store: https://api.trayfoods.com/admin/users/store/{}/
-                        """.format(
-                            store.store_name,
-                            store.store_nickname,
-                            store.store_type,
-                            store.store_country.code,
-                            store.pk,
-                        ),
-                    )
+        try:
+            admin_users = User.objects.filter(is_superuser=True)
+            for admin_user in admin_users:
+                if admin_user.email:
+                    if async_email_func:
+                        async_email_func(
+                            subject="New Store Created",
+                            message="""A new store has been created, please verify it.
+                            Store Name: {}
+                            Store Nickname: {}
+                            Store Type: {}
+                            Store Country: {}
+                            Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                            """.format(
+                                store.store_name,
+                                store.store_nickname,
+                                store.store_type,
+                                store.store_country.code,
+                                store.pk,
+                            ),
+                            recipient=admin_user.email,
+                        )
+                    else:
+                        admin_user.email_user(
+                            subject="New Store Created",
+                            message="""A new store has been created, please verify it.
+                            Store Name: {}
+                            Store Nickname: {}
+                            Store Type: {}
+                            Store Country: {}
+                            Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                            """.format(
+                                store.store_name,
+                                store.store_nickname,
+                                store.store_type,
+                                store.store_country.code,
+                                store.pk,
+                            ),
+                        )
+        except Exception as e:
+            print(e)
 
         # return the vendor and user
         return CreateStoreMutation(success=True, user=info.context.user)
