@@ -66,6 +66,11 @@ class UserInline(admin.TabularInline):
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [StoreInline]
     list_filter = (RolesFilter,)
+    readonly_fields = ("calling_code", "phone_number", "country")
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.exclude(user__is_staff=True)
 
 
 class TransactionInline(admin.TabularInline):

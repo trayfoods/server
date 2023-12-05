@@ -68,7 +68,7 @@ class ItemImage(models.Model):
 class Item(models.Model):
     product_name = models.CharField(max_length=100)
     product_qty = models.IntegerField(default=0)
-    has_qty = models.BooleanField(default=False)
+    has_qty = models.BooleanField(default=False, editable=False)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     product_calories = models.FloatField(default=0.0)
