@@ -221,6 +221,7 @@ class CountOrderInputType(CountOrder, graphene.InputObjectType):
 class StoreInfoType(graphene.ObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
+    storeNote = graphene.String()
     total = graphene.Field(TotalOrderType, required=True)
     count = graphene.Field(CountOrderType, required=True)
     items = graphene.List(JSONField, required=True)
@@ -234,6 +235,7 @@ class StoreInfoType(graphene.ObjectType):
 class StoreInfoInputType(graphene.InputObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
+    storeNote = graphene.String()
     total = TotalOrderInputType(required=True)
     count = CountOrderInputType(required=True)
     items = graphene.List(JSONField, required=True)
