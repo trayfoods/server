@@ -136,16 +136,19 @@ class TransactionNode(TransactionType, graphene.ObjectType):
         interfaces = (graphene.relay.Node,)
         filterset_class = TransactionFilter
 
+
 class StoreOpenHours(graphene.ObjectType):
     day = graphene.String()
     open_time = graphene.String()
     close_time = graphene.String()
+
 
 # store open hours input
 class StoreOpenHoursInput(graphene.InputObjectType):
     day = graphene.String()
     open_time = graphene.String()
     close_time = graphene.String()
+
 
 class StoreType(DjangoObjectType):
     store_country = graphene.String()
@@ -172,6 +175,8 @@ class StoreType(DjangoObjectType):
             "store_school",
             "store_image",
             "store_cover_image",
+            "has_physical_store",
+            "is_active",
             "store_products",
             "store_rank",
         ]
