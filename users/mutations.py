@@ -901,10 +901,10 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order.delivery_person is None and order.order_payment_status == "success"
         ) or settings.DEBUG:
             order.delivery_person = delivery_person
-            order.order_status = "shipped"
+            order.order_status = "out-for-delivery"
             # check if delivery person has more than 5 active orders
             active_orders_count = Order.objects.filter(
-                delivery_person=delivery_person, order_status="shipped"
+                delivery_person=delivery_person, order_status="out-for-delivery"
             ).count()
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True

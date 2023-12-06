@@ -221,7 +221,6 @@ class CountOrderInputType(CountOrder, graphene.InputObjectType):
 class StoreInfoType(graphene.ObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
-    storeNote = graphene.String()
     total = graphene.Field(TotalOrderType, required=True)
     count = graphene.Field(CountOrderType, required=True)
     items = graphene.List(JSONField, required=True)
@@ -235,10 +234,14 @@ class StoreInfoType(graphene.ObjectType):
 class StoreInfoInputType(graphene.InputObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
-    storeNote = graphene.String()
     total = TotalOrderInputType(required=True)
     count = CountOrderInputType(required=True)
     items = graphene.List(JSONField, required=True)
+
+
+class StoreNoteType(graphene.ObjectType):
+    storeId = graphene.String(required=True)
+    note = graphene.String(required=True)
 
 
 class OrderType(DjangoObjectType):
@@ -250,6 +253,7 @@ class OrderType(DjangoObjectType):
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
+    store_notes = graphene.List(StoreNoteType)
 
     class Meta:
         model = Order
@@ -262,6 +266,7 @@ class OrderType(DjangoObjectType):
             "created_at",
             "items_count",
             "stores_infos",
+            "store_notes",
             "order_track_id",
             "delivery_fee",
             "linked_items",
@@ -318,8 +323,18 @@ class OrderType(DjangoObjectType):
         if self.user != current_user.profile:
             view_as = current_user.roles
 
+        # set all price to 0 if the user is a delivery person
+        if "DELIVERY_PERSON" in view_as:
+            for store_info in stores_infos:
+                store_info["total"]["price"] = 0
+                store_info["total"]["platePrice"] = 0
+
+                # set all item price to 0
+                for item in store_info["items"]:
+                    item["productPrice"] = 0
+
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if "VENDOR" in view_as:
+        if "VENDOR" in view_as and not "DELIVERY_PERSON" in view_as:
             current_user = info.context.user
             if "VENDOR" in current_user.roles:
                 current_user_profile = current_user.profile
@@ -331,6 +346,9 @@ class OrderType(DjangoObjectType):
                 ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos
+
+    def resolve_store_notes(self, info):
+        return self.store_notes
 
     def resolve_linked_items(self, info):
         return self.linked_items.all()
