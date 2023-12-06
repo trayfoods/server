@@ -303,6 +303,7 @@ class CreateOrderMutation(graphene.Mutation):
         shipping = kwargs.get("shipping")
         linked_items = kwargs.get("linked_items")
         stores_infos = kwargs.get("stores_infos")
+        store_notes = kwargs.get("store_notes")
 
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
@@ -352,6 +353,7 @@ class CreateOrderMutation(graphene.Mutation):
             transaction_fee=transaction_fee,
             shipping=shipping,
             stores_infos=stores_infos,
+            store_notes=store_notes,
             order_payment_status=order_payment_status,
         )
         create_order.linked_stores.set(available_stores)

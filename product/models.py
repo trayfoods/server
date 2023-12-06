@@ -241,7 +241,7 @@ class Order(models.Model):
         choices=(
             ("not-started", "not-started"),
             ("processing", "processing"),
-            ("shipped", "shipped"),
+            ("out-for-delivery", "out-for-delivery"),
             ("delivered", "delivered"),
             ("cancelled", "cancelled"),
         ),
@@ -260,6 +260,7 @@ class Order(models.Model):
     )
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=dict)
+    store_notes = models.JSONField(default=dict)
     linked_items = models.ManyToManyField(Item, editable=False)
     linked_stores = models.ManyToManyField("users.Store", editable=False)
 
@@ -280,6 +281,7 @@ class Order(models.Model):
         blank=True,
         editable=False,
     )
+    delivery_person_note = models.TextField(blank=True, null=True)
     order_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
