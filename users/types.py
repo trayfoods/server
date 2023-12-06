@@ -159,12 +159,15 @@ class StoreType(DjangoObjectType):
     store_products = graphene.List("product.types.ItemType")
     store_menu = graphene.List(graphene.String)
 
+    store_open_hours = graphene.List(StoreOpenHours)
+
     class Meta:
         model = Store
         fields = [
             "vendor",
             "store_name",
             "store_country",
+            "store_timezone",
             "store_type",
             "store_categories",
             "store_menu",
@@ -223,6 +226,9 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return cover_image
+    
+    def resolve_store_open_hours(self, info):
+        return self.store_open_hours
 
 
 class StoreNode(StoreType, graphene.ObjectType):

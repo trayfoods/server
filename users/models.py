@@ -238,8 +238,8 @@ class Profile(models.Model):
             # get the calling code from the country
             from restcountries import RestCountryApiV2 as rapi
 
-            country = rapi.get_country_by_country_code(self.country.code).first()
-            calling_code = country.callingCodes[0]
+            country = rapi.get_country_by_country_code(self.country.code)
+            calling_code = country.calling_codes[0]
             self.calling_code = calling_code
             self.save()
         return True if self.calling_code else False
@@ -663,6 +663,7 @@ class Store(models.Model):
     vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
     store_name = models.CharField(max_length=100)
     store_country = CountryField(default="NG")
+    store_timezone = models.CharField(max_length=50, null=True, blank=True)
     store_type = models.CharField(max_length=20, null=True, blank=True)
     store_categories = models.JSONField(
         default=list, null=True, blank=True, editable=False
@@ -717,6 +718,19 @@ class Store(models.Model):
                 if img_file:
                     img_name = self.store_cover_image.name
                     self.store_cover_image.save(img_name, img_file, save=False)
+
+            if not self.store_nickname:
+                self.store_nickname = slugify(self.store_name)
+                self.save()
+
+            if not self.store_timezone:
+                # get the timezone from the country
+                from restcountries import RestCountryApiV2 as rapi
+
+                country = rapi.get_country_by_country_code(self.store_country.code)
+                timezone = country.timezones[0]
+                self.store_timezone = timezone
+                self.save()
 
         super().save(*args, **kwargs)
 
