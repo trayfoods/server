@@ -290,6 +290,7 @@ class CreateOrderMutation(graphene.Mutation):
         shipping = ShippingInputType(required=True)
         linked_items = graphene.List(graphene.String, required=True)
         stores_infos = graphene.JSONString(required=True)
+        store_notes = graphene.JSONString()
 
     order = graphene.Field(OrderType)
     success = graphene.Boolean(default_value=False)
