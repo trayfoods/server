@@ -161,7 +161,7 @@ class ProcessPayment:
             else:
                 # send sms to user to pick up order
                 order.user.send_sms(
-                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup. Thank you for using TrayFoods"
+                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup"
                 )
 
         return HttpResponse("Payment successful", status=200)

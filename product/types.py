@@ -253,7 +253,7 @@ class OrderType(DjangoObjectType):
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
-    store_notes = graphene.List(StoreNoteType)
+    customer_note = graphene.String()
 
     class Meta:
         model = Order
@@ -266,7 +266,7 @@ class OrderType(DjangoObjectType):
             "created_at",
             "items_count",
             "stores_infos",
-            "store_notes",
+            "customer_note",
             "order_track_id",
             "delivery_fee",
             "linked_items",
@@ -347,8 +347,38 @@ class OrderType(DjangoObjectType):
 
         return stores_infos
 
-    def resolve_store_notes(self, info):
-        return self.store_notes
+    def resolve_customer_note(self, info):
+        store_notes = self.store_notes
+        view_as = []
+        current_user = info.context.user
+        if self.user != current_user.profile:
+            view_as = current_user.roles
+
+        customer_note = None
+
+        # check if view_as is set to VENDOR, 
+        # then find and return the store note as customer note
+        if "VENDOR" in view_as:
+            current_user = info.context.user
+            if "VENDOR" in current_user.roles:
+                current_user_profile = current_user.profile
+                store_note = [
+                    store_note
+                    for store_note in store_notes
+                    if store_note["storeId"]
+                    == current_user_profile.store.store_nickname
+                ]  # filter the stores_infos to only the store that the vendor is linked to
+                if len(store_note) > 0:
+                    customer_note = store_note[0]["note"]
+
+            # check if view_as is set to DELIVERY_PERSON,
+            # then find and return the delivery person note as customer note
+        if "DELIVERY_PERSON" in view_as:
+            current_user = info.context.user
+            if "DELIVERY_PERSON" in current_user.roles:
+                customer_note = self.delivery_person_note
+        print(customer_note)
+        return customer_note
 
     def resolve_linked_items(self, info):
         return self.linked_items.all()

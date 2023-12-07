@@ -900,8 +900,14 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if (
             order.delivery_person is None and order.order_payment_status == "success"
         ) or settings.DEBUG:
+            # check if delivery person can deliver to the order
+            if not delivery_person.can_deliver(order):
+                return AcceptDeliveryMutation(
+                    error="You did not meet the requirements to deliver this order"
+                )
             order.delivery_person = delivery_person
             order.order_status = "out-for-delivery"
+
             # check if delivery person has more than 5 active orders
             active_orders_count = Order.objects.filter(
                 delivery_person=delivery_person, order_status="out-for-delivery"
@@ -909,7 +915,20 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True
                 delivery_person.save()
+                
             order.save()
+
+            # send sms to user
+            try:
+                order_disp_id = order.order_track_id.replace("order_", "")
+                order.user.send_sms(
+                    "Your order #{} is on its way and will be delivered soon".format(
+                        order_disp_id
+                    )
+                )
+            except Exception as e:
+                print(e)
+                print("Order :=> {}".format(order_track_id))
             return AcceptDeliveryMutation(success=True)
         else:
             return AcceptDeliveryMutation(error="This order was taken")

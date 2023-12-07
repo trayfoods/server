@@ -441,14 +441,6 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
-    cleared_balance = models.DecimalField(
-        max_digits=100,
-        null=True,
-        default=00.00,
-        decimal_places=2,
-        blank=True,
-        editable=False,
-    )
     passcode = models.CharField(
         _("passcode"), max_length=128, editable=False, null=True, blank=True
     )
@@ -530,13 +522,10 @@ class Wallet(models.Model):
         desc = kwargs.get("desc", None)
         order = kwargs.get("order", None)
         unclear = kwargs.get("unclear", False)
-        cleared = kwargs.get("cleared", False)
         transaction = None
         amount = Decimal(amount)
-        if cleared:
-            self.cleared_balance += amount
-            self.save()
-        elif unclear:
+
+        if unclear:
             self.uncleared_balance += amount
             self.save()
         else:
@@ -558,15 +547,6 @@ class Wallet(models.Model):
             transaction.save()
         return transaction
 
-    def clear_balance(self, type):
-        list_of_actions = ["cleared", "uncleared"]
-        if type in list_of_actions:
-            if type == "cleared":
-                self.cleared_balance = Decimal(0.00)
-            else:
-                self.uncleared_balance = Decimal(0.00)
-            self.save()
-
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
         transaction_fee = kwargs.get("transaction_fee", 0.00)
@@ -578,7 +558,6 @@ class Wallet(models.Model):
         order = kwargs.get("order", None)
         status = kwargs.get("status", "pending")
         unclear = kwargs.get("unclear", False)
-        cleared = kwargs.get("cleared", False)
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)
@@ -591,10 +570,7 @@ class Wallet(models.Model):
         if self.balance < amount:
             raise Exception("Insufficient funds")
 
-        if cleared:
-            self.cleared_balance -= amount + transaction_fee
-            self.save()
-        elif unclear:
+        if unclear:
             self.uncleared_balance -= amount + transaction_fee
             self.save()
         else:
@@ -628,15 +604,11 @@ class Wallet(models.Model):
         order = kwargs.get("order", None)
         transaction_id = kwargs.get("transaction_id", None)
         unclear = kwargs.get("unclear", False)
-        cleared = kwargs.get("cleared", False)
 
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
 
         amount = Decimal(amount)
-        if cleared:
-            self.cleared_balance += amount
-            self.save()
-        elif unclear:
+        if unclear:
             self.uncleared_balance += amount
             self.save()
         else:
@@ -829,11 +801,20 @@ class DeliveryPerson(models.Model):
         return Order.get_orders_by_delivery_person(delivery_person=self)
 
     # function to check if a order is able ti be delivered by a delivery person
-    def can_deliver(self, order):
+    def can_deliver(self, order: Order):
+        import json
+
         order_user = order.user
 
         # check if the order user is same as the delivery person
         if order_user == self.profile:
+            return False
+
+        # check if the delivery person is a vendor and is linked to the order
+        if (
+            self.profile.is_vendor
+            and order.linked_stores.filter(vendor=self.profile).exists()
+        ):
             return False
 
         # check if the delivery person is a student and the order user is a student
@@ -844,8 +825,7 @@ class DeliveryPerson(models.Model):
             if order_user_gender != delivery_person_gender:
                 return False
 
-        shipping = order.shipping
-        print("shipping")
+        shipping = json.loads(order.shipping)
         sch = shipping.get("sch")
         address = shipping.get("address")
         bash = shipping.get("bash")
@@ -865,7 +845,7 @@ class DeliveryPerson(models.Model):
 
     # function to get delivery people that can deliver a order
     @staticmethod
-    def get_delivery_people_that_can_deliver(order):
+    def get_delivery_people_that_can_deliver(order: Order):
         delivery_people = DeliveryPerson.objects.filter(
             is_available=True, is_on_delivery=False
         )

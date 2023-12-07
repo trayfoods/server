@@ -362,6 +362,44 @@ class CreateOrderMutation(graphene.Mutation):
 
         return CreateOrderMutation(order=create_order, success=True)
 
+class MarkOrderAsMutation(Output, graphene.Mutation):
+    class Arguments:
+        order_id = graphene.String(required=True)
+        action = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, order_id, action):
+        user = info.context.user
+
+        order = Order.objects.filter(order_id=order_id)
+
+        if not order.exists():
+            return MarkOrderAsMutation(error="Order does not exists")
+        
+        order = order.first()
+        
+        if action == "delivered" and order.order_status != "out-for-delivery":
+            return MarkOrderAsMutation(error="Order has not been accepted by a delivery person")
+        
+        if "DELIVERY_PERSON" in user.roles:
+            delivery_person = user.profile
+            # check if order delivery person is same as current delivery person
+            if order.delivery_person != delivery_person:
+                return MarkOrderAsMutation(error="You are not allowed to interact with this order")
+            
+            order.order_status = "delivered"
+            order.save()
+
+            # credit delivery person wallet
+            credit_kwargs = {
+                "amount": order.delivery_fee,
+                "title": "Delivery Funds",
+                "order": order,
+            }
+            delivery_person.wallet.add_balance(**credit_kwargs)
+
+            return MarkOrderAsMutation(success=True)
+    
 
 class RateItemMutation(graphene.Mutation):
     class Arguments:
