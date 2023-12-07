@@ -285,7 +285,7 @@ class OrderType(DjangoObjectType):
 
     def resolve_user(self, info):
         current_user = info.context.user
-        if self.user != current_user.profile:
+        if self.user != current_user.profile and self.order_status != "delivered":
             return self.user
 
     def resolve_display_date(self, info):
@@ -377,7 +377,6 @@ class OrderType(DjangoObjectType):
             current_user = info.context.user
             if "DELIVERY_PERSON" in current_user.roles:
                 customer_note = self.delivery_person_note
-        print(customer_note)
         return customer_note
 
     def resolve_linked_items(self, info):

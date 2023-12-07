@@ -137,10 +137,13 @@ class ProcessPayment:
                 else:
                     stores_with_issues.append(store_id)
             print("stores_with_issues: ", stores_with_issues)
+            # remove 25% of the delivery fee from the delivery person
+            new_delivery_fee = delivery_fee * Decimal(0.25)
+            new_delivery_fee = delivery_fee - new_delivery_fee
             # update the order payment status
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
-            # order.delivery_fee = delivery_fee
+            order.delivery_fee = new_delivery_fee
             order.order_status = "processing"
             order.order_message = "Your Order Payment Was Successful"
             order.save()

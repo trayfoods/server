@@ -786,7 +786,7 @@ class DeliveryPerson(models.Model):
 
     @property
     def wallet(self):
-        return Wallet.objects.filter(user=self.profile).filter()
+        return Wallet.objects.filter(user=self.profile).first()
 
     class Meta:
         ordering = ["-is_available"]

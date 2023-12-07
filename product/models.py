@@ -127,6 +127,9 @@ class Item(models.Model):
     def save(self, *args, **kwargs):  # auto create product_slug
         if not self.product_slug:
             self.product_slug = slugify(self.product_name)
+
+        if self.product_qty > 0:
+            self.has_qty = True
         return super().save(*args, **kwargs)
 
     @property
