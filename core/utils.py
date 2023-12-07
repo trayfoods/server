@@ -156,11 +156,8 @@ class ProcessPayment:
                 delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
                     order
                 )
-                print("delivery_people: ", delivery_people)
                 for delivery_person in delivery_people:
-                    order.send_order_to_delivery_person(
-                        who="delivery_person", delivery_person=delivery_person
-                    )
+                    order.send_order_to_delivery_person(delivery_person=delivery_person)
             else:
                 # send sms to user to pick up order
                 order.user.send_sms(
