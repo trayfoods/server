@@ -263,7 +263,10 @@ class Order(models.Model):
     )
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=dict)
-    store_notes = models.JSONField(default=dict)
+    store_notes = models.JSONField(
+        default=dict,
+        blank=True,
+    )
     linked_items = models.ManyToManyField(Item, editable=False)
     linked_stores = models.ManyToManyField("users.Store", editable=False)
 
