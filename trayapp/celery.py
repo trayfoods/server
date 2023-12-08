@@ -6,7 +6,7 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trayapp.settings")
 
-app = Celery("trayapp")
+app = Celery("trayapp", backend=os.getenv("REDIS_URL"), broker=os.getenv("REDIS_URL"))
 app.conf.enable_utc = False
 
 app.conf.update(timezone="Africa/Lagos")
@@ -14,8 +14,11 @@ app.conf.update(timezone="Africa/Lagos")
 app.config_from_object(settings, namespace="CELERY")
 
 # Celery Beat Settings
-app.conf.beat_schedule = {
-    
-}
+app.conf.beat_schedule = {}
 
 app.autodiscover_tasks()
+
+
+@app.task(bind=True)
+def debug_task(self):
+    print("Request: {0!r}".format(self.request))
