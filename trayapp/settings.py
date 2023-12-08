@@ -35,7 +35,11 @@ USE_S3 = "True" in os.environ.get("USE_S3", "False")
 USE_DB = "True" in os.environ.get("USE_DB", "False")
 
 if not DEBUG:
-    CSRF_TRUSTED_ORIGINS = ["https://*.trayfoods.com", "http://127.0.0.1:8000", "http://localhost:8000"]
+    CSRF_TRUSTED_ORIGINS = [
+        "https://*.trayfoods.com",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ]
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
@@ -116,6 +120,8 @@ INSTALLED_APPS = [
     "anymail",
     "theme",
     "django_countries",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 USE_MAILERSEND = "True" in os.environ.get("USE_MAILERSEND", "False")
@@ -151,15 +157,6 @@ CHANNEL_LAYERS = {
         },
     },
 }
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379"),
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#         },
-#     }
-# }
 
 GRAPH_MODELS = {
     "all_applications": True,
@@ -308,7 +305,7 @@ if USE_S3:
     # s3 public media settings
     PUBLIC_MEDIA_LOCATION = "media"
     MEDIA_URL = f"https://ik.imagekit.io/trayfoods"
-    DEFAULT_FILE_STORAGE = 'trayapp.storage_backends.AzureMediaStorage'
+    DEFAULT_FILE_STORAGE = "trayapp.storage_backends.AzureMediaStorage"
 
 elif not USE_S3:
     STATIC_URL = "/assets/"
@@ -353,3 +350,15 @@ CORS_ALLOW_HEADERS = (
     "sentry-trace",
     "x-requested-with",
 )
+
+# CELERY SETTINGS
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = "Africa/Lagos"
+CELERY_RESULT_BACKEND = "django-db"
+
+# CELERY_BEAT
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

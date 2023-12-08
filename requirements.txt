@@ -1,6 +1,7 @@
 better-profanity
 blurhash-python
 celery
+django-celery-results==2.5.1
 channels
 channels-redis
 daphne
