@@ -1,8 +1,6 @@
-from celery import Celery
+from celery import shared_task
 
-app = Celery('send-email', broker='amqp://guest@localhost//')
-
-@app.task
+@shared_task
 def graphql_auth_async_email(func, *args):
     """
     Task to send an e-mail for the graphql_auth package

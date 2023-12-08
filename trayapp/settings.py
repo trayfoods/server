@@ -193,7 +193,6 @@ GRAPHQL_JWT = {
         "graphql_auth.mutations.RevokeToken",
     ],
 }
-EMAIL_ASYNC_TASK = "trayapp.task.graphql_auth_async_email"
 
 GRAPHQL_AUTH = {
     "EMAIL_FROM": DEFAULT_FROM_EMAIL,
@@ -206,6 +205,7 @@ GRAPHQL_AUTH = {
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
     "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"],
     "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
+    "EMAIL_ASYNC_TASK": "trayapp.graphql_auth_async_email"
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -359,6 +359,7 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "Africa/Lagos"
 CELERY_RESULT_BACKEND = "django-db"
+EMAIL_ASYNC_TASK = True
 
 # CELERY_BEAT
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
