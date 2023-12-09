@@ -197,7 +197,7 @@ GRAPHQL_JWT = {
 GRAPHQL_AUTH = {
     "EMAIL_FROM": DEFAULT_FROM_EMAIL,
     "EMAIL_TEMPLATE_VARIABLES": {"frontend_domain": FRONTEND_URL},
-    "SEND_ACTIVATION_EMAIL": DEBUG == False,
+    "SEND_ACTIVATION_EMAIL": True,
     "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
     "SEND_PASSWORD_RESET_EMAIL": True,
     "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password-reset",
@@ -360,7 +360,7 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "Africa/Lagos"
 CELERY_RESULT_BACKEND = "django-db"
 # EMAIL_ASYNC_TASK = True
-CELERY_IMPORTS = ('users.tasks',)
+CELERY_IMPORTS = ("users.tasks",)
 
 # CELERY_BEAT
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
