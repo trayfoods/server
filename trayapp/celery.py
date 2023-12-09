@@ -6,7 +6,7 @@ from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trayapp.settings")
 
-app = Celery("trayapp")
+app = Celery("trayapp", broker=settings.CELERY_BROKER_URL)
 app.conf.enable_utc = False
 
 app.conf.update(timezone="Africa/Lagos")
