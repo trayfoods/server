@@ -337,14 +337,11 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        try:
-            if self.has_calling_code and self.phone_number_verified:
-                phone_number = f"{self.calling_code}{self.phone_number}"
-                TWILIO_CLIENT.messages.create(
-                    from_=settings.TWILIO_PHONE_NUMBER, body=message, to=phone_number
-                )
-        except Exception as e:
-            print(e)
+        if self.has_calling_code and self.phone_number_verified:
+            phone_number = f"{self.calling_code}{self.phone_number}"
+            from .tasks import send_async_sms
+
+            send_async_sms.delay(message, phone_number)
 
     @property
     def is_delivery_person(self):
