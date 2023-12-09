@@ -13,7 +13,7 @@ def graphql_auth_async_email(func, *args):
 
     return func(*args)
 
-
+@shared_task
 def send_async_sms(message, phone_number):
     """
     Task to send an SMS
