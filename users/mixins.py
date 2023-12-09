@@ -67,16 +67,7 @@ class RegisterMixin(Output):
                         app_settings.SEND_ACTIVATION_EMAIL is True and email
                     )
                     if send_activation:
-                        from .tasks import send_activation_email
-                        from django.contrib.sites.shortcuts import get_current_site
-
-                        send_activation_email.delay(user.pk, {
-                            "port": info.context.get_port(),
-                            "site": get_current_site(info.context).domain,
-                            "is_secure": info.context.is_secure(),
-                            
-                        })
-
+                        user.status.send_activation_email(info)
                     if app_settings.ALLOW_LOGIN_NOT_VERIFIED:
                         payload = cls.login_on_register(
                             root, info, password=kwargs.get("password1"), **kwargs
