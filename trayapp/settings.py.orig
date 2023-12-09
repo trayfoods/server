@@ -353,14 +353,14 @@ CORS_ALLOW_HEADERS = (
 
 # CELERY SETTINGS
 
-CELERY_broker_url = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
-accept_content = ["application/json"]
-result_serializer = "json"
-task_serializer = "json"
-timezone = "Africa/Lagos"
-result_backend = "django-db"
+CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
+CELERY_ACCEPT_CONTENT = ["application/json"]
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_SERIALIZER = "json"
+CELERY_TIMEZONE = "Africa/Lagos"
+CELERY_RESULT_BACKEND = "django-db"
 # EMAIL_ASYNC_TASK = True
-imports = ("users.tasks",)
+CELERY_IMPORTS = ("users.tasks",)
 
 # CELERY_BEAT
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
