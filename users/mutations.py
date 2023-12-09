@@ -33,8 +33,12 @@ import uuid
 User = UserAccount
 PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
-if settings.EMAIL_ASYNC_TASK and isinstance(settings.EMAIL_ASYNC_TASK, str):
-    async_email_func = import_string(settings.EMAIL_ASYNC_TASK)
+# get email_async_task from the graphql_auth settings
+
+EMAIL_ASYNC_TASK = settings.GRAPHQL_AUTH.get("EMAIL_ASYNC_TASK", None)
+
+if EMAIL_ASYNC_TASK and isinstance(EMAIL_ASYNC_TASK, str):
+    async_email_func = import_string(EMAIL_ASYNC_TASK)
 else:
     async_email_func = None
 
@@ -158,22 +162,41 @@ class CreateStoreMutation(Output, graphene.Mutation):
         try:
             admin_users = User.objects.filter(is_superuser=True)
             for admin_user in admin_users:
-                admin_user.email_user(
-                    subject="New Store Created",
-                    message="""A new store has been created, please verify it.
-                            Store Name: {}
-                            Store Nickname: {}
-                            Store Type: {}
-                            Store Country: {}
-                            Link to store: https://api.trayfoods.com/admin/users/store/{}/
-                            """.format(
-                        store.store_name,
-                        store.store_nickname,
-                        store.store_type,
-                        store.store_country.code,
-                        store.pk,
-                    ),
-                )
+                if async_email_func:
+                    async_email_func(
+                        subject="New Store Created",
+                        message="""A new store has been created, please verify it.
+                                Store Name: {}
+                                Store Nickname: {}
+                                Store Type: {}
+                                Store Country: {}
+                                Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                """.format(
+                            store.store_name,
+                            store.store_nickname,
+                            store.store_type,
+                            store.store_country.code,
+                            store.pk,
+                        ),
+                        recipient_list=[admin_user.email],
+                    )
+                else:
+                    admin_user.email_user(
+                        subject="New Store Created",
+                        message="""A new store has been created, please verify it.
+                                Store Name: {}
+                                Store Nickname: {}
+                                Store Type: {}
+                                Store Country: {}
+                                Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                """.format(
+                            store.store_name,
+                            store.store_nickname,
+                            store.store_type,
+                            store.store_country.code,
+                            store.pk,
+                        ),
+                    )
         except Exception as e:
             print(e)
 
@@ -915,7 +938,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True
                 delivery_person.save()
-                
+
             order.save()
 
             # send sms to user

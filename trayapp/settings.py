@@ -205,7 +205,7 @@ GRAPHQL_AUTH = {
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
     "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"],
     "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
-    "EMAIL_ASYNC_TASK": "trayapp.graphql_auth_async_email"
+    "EMAIL_ASYNC_TASK": "users.tasks.graphql_auth_async_email",
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -353,13 +353,14 @@ CORS_ALLOW_HEADERS = (
 
 # CELERY SETTINGS
 
-CELERY_BROKER_URL = os.environ.get("REDIS_URL")
+CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
 CELERY_ACCEPT_CONTENT = ["application/json"]
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "Africa/Lagos"
 CELERY_RESULT_BACKEND = "django-db"
-EMAIL_ASYNC_TASK = True
+# EMAIL_ASYNC_TASK = True
+CELERY_IMPORTS = ('users.tasks',)
 
 # CELERY_BEAT
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"

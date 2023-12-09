@@ -67,7 +67,10 @@ class RegisterMixin(Output):
                         app_settings.SEND_ACTIVATION_EMAIL is True and email
                     )
                     if send_activation:
-                        user.status.send_activation_email(info)
+                        from .tasks import send_activation_email
+
+                        send_activation_email.delay(user.pk, email)
+
                     if app_settings.ALLOW_LOGIN_NOT_VERIFIED:
                         payload = cls.login_on_register(
                             root, info, password=kwargs.get("password1"), **kwargs
@@ -75,7 +78,6 @@ class RegisterMixin(Output):
                         payload.user = user
                         return_value = {}
                         for field in cls._meta.fields:
-                            print(getattr(payload, field), field)
                             return_value[field] = getattr(payload, field)
                         return cls(**return_value)
                     return cls(success=True, user=user)
