@@ -340,9 +340,8 @@ class Profile(models.Model):
         try:
             if self.has_calling_code and self.phone_number_verified:
                 phone_number = f"{self.calling_code}{self.phone_number}"
-                TWILIO_CLIENT.messages.create(
-                    from_=settings.TWILIO_PHONE_NUMBER, body=message, to=phone_number
-                )
+                from .tasks import send_async_sms
+                send_async_sms.delay(phone_number, message)
         except Exception as e:
             print(e)
 
