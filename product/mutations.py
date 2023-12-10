@@ -408,7 +408,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
 class RateItemMutation(graphene.Mutation):
     class Arguments:
-        item_slug = graphene.ID(required=True)
+        item_slug = graphene.String(required=True)
         rating = graphene.Argument(RatingInputType, required=True)
 
     success = graphene.Boolean()
@@ -422,13 +422,16 @@ class RateItemMutation(graphene.Mutation):
             item = Item.get_items().get(product_slug=item_slug)
             try:
                 rating_qs = Rating.objects.get(user=user, item=item)
-                rating_qs.stars = rating.stars
+                rating_qs.stars = rating.stars.value
                 rating_qs.comment = filter_comment(rating.comment)
                 rating_qs.save()
                 return RateItemMutation(success=True, review_id=rating_qs.id)
             except Rating.DoesNotExist:
                 new_rating = Rating.objects.create(
-                    user=user, item=item, stars=rating.stars, comment=rating.comment
+                    user=user,
+                    item=item,
+                    stars=rating.stars.value,
+                    comment=rating.comment,
                 )
                 new_rating.save()
                 return RateItemMutation(success=True, review_id=new_rating.id)
