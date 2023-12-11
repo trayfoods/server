@@ -10,6 +10,7 @@ from users.models import (
     Wallet,
     School,
     Transaction,
+    UserDevice
 )
 
 ROLE_CHOICES = (
@@ -113,4 +114,5 @@ admin.site.register(DeliveryPerson, DeliveryPersonAdmin)
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Wallet, WalletAdmin)
 admin.site.register(School)
+admin.site.register(UserDevice)
 admin.site.register(Transaction, TransactionAdmin)

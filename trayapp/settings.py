@@ -1,6 +1,7 @@
 from datetime import timedelta
 from pathlib import Path
 import os
+import json
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -23,6 +24,26 @@ sentry_sdk.init(
     # We recommend adjusting this value in production.
     profiles_sample_rate=1.0,
 )
+
+# FIREBASE SETTINGS
+from firebase_admin import initialize_app, credentials
+from cryptography.fernet import Fernet
+
+FIREBASE_CONFIG_KEY = os.environ.get("FIREBASE_CONFIG_KEY")
+fernet = Fernet(FIREBASE_CONFIG_KEY)
+
+with open(BASE_DIR / "configs/firebaseServiceAccountKey.bin", "rb") as f:
+    firebaseServiceAccountKey_encrypted_data = f.read()
+try:
+    firebaseServiceAccountKey_data = fernet.decrypt(
+        firebaseServiceAccountKey_encrypted_data
+    )
+except Exception as e:
+    # Handle decryption error
+    raise ValueError("Decryption failed", e)
+
+cred = credentials.Certificate(json.loads(firebaseServiceAccountKey_data.decode()))
+initialize_app(cred)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
@@ -350,6 +371,7 @@ CORS_ALLOW_HEADERS = (
     "sentry-trace",
     "x-requested-with",
 )
+
 
 # CELERY SETTINGS
 

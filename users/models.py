@@ -13,12 +13,15 @@ from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
 from trayapp.utils import image_resized, image_exists
+from celery.utils.log import get_task_logger
 
 from product.models import Item, Order
 
 from django.conf import settings
 
 from trayapp.utils import get_twilio_client
+
+logger = get_task_logger(__name__)
 
 TWILIO_CLIENT = get_twilio_client()
 
@@ -156,6 +159,8 @@ class UserDevice(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
+        self.user.profile.send_push_notification()
+
         return f"{self.user.username}'s {self.device_type}"
 
 
@@ -341,9 +346,17 @@ class Profile(models.Model):
             if self.has_calling_code and self.phone_number_verified:
                 phone_number = f"{self.calling_code}{self.phone_number}"
                 from .tasks import send_async_sms
+
+                logger.info(f"Sending SMS to user {self.user.username}")
                 send_async_sms.delay(phone_number, message)
         except Exception as e:
             print(e)
+
+    def send_push_notification(self):
+        from .tasks import send_fcm_notification_task
+
+        logger.info(f"Sending FCM notification to user {self.user.username}")
+        send_fcm_notification_task.delay(self.user.pk)
 
     @property
     def is_delivery_person(self):
