@@ -379,19 +379,35 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         order = order.first()
 
+        action = action.lower().replace("_", "-")
+        allowed_actions = ["delivered", "ready-for-pickup"]
+
+        if not action in allowed_actions:
+            return MarkOrderAsMutation(
+                error="Invalid action"
+            )
         if action == "delivered" and order.order_status != "out-for-delivery":
             return MarkOrderAsMutation(
                 error="Order is not out for delivery, cannot be marked as delivered"
             )
+        elif action == "ready-for-pickup" and order.order_status != "processing":
+            return MarkOrderAsMutation(
+                error="Order has not been processed, cannot be ready for pickup"
+            )
+        is_vendor = False
+        is_delivery_person = False
 
-        if "DELIVERY_PERSON" in user.roles:
+        if "DELIVERY_PERSON" in user.roles or "VENDOR" in user.roles:
             delivery_person = user.profile.delivery_person
             # check if order delivery person is same as current delivery person
-            if order.delivery_person != delivery_person:
-                return MarkOrderAsMutation(
-                    error="You are not allowed to interact with this order"
-                )
+            is_vendor = order.linked_stores.filter(vendor=user.profile).exists()
+            is_delivery_person = order.delivery_person == delivery_person
+        if (not is_delivery_person and not is_vendor) or not is_vendor:
+            return MarkOrderAsMutation(
+                error="You are not allowed to interact with this order"
+            )
 
+        if is_delivery_person:
             order.order_status = "delivered"
             order.save()
 
@@ -402,6 +418,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 "order": order,
             }
             delivery_person.wallet.add_balance(**credit_kwargs)
+
+            return MarkOrderAsMutation(success=True)
+
+        if is_vendor:
+            order.order_status = "ready-for-pickup"
+            order.save()
 
             return MarkOrderAsMutation(success=True)
 

@@ -245,6 +245,7 @@ class Order(models.Model):
             ("not-started", "not-started"),
             ("processing", "processing"),
             ("out-for-delivery", "out-for-delivery"),
+            ("ready-for-pickup", "ready-for-pickup"),
             ("delivered", "delivered"),
             ("cancelled", "cancelled"),
         ),

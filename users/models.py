@@ -159,7 +159,7 @@ class UserDevice(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        self.user.profile.send_push_notification()
+        # self.user.profile.send_push_notification()
 
         return f"{self.user.username}'s {self.device_type}"
 
