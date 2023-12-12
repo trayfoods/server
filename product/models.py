@@ -305,6 +305,12 @@ class Order(models.Model):
     def __str__(self):
         return "Order #" + str(self.order_track_id)
 
+    @property
+    def is_pickup(self):
+        import json
+        shipping = json.loads(self.shipping)
+        return shipping and shipping["address"] and shipping["address"].lower() == "pickup"
+
     def send_order_sms_to_delivery_people(self, delivery_people):
         order_address = "{} / {}".format(
             self.shipping.get("address"), self.shipping.get("bash", "")

@@ -910,6 +910,9 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             return AcceptDeliveryMutation(error="You are not a delivery personnal")
 
         order = Order.objects.filter(order_track_id=order_track_id).first()
+        
+        if order.is_pickup:
+            return AcceptDeliveryMutation(error="This order can not be delivered")
 
         if order is None:
             return AcceptDeliveryMutation(error="This order Does not exists")
