@@ -379,7 +379,7 @@ class OrderType(DjangoObjectType):
         return self.linked_items.all()
 
     def resolve_view_as(self, info):
-        current_user_profile = info.user.profile
+        current_user_profile = info.context.user.profile
         return self.view_as(current_user_profile)
 
 
