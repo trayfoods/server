@@ -285,7 +285,11 @@ class OrderType(DjangoObjectType):
 
     def resolve_user(self, info):
         current_user = info.context.user
-        if self.user != current_user.profile and self.order_status != "delivered":
+        if self.order_status == "delivered":
+            return None
+        if self.user == current_user.profile and self.delivery_person:
+            return self.delivery_person.profile
+        if self.user != current_user.profile:
             return self.user
 
     def resolve_display_date(self, info):
@@ -353,7 +357,7 @@ class OrderType(DjangoObjectType):
 
         customer_note = None
 
-        # check if view_as is set to VENDOR, 
+        # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
         if "VENDOR" in view_as:
             current_user = info.context.user
