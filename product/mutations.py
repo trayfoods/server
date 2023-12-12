@@ -397,13 +397,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         if "DELIVERY_PERSON" in user.roles or "VENDOR" in user.roles:
             delivery_person = user.profile.delivery_person
-            # check if order delivery person is same as current delivery person
             is_vendor = order.linked_stores.filter(vendor=user.profile).exists()
             is_delivery_person = order.delivery_person == delivery_person
-        if (not is_delivery_person and not is_vendor) or not is_vendor:
-            return MarkOrderAsMutation(
-                error="You are not allowed to interact with this order"
-            )
 
         if is_delivery_person:
             order.order_status = "delivered"
@@ -419,13 +414,18 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             return MarkOrderAsMutation(success=True)
 
-        if is_vendor:
+        elif is_vendor:
             order.order_status = "ready-for-pickup"
             order.save()
             order_disp_id = order.order_track_id.replace("order_", "")
             order.user.send_sms("Order #{} is ready for pickup".format(order_disp_id))
 
             return MarkOrderAsMutation(success=True)
+
+        else:
+            return MarkOrderAsMutation(
+                error="You are not allowed to interact with this order"
+            )
 
 
 class RateItemMutation(graphene.Mutation):
