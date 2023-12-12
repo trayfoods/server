@@ -308,8 +308,11 @@ class Order(models.Model):
     @property
     def is_pickup(self):
         import json
+
         shipping = json.loads(self.shipping)
-        return shipping and shipping["address"] and shipping["address"].lower() == "pickup"
+        return (
+            shipping and shipping["address"] and shipping["address"].lower() == "pickup"
+        )
 
     def send_order_sms_to_delivery_people(self, delivery_people):
         order_address = "{} / {}".format(
@@ -327,7 +330,9 @@ class Order(models.Model):
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_store(cls, store):
-        return cls.objects.filter(linked_stores=store).exclude(order_status="not-started")
+        return cls.objects.filter(linked_stores=store).exclude(
+            order_status="not-started"
+        )
 
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
@@ -347,6 +352,9 @@ class Order(models.Model):
             and self.delivery_person.profile == current_user_profile
         )
         is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
+
+        if current_user_profile == self.user:
+            return []
 
         if is_vendor:
             return ["VEDNOR"]
