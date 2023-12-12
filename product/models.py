@@ -305,20 +305,18 @@ class Order(models.Model):
     def __str__(self):
         return "Order #" + str(self.order_track_id)
 
-    def send_order_to_delivery_person(self, delivery_person):
-        order_address = self.shipping.get("address")
-        msg = """
-        You have a new order to deliver.
-        Order ID: {}
-        Order Address: {}
-        Click on the link below to accept the order.
-        {}
-        """.format(
-            self.order_track_id,
-            order_address,
-            f"{FRONTEND_URL}/delivery/{self.order_track_id}",
+    def send_order_sms_to_delivery_people(self, delivery_people):
+        order_address = "{} / {}".format(
+            self.shipping.get("address"), self.shipping.get("bash", "")
         )
-        delivery_person.profile.send_sms(msg)
+        for delivery_person in delivery_people:
+            delivery_person.profile.send_sms(
+                "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
+                    self.order_track_id,
+                    order_address,
+                    f"{FRONTEND_URL}/delivery/{self.order_track_id}",
+                )
+            )
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod

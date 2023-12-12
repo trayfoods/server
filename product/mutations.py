@@ -383,9 +383,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
         allowed_actions = ["delivered", "ready-for-pickup"]
 
         if not action in allowed_actions:
-            return MarkOrderAsMutation(
-                error="Invalid action"
-            )
+            return MarkOrderAsMutation(error="Invalid action")
         if action == "delivered" and order.order_status != "out-for-delivery":
             return MarkOrderAsMutation(
                 error="Order is not out for delivery, cannot be marked as delivered"
@@ -424,6 +422,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
         if is_vendor:
             order.order_status = "ready-for-pickup"
             order.save()
+            order_disp_id = order.order_track_id.replace("order_", "")
+            order.user.send_sms("Order #{} is ready for pickup".format(order_disp_id))
 
             return MarkOrderAsMutation(success=True)
 
