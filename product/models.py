@@ -327,7 +327,7 @@ class Order(models.Model):
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_store(cls, store):
-        return cls.objects.filter(linked_stores=store)
+        return cls.objects.filter(linked_stores=store).exclude(order_status="not-started")
 
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
