@@ -245,6 +245,9 @@ class Profile(models.Model):
 
             country = rapi.get_country_by_country_code(self.country.code)
             calling_code = country.calling_codes[0]
+            if "+" not in calling_code:
+                calling_code = f"+{calling_code}"
+                
             self.calling_code = calling_code
             self.save()
         return True if self.calling_code else False
