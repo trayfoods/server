@@ -318,10 +318,9 @@ class OrderType(DjangoObjectType):
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
 
-        view_as = []
         current_user = info.context.user
-        if self.user != current_user.profile:
-            view_as = current_user.roles
+        current_user_profile = current_user.profile
+        view_as = self.view_as(current_user_profile)
 
         # set all price to 0 if the user is a delivery person
         if "DELIVERY_PERSON" in view_as:
@@ -334,8 +333,7 @@ class OrderType(DjangoObjectType):
                     item["productPrice"] = 0
 
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if "VENDOR" in view_as and not "DELIVERY_PERSON" in view_as:
-            current_user = info.context.user
+        if "VENDOR" in view_as:
             if "VENDOR" in current_user.roles:
                 current_user_profile = current_user.profile
                 stores_infos = [
@@ -349,10 +347,9 @@ class OrderType(DjangoObjectType):
 
     def resolve_customer_note(self, info):
         store_notes = self.store_notes
-        view_as = []
         current_user = info.context.user
-        if self.user != current_user.profile:
-            view_as = current_user.roles
+        current_user_profile = current_user.profile
+        view_as = self.view_as(current_user_profile)
 
         customer_note = None
 
@@ -361,7 +358,6 @@ class OrderType(DjangoObjectType):
         if "VENDOR" in view_as:
             current_user = info.context.user
             if "VENDOR" in current_user.roles:
-                current_user_profile = current_user.profile
                 store_note = [
                     store_note
                     for store_note in store_notes
@@ -383,10 +379,8 @@ class OrderType(DjangoObjectType):
         return self.linked_items.all()
 
     def resolve_view_as(self, info):
-        current_user = info.context.user
-        if self.user != current_user.profile:
-            return current_user.roles
-        return []
+        current_user_profile = info.user.profile
+        return self.view_as(current_user_profile)
 
 
 class OrderNode(OrderType, DjangoObjectType):

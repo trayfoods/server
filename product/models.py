@@ -337,6 +337,20 @@ class Order(models.Model):
         self.save()
         return self.order_track_id
 
+    def view_as(self, current_user_profile):
+        is_delivery_person = (
+            self.delivery_person
+            and self.delivery_person.profile == current_user_profile
+        )
+        is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
+
+        if is_vendor:
+            return ["VEDNOR"]
+        elif is_delivery_person:
+            return ["DELIVERY_PERSON"]
+        else:
+            return []
+
     # create a payment link for the order
     def create_payment_link(self):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
