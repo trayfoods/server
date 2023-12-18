@@ -325,8 +325,10 @@ class Order(models.Model):
         )
 
     def send_order_sms_to_delivery_people(self, delivery_people):
+        import json
+        shipping = json.loads(self.shipping)
         order_address = "{} / {}".format(
-            self.shipping.get("address"), self.shipping.get("bash", "")
+            shipping.get("address"), shipping.get("bash", "")
         )
         for delivery_person in delivery_people:
             delivery_person.profile.send_sms(
