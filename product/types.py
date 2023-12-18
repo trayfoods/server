@@ -254,6 +254,7 @@ class OrderType(DjangoObjectType):
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
     customer_note = graphene.String()
+    confirm_pin = graphene.String()
 
     class Meta:
         model = Order
@@ -278,6 +279,7 @@ class OrderType(DjangoObjectType):
             "order_payment_status",
             "order_payment_url",
             "items_images_urls",
+            "confirm_pin",
         ]
 
     def resolve_id(self, info):
@@ -360,19 +362,16 @@ class OrderType(DjangoObjectType):
         # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
         if "VENDOR" in view_as:
-            current_user = info.context.user
-            if "VENDOR" in current_user.roles:
-                store_note = [
-                    store_note
-                    for store_note in store_notes
-                    if store_note["storeId"]
-                    == current_user_profile.store.store_nickname
-                ]  # filter the stores_infos to only the store that the vendor is linked to
-                if len(store_note) > 0:
-                    customer_note = store_note[0]["note"]
+            store_note = [
+                store_note
+                for store_note in store_notes
+                if store_note["storeId"] == current_user_profile.store.store_nickname
+            ]  # filter the stores_infos to only the store that the vendor is linked to
+            if len(store_note) > 0:
+                customer_note = store_note[0]["note"]
 
-            # check if view_as is set to DELIVERY_PERSON,
-            # then find and return the delivery person note as customer note
+        # check if view_as is set to DELIVERY_PERSON,
+        # then find and return the delivery person note as customer note
         if "DELIVERY_PERSON" in view_as:
             current_user = info.context.user
             if "DELIVERY_PERSON" in current_user.roles:
@@ -385,6 +384,9 @@ class OrderType(DjangoObjectType):
     def resolve_view_as(self, info):
         current_user_profile = info.context.user.profile
         return self.view_as(current_user_profile)
+    
+    def resolve_confirm_pin(self, info):
+        return self.get_confirm_pin()
 
 
 class OrderNode(OrderType, DjangoObjectType):

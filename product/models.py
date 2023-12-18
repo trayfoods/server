@@ -292,6 +292,10 @@ class Order(models.Model):
     order_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
+
+    class Meta:
+        ordering = ["-created_at", "-updated_at"]
 
     def save(self, *args, **kwargs):
         if not self.order_track_id:
@@ -304,6 +308,12 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
+    
+    def get_confirm_pin(self):
+        if not self.order_confirm_pin:
+            self.order_confirm_pin = str(uuid.uuid4().hex)[:4]
+            self.save()
+        return self.order_confirm_pin
 
     @property
     def is_pickup(self):
@@ -357,7 +367,7 @@ class Order(models.Model):
             return []
 
         if is_vendor:
-            return ["VEDNOR"]
+            return ["VENDOR"]
         elif is_delivery_person:
             return ["DELIVERY_PERSON"]
         else:
