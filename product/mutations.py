@@ -306,9 +306,11 @@ class CreateOrderMutation(graphene.Mutation):
         store_notes = kwargs.get("store_notes")
 
         overall_price = Decimal(overall_price)
+        overall_price = overall_price.quantize(Decimal("1.00"))
         delivery_fee = Decimal(delivery_fee)
 
         transaction_fee = Decimal(0.05) * overall_price
+        transaction_fee = transaction_fee.quantize(Decimal("1.00"))
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
