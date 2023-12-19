@@ -247,7 +247,7 @@ class Profile(models.Model):
             calling_code = country.calling_codes[0]
             if "+" not in calling_code:
                 calling_code = f"+{calling_code}"
-                
+
             self.calling_code = calling_code
             self.save()
         return True if self.calling_code else False
@@ -823,6 +823,9 @@ class DeliveryPerson(models.Model):
 
         # check if the order user is same as the delivery person
         if order_user == self.profile:
+            return False
+
+        if self.is_on_delivery:
             return False
 
         # check if the delivery person is a vendor and is linked to the order

@@ -931,8 +931,6 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
                 return AcceptDeliveryMutation(
                     error="You did not meet the requirements to deliver this order"
                 )
-            order.delivery_person = delivery_person
-            order.order_status = "out-for-delivery"
 
             # check if delivery person has more than 5 active orders
             active_orders_count = Order.objects.filter(
@@ -941,6 +939,12 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True
                 delivery_person.save()
+            if active_orders_count == 5:
+                return AcceptDeliveryMutation(
+                    error="You have reached the maximum number of orders you can deliver, complete current deliveries to accept more orders"
+                )
+            order.delivery_person = delivery_person
+            order.order_status = "out-for-delivery"
 
             order.save()
 
