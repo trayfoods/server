@@ -1,4 +1,4 @@
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
 from django.conf import settings
 import graphene
@@ -306,11 +306,11 @@ class CreateOrderMutation(graphene.Mutation):
         store_notes = kwargs.get("store_notes")
 
         overall_price = Decimal(overall_price)
-        overall_price = overall_price.quantize(Decimal("1.00"))
         delivery_fee = Decimal(delivery_fee)
+        delivery_fee = delivery_fee.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
 
         transaction_fee = Decimal(0.05) * overall_price
-        transaction_fee = transaction_fee.quantize(Decimal("1.00"))
+        transaction_fee = transaction_fee.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
