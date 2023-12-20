@@ -250,7 +250,7 @@ class OrderType(DjangoObjectType):
     linked_items = graphene.List(ItemType)
     linked_delivery_people = graphene.List("users.types.DeliveryPersonType")
     view_as = graphene.List(graphene.String)
-    users = graphene.List("users.types.ProfileType", default_value=None)
+    users = graphene.List("users.types.ProfileType")
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
@@ -261,7 +261,7 @@ class OrderType(DjangoObjectType):
         model = Order
         fields = [
             "id",
-            "user",
+            "users",
             "view_as",
             "shipping",
             "updated_at",
@@ -286,11 +286,11 @@ class OrderType(DjangoObjectType):
     def resolve_id(self, info):
         return self.order_track_id
 
-    def resolve_user(self, info):
+    def resolve_users(self, info):
         current_user = info.context.user
         if self.order_status == "delivered":
-            return None
-        delivery_people = json.loads(self.delivery_people)
+            return []
+        delivery_people = self.delivery_people
         if self.user == current_user.profile and len(delivery_people) > 0:
             # get all the delivery people that are linked to the order
             return self.linked_items
@@ -392,7 +392,7 @@ class OrderType(DjangoObjectType):
 
     def resolve_linked_items(self, info):
         return self.linked_items.all()
-    
+
     def resolve_linked_delivery_people(self, info):
         return self.linked_delivery_people.all()
 
