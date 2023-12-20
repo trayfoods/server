@@ -272,7 +272,7 @@ class Order(models.Model):
     # the delivery people json format is as follows
     # [{
     #     "id": delivery_person,
-    #     "status": "pending",
+    #     "status": "out-for-delivery",
     #     "storeId": store.id,
     # }]
     delivery_people = models.JSONField(default=list, blank=True)
@@ -314,6 +314,26 @@ class Order(models.Model):
         # validate the delivery people format is correct
         if not self.validate_delivery_people():
             raise ValueError("Invalid delivery people format")
+
+        # check if all the delivery people are linked to the order, if not, then clear the linked_delivery_people and add the delivery people
+        delivery_people = self.delivery_people
+        if len(delivery_people) > 0:
+            # check if all the delivery people are linked to the order
+            for delivery_person in delivery_people:
+                if not self.linked_delivery_people.filter(
+                    id=delivery_person.get("id")
+                ).exists():
+                    self.linked_delivery_people.clear()
+                    break
+            # add the delivery people to the order
+            for delivery_person in delivery_people:
+                if not self.linked_delivery_people.filter(
+                    id=delivery_person.get("id")
+                ).exists():
+                    self.linked_delivery_people.add(delivery_person.get("id"))
+        else:
+            self.linked_delivery_people.clear()
+
         super().save(*args, **kwargs)
 
     def __str__(self):

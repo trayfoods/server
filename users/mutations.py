@@ -937,18 +937,17 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order.order_status == "delivered":
             return AcceptDeliveryMutation(error="Order is already delivered")
 
-        order_delivery_people = json.loads(order.order_delivery_people)
+        order_delivery_people = order.delivery_people
         # the delivery people json format is as follows
         # [{
         #     "id": delivery_person,
-        #     "status": "pending",
+        #     "status": "out-for-delivery",
         #     "storeId": store.id,
         # }]
 
-        # check if the delivery person is already in the order
-        for order_delivery_person in order_delivery_people:
-            if order_delivery_person["id"] == delivery_person.id:
-                return AcceptDeliveryMutation(error="You already accepted this order")
+        # check if the delivery person is already linked to the order
+        if order.linked_delivery_people.filter(profile=user_profile).exists():
+            return AcceptDeliveryMutation(error="You already accepted this order")
 
         # check if the order store count is same as the delivery people count, if it is then return error
         if len(order_delivery_people) == order.linked_stores.count():
@@ -989,11 +988,11 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order_delivery_people.append(
                 {
                     "id": delivery_person.id,
-                    "status": "pending",
-                    "storeId": store.id,
+                    "status": "out-for-delivery",
+                    "storeId": store.store_nickname,
                 }
             )
-            order.delivery_people = json.dumps(order_delivery_people)
+            order.delivery_people = order_delivery_people
             order.order_status = "out-for-delivery"
 
             order.save()
