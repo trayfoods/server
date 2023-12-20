@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, DeliveryPerson
+from users.models import UserActivity, Store
 from graphene_file_upload.scalars import Upload
 from .types import ShippingInputType, OrderType, RatingInputType
 
@@ -427,7 +427,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             delivery_fee = order.delivery_fee / len(order_delivery_people)
             print(delivery_fee)
 
-            delivery_person = DeliveryPerson.objects.get(profile=user.profile)
+            delivery_person = user.profile.delivery_person
 
             # credit delivery person wallet
             credit_kwargs = {
