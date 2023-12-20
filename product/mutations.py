@@ -291,6 +291,7 @@ class CreateOrderMutation(graphene.Mutation):
         linked_items = graphene.List(graphene.String, required=True)
         stores_infos = graphene.JSONString(required=True)
         store_notes = graphene.JSONString()
+        delivery_person_note = graphene.String()
 
     order = graphene.Field(OrderType)
     success = graphene.Boolean(default_value=False)
@@ -304,6 +305,7 @@ class CreateOrderMutation(graphene.Mutation):
         linked_items = kwargs.get("linked_items")
         stores_infos = kwargs.get("stores_infos")
         store_notes = kwargs.get("store_notes")
+        delivery_person_note = kwargs.get("delivery_person_note")
 
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
@@ -357,6 +359,7 @@ class CreateOrderMutation(graphene.Mutation):
             stores_infos=stores_infos,
             store_notes=store_notes,
             order_payment_status=order_payment_status,
+            delivery_person_note=delivery_person_note,
         )
         create_order.linked_stores.set(available_stores)
         create_order.linked_items.set(available_items)
