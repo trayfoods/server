@@ -317,22 +317,23 @@ class Order(models.Model):
 
         # check if all the delivery people are linked to the order, if not, then clear the linked_delivery_people and add the delivery people
         delivery_people = self.delivery_people
-        if len(delivery_people) > 0:
-            # check if all the delivery people are linked to the order
-            for delivery_person in delivery_people:
-                if not self.linked_delivery_people.filter(
-                    id=delivery_person.get("id")
-                ).exists():
-                    self.linked_delivery_people.clear()
-                    break
-            # add the delivery people to the order
-            for delivery_person in delivery_people:
-                if not self.linked_delivery_people.filter(
-                    id=delivery_person.get("id")
-                ).exists():
-                    self.linked_delivery_people.add(delivery_person.get("id"))
-        else:
-            self.linked_delivery_people.clear()
+        if self.id and delivery_people:
+            if len(delivery_people) > 0:
+                # check if all the delivery people are linked to the order
+                for delivery_person in delivery_people:
+                    if not self.linked_delivery_people.filter(
+                        id=delivery_person.get("id")
+                    ).exists():
+                        self.linked_delivery_people.clear()
+                        break
+                # add the delivery people to the order
+                for delivery_person in delivery_people:
+                    if not self.linked_delivery_people.filter(
+                        id=delivery_person.get("id")
+                    ).exists():
+                        self.linked_delivery_people.add(delivery_person.get("id"))
+            else:
+                self.linked_delivery_people.clear()
 
         super().save(*args, **kwargs)
 
