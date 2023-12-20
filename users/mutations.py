@@ -902,18 +902,32 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
     @permission_checker([IsAuthenticated])
     def mutate(self, info, order_track_id):
+        """
+        Accept delivery mutation
+
+        Args:
+            order_track_id (str): the order track id
+
+        About:
+            This mutation is used by delivery person to accept an order
+
+        Returns:
+            AcceptDeliveryMutation: the mutation response
+
+        """
         user = info.context.user
         user_profile = user.profile
-        delivery_person = user_profile.delivery_person
 
-        if not "DELIVERY_PERSON" in user.roles or delivery_person is None:
+        if not "DELIVERY_PERSON" in user.roles:
             return AcceptDeliveryMutation(error="You are not a delivery personnal")
+
+        delivery_person = user_profile.delivery_person
 
         order = Order.objects.filter(order_track_id=order_track_id).first()
 
         if order is None:
             return AcceptDeliveryMutation(error="This order Does not exists")
-        
+
         if order.is_pickup:
             return AcceptDeliveryMutation(error="This order can not be delivered")
 
@@ -923,9 +937,24 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order.order_status == "delivered":
             return AcceptDeliveryMutation(error="Order is already delivered")
 
-        if (
-            order.delivery_person is None and order.order_payment_status == "success"
-        ) or settings.DEBUG:
+        order_delivery_people = json.loads(order.order_delivery_people)
+        # the delivery people json format is as follows
+        # [{
+        #     "id": delivery_person,
+        #     "status": "pending",
+        #     "storeId": store.id,
+        # }]
+
+        # check if the delivery person is already in the order
+        for order_delivery_person in order_delivery_people:
+            if order_delivery_person["id"] == delivery_person.id:
+                return AcceptDeliveryMutation(error="You already accepted this order")
+
+        # check if the order store count is same as the delivery people count, if it is then return error
+        if len(order_delivery_people) == order.linked_stores.count():
+            return AcceptDeliveryMutation(error="Order is already taken")
+
+        if order.order_payment_status == "success" or settings.DEBUG:
             # check if delivery person can deliver to the order
             if not delivery_person.can_deliver(order):
                 return AcceptDeliveryMutation(
@@ -933,17 +962,38 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
                 )
 
             # check if delivery person has more than 5 active orders
-            active_orders_count = Order.objects.filter(
-                delivery_person=delivery_person, order_status="out-for-delivery"
-            ).count()
+            active_orders_count = order.get_active_orders_count_by_delivery_person(
+                delivery_person
+            )
             if active_orders_count > 4:
                 delivery_person.is_on_delivery = True
                 delivery_person.save()
+
             if active_orders_count == 5:
                 return AcceptDeliveryMutation(
                     error="You have reached the maximum number of orders you can deliver, complete current deliveries to accept more orders"
                 )
-            order.delivery_person = delivery_person
+
+            # add the delivery person to the order
+            order.linked_delivery_people.add(delivery_person)
+            # get the stores that have not been taken
+            stores = order.linked_stores.exclude(
+                id__in=[
+                    order_delivery_person["storeId"]
+                    for order_delivery_person in order_delivery_people
+                ]
+            )
+            # get the first store
+            store = stores.first()
+            # add the delivery person to the order_delivery_people
+            order_delivery_people.append(
+                {
+                    "id": delivery_person.id,
+                    "status": "pending",
+                    "storeId": store.id,
+                }
+            )
+            order.delivery_people = json.dumps(order_delivery_people)
             order.order_status = "out-for-delivery"
 
             order.save()

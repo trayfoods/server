@@ -270,12 +270,12 @@ class Order(models.Model):
         blank=True,
     )
     # the delivery people json format is as follows
-    # {
+    # [{
     #     "id": delivery_person,
     #     "status": "pending",
     #     "storeId": store.id,
-    # }
-    delivery_people = models.JSONField(default=dict, blank=True)
+    # }]
+    delivery_people = models.JSONField(default=list, blank=True)
 
     linked_items = models.ManyToManyField(Item, editable=False)
     linked_stores = models.ManyToManyField("users.Store", editable=False)
@@ -382,6 +382,11 @@ class Order(models.Model):
     def get_orders_by_delivery_person(cls, delivery_person):
         return cls.objects.filter(linked_delivery_people=delivery_person)
 
+    # get the number of active orders linked to a delivery person
+    @classmethod
+    def get_active_orders_count_by_delivery_person(cls, delivery_person):
+        return cls.objects.filter(linked_delivery_people=delivery_person).count()
+
     # re-generate a order_track_id for the order and update the order_track_id of the order
     @property
     def regenerate_order_track_id(self):
@@ -394,7 +399,7 @@ class Order(models.Model):
         is_delivery_person = self.linked_delivery_people.filter(
             profile=current_user_profile
         ).exists()
-        
+
         is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
 
         if current_user_profile == self.user:
