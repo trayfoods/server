@@ -336,7 +336,6 @@ class OrderType(DjangoObjectType):
             delivery_person = self.get_delivery_person(
                 current_user_profile.delivery_person.id
             )
-            print("delivery_person", delivery_person)
             if delivery_person:
                 # filter stores_infos to only the store that the delivery person is linked to
                 stores_infos = [
