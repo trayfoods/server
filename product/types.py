@@ -183,13 +183,11 @@ class ItemNode(ItemType, DjangoObjectType):
 class ShippingType(graphene.ObjectType):
     sch = graphene.String()
     address = graphene.String()
-    batch = graphene.String()
 
 
 class ShippingInputType(graphene.InputObjectType):
     sch = graphene.String(default_value=None)
     address = graphene.String()
-    batch = graphene.String()
 
 
 class TotalOrder:
@@ -294,7 +292,8 @@ class OrderType(DjangoObjectType):
         if self.user == current_user.profile and len(delivery_people) > 0:
             # get all the delivery people that are linked to the order profiles
             delivery_people_profiles = [
-                delivery_person.profile for delivery_person in self.linked_delivery_people.all()
+                delivery_person.profile
+                for delivery_person in self.linked_delivery_people.all()
             ]
             return delivery_people_profiles
         if self.user != current_user.profile:
@@ -323,9 +322,7 @@ class OrderType(DjangoObjectType):
         sch = None
         if shipping["sch"]:
             sch = shipping["sch"]
-        return ShippingType(
-            sch=sch, address=shipping["address"], batch=shipping["batch"]
-        )
+        return ShippingType(sch=sch, address=shipping["address"])
 
     def resolve_stores_infos(self, info):
         stores_infos = json.loads(self.stores_infos)
