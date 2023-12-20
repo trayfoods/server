@@ -368,7 +368,7 @@ class OrderType(DjangoObjectType):
         current_user_profile = current_user.profile
         view_as = self.view_as(current_user_profile)
 
-        customer_note = None
+        customer_note = self.delivery_person_note
 
         # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
@@ -380,13 +380,6 @@ class OrderType(DjangoObjectType):
             ]  # filter the stores_infos to only the store that the vendor is linked to
             if len(store_note) > 0:
                 customer_note = store_note[0]["note"]
-
-        # check if view_as is set to DELIVERY_PERSON,
-        # then find and return the delivery person note as customer note
-        if "DELIVERY_PERSON" in view_as:
-            current_user = info.context.user
-            if "DELIVERY_PERSON" in current_user.roles:
-                customer_note = self.delivery_person_note
         return customer_note
 
     def resolve_linked_items(self, info):
