@@ -436,12 +436,6 @@ class Order(models.Model):
     def get_delivery_person(self, delivery_person_id):
         delivery_people = self.delivery_people
         for delivery_person in delivery_people:
-            print(
-                "delivery_person: ",
-                delivery_person,
-                "get_delivery_person: ",
-                delivery_person_id,
-            )
             if delivery_person["id"] == delivery_person_id:
                 return delivery_person
         return None
