@@ -292,8 +292,11 @@ class OrderType(DjangoObjectType):
             return []
         delivery_people = self.delivery_people
         if self.user == current_user.profile and len(delivery_people) > 0:
-            # get all the delivery people that are linked to the order
-            return self.linked_items
+            # get all the delivery people that are linked to the order profiles
+            delivery_people_profiles = [
+                delivery_person.profile for delivery_person in self.linked_delivery_people.all()
+            ]
+            return delivery_people_profiles
         if self.user != current_user.profile:
             return [self.user]
 
