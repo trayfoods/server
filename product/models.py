@@ -400,6 +400,7 @@ class Order(models.Model):
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_delivery_person(cls, delivery_person):
+        print(cls.objects.filter(linked_delivery_people=delivery_person))
         return cls.objects.filter(linked_delivery_people=delivery_person)
 
     # get the number of active orders linked to a delivery person

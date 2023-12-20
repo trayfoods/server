@@ -946,7 +946,8 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         # }]
 
         # check if the delivery person is already linked to the order
-        if order.linked_delivery_people.filter(profile=user_profile).exists():
+        order_delivery_person = order.get_delivery_person(delivery_person.id)
+        if order_delivery_person is not None:
             return AcceptDeliveryMutation(error="You already accepted this order")
 
         # check if the order store count is same as the delivery people count, if it is then return error
@@ -977,7 +978,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order.linked_delivery_people.add(delivery_person)
             # get the stores that have not been taken
             stores = order.linked_stores.exclude(
-                id__in=[
+                store_nickname__in=[
                     order_delivery_person["storeId"]
                     for order_delivery_person in order_delivery_people
                 ]
