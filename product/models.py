@@ -359,6 +359,13 @@ class Order(models.Model):
                 id=delivery_person.get("id")
             ).exists():
                 return False
+        # check of there is any duplicate delivery person ["id"]
+        delivery_people_ids = [
+            delivery_person["id"] for delivery_person in delivery_people
+        ]
+        if len(delivery_people_ids) != len(set(delivery_people_ids)):
+            return False
+
         return True
 
     def get_confirm_pin(self):
