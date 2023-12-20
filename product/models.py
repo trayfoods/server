@@ -321,7 +321,7 @@ class Order(models.Model):
 
     # validate the order delivery people format is correct
     def validate_delivery_people(self):
-        delivery_people = json.loads(self.delivery_people)
+        delivery_people = self.delivery_people
         if not isinstance(delivery_people, list):
             return False
         if len(delivery_people) == 0:

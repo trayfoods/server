@@ -30,10 +30,9 @@ class OrderQueries(graphene.ObjectType):
             if order_qs is None:
                 raise GraphQLError("Order Not Found")
 
-            is_delivery_person = (
-                order_qs.delivery_person
-                and order_qs.delivery_person.profile == current_user_profile
-            )
+            is_delivery_person = order_qs.linked_delivery_people.filter(
+                profile=current_user_profile
+            ).exists()
             is_vendor = order_qs.linked_stores.filter(
                 vendor=current_user_profile
             ).exists()
