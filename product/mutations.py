@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store
+from users.models import UserActivity, Store, DeliveryPerson
 from graphene_file_upload.scalars import Upload
 from .types import ShippingInputType, OrderType, RatingInputType
 
@@ -307,10 +307,10 @@ class CreateOrderMutation(graphene.Mutation):
 
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
-        delivery_fee = delivery_fee.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        delivery_fee = delivery_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         transaction_fee = Decimal(0.05) * overall_price
-        transaction_fee = transaction_fee.quantize(Decimal('1'), rounding=ROUND_HALF_UP)
+        transaction_fee = transaction_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
@@ -394,29 +394,55 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             return MarkOrderAsMutation(
                 error="Order has not been processed, cannot be ready for pickup"
             )
-        is_vendor = False
-        is_delivery_person = False
+        view_as = order.view_as(user.profile)
 
-        if "DELIVERY_PERSON" in user.roles or "VENDOR" in user.roles:
-            delivery_person = user.profile.delivery_person
-            is_vendor = order.linked_stores.filter(vendor=user.profile).exists()
-            is_delivery_person = order.delivery_person == delivery_person
+        if not "DELIVERY_PERSON" in view_as or not "VENDOR" in view_as:
+            return MarkOrderAsMutation(
+                error="You are not authorized to interact with this order"
+            )
+        delivery_person = order.get_delivery_person(current_delivery_person_id)
+        current_delivery_person_id = user.profile.delivery_person.id
 
-        if is_delivery_person:
-            order.order_status = "delivered"
-            order.save()
+        if "DELIVERY_PERSON" in view_as and delivery_person is not None:
+            order_delivery_people = json.loads(order.delivery_people)
+
+            new_order_delivery_people_state = []
+            all_delivered = True
+            # update the current delivery person status
+            for delivery_person in order_delivery_people:
+                if delivery_person["id"] == current_delivery_person_id:
+                    delivery_person["status"] = action
+                # check if all delivery people have been delivered
+                if delivery_person["status"] != "delivered":
+                    all_delivered = False
+
+                new_order_delivery_people_state.append(delivery_person)
+
+            if all_delivered:
+                order.order_status = "delivered"
+
+            order.delivery_people = json.dumps(new_order_delivery_people_state)
+
+            # get delivery_fee by dividing the delivery fee by the number of delivery people
+            delivery_fee = order.delivery_fee / len(order_delivery_people)
+            print(delivery_fee)
+
+            delivery_person = DeliveryPerson.objects.get(profile=user.profile)
 
             # credit delivery person wallet
             credit_kwargs = {
-                "amount": order.delivery_fee,
-                "title": "Delivery Funds",
+                "amount": delivery_fee,
+                "title": "Delivery Fee for Order #{}".format(order.order_track_id.replace("order_", "")),
                 "order": order,
             }
             delivery_person.wallet.add_balance(**credit_kwargs)
 
+            order.save()
+
+
             return MarkOrderAsMutation(success=True)
 
-        elif is_vendor:
+        elif "VENDOR" in view_as:
             order.order_status = "ready-for-pickup"
             order.save()
             order_disp_id = order.order_track_id.replace("order_", "")

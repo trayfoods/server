@@ -14,6 +14,7 @@ from .models import (
     Hostel,
     Gender,
     Transaction,
+    DeliveryPerson
 )
 
 
@@ -236,3 +237,8 @@ class StoreNode(StoreType, graphene.ObjectType):
         model = Store
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreFilter
+
+class DeliveryPersonType(DjangoObjectType):
+    class Meta:
+        model = DeliveryPerson
+        fields = "__all__"

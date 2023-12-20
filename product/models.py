@@ -7,6 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from django.conf import settings
 
 import requests
+import json
 
 User = settings.AUTH_USER_MODEL
 FRONTEND_URL = settings.FRONTEND_URL
@@ -268,8 +269,19 @@ class Order(models.Model):
         default=dict,
         blank=True,
     )
+    # the delivery people json format is as follows
+    # {
+    #     "id": delivery_person,
+    #     "status": "pending",
+    #     "storeId": store.id,
+    # }
+    delivery_people = models.JSONField(default=dict, blank=True)
+
     linked_items = models.ManyToManyField(Item, editable=False)
     linked_stores = models.ManyToManyField("users.Store", editable=False)
+    linked_delivery_people = models.ManyToManyField(
+        "users.DeliveryPerson", editable=False, related_name="linked_delivery_people"
+    )
 
     order_payment_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
@@ -281,13 +293,7 @@ class Order(models.Model):
         null=True,
         choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
     )
-    delivery_person = models.ForeignKey(
-        "users.DeliveryPerson",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        editable=False,
-    )
+
     delivery_person_note = models.TextField(blank=True, null=True)
     order_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -304,11 +310,37 @@ class Order(models.Model):
             while Order.objects.filter(order_track_id=order_track_id).exists():
                 order_track_id = "order_" + str(uuid.uuid4().hex)[:17]
             self.order_track_id = order_track_id
+
+        # validate the delivery people format is correct
+        if not self.validate_delivery_people():
+            raise ValueError("Invalid delivery people format")
         super().save(*args, **kwargs)
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
-    
+
+    # validate the order delivery people format is correct
+    def validate_delivery_people(self):
+        delivery_people = json.loads(self.delivery_people)
+        if not isinstance(delivery_people, list):
+            return False
+        if len(delivery_people) == 0:
+            return True
+
+        for delivery_person in delivery_people:
+            if not delivery_person.get("id"):
+                return False
+            if not delivery_person.get("status"):
+                return False
+            if not delivery_person.get("storeId"):
+                return False
+            # check if the delivery people are linked to the order
+            if not self.linked_delivery_people.filter(
+                id=delivery_person.get("id")
+            ).exists():
+                return False
+        return True
+
     def get_confirm_pin(self):
         if not self.order_confirm_pin:
             self.order_confirm_pin = str(uuid.uuid4().hex)[:4]
@@ -325,7 +357,6 @@ class Order(models.Model):
         )
 
     def send_order_sms_to_delivery_people(self, delivery_people):
-        import json
         shipping = json.loads(self.shipping)
         order_address = "{} / {}".format(
             shipping.get("address"), shipping.get("bash", "")
@@ -349,7 +380,7 @@ class Order(models.Model):
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_delivery_person(cls, delivery_person):
-        return cls.objects.filter(delivery_person=delivery_person)
+        return cls.objects.filter(linked_delivery_people=delivery_person)
 
     # re-generate a order_track_id for the order and update the order_track_id of the order
     @property
@@ -359,10 +390,11 @@ class Order(models.Model):
         return self.order_track_id
 
     def view_as(self, current_user_profile):
-        is_delivery_person = (
-            self.delivery_person
-            and self.delivery_person.profile == current_user_profile
-        )
+        # check if the current user is among the linked delivery people
+        is_delivery_person = self.linked_delivery_people.filter(
+            profile=current_user_profile
+        ).exists()
+        
         is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
 
         if current_user_profile == self.user:
@@ -374,6 +406,14 @@ class Order(models.Model):
             return ["DELIVERY_PERSON"]
         else:
             return []
+
+    # get delivery_person from the delivery_people json
+    def get_delivery_person(self, delivery_person_id):
+        delivery_people = json.loads(self.delivery_people)
+        for delivery_person in delivery_people:
+            if delivery_person["id"] == delivery_person_id:
+                return delivery_person
+        return None
 
     # create a payment link for the order
     def create_payment_link(self):

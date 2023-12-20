@@ -3,7 +3,7 @@ import json
 import graphene
 from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
-from users.models import Store
+from users.models import Store, DeliveryPerson
 from users.types import StoreType
 from .filters import ItemFilter, OrderFilter
 
@@ -248,8 +248,9 @@ class OrderType(DjangoObjectType):
     shipping = graphene.Field(ShippingType)
     stores_infos = graphene.List(StoreInfoType)
     linked_items = graphene.List(ItemType)
+    linked_delivery_people = graphene.List("users.types.DeliveryPersonType")
     view_as = graphene.List(graphene.String)
-    user = graphene.Field("users.types.ProfileType", default_value=None)
+    users = graphene.List("users.types.ProfileType", default_value=None)
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
@@ -289,10 +290,12 @@ class OrderType(DjangoObjectType):
         current_user = info.context.user
         if self.order_status == "delivered":
             return None
-        if self.user == current_user.profile and self.delivery_person:
-            return self.delivery_person.profile
+        delivery_people = json.loads(self.delivery_people)
+        if self.user == current_user.profile and len(delivery_people) > 0:
+            # get all the delivery people that are linked to the order
+            return self.linked_items
         if self.user != current_user.profile:
-            return self.user
+            return [self.user]
 
     def resolve_display_date(self, info):
         from trayapp.utils import convert_time_to_ago
@@ -330,6 +333,17 @@ class OrderType(DjangoObjectType):
 
         # set all price to 0 if the user is a delivery person
         if "DELIVERY_PERSON" in view_as:
+            delivery_person = self.get_delivery_person(
+                current_user_profile.delivery_person.id
+            )
+            print("delivery_person", delivery_person)
+            if delivery_person:
+                # filter stores_infos to only the store that the delivery person is linked to
+                stores_infos = [
+                    store_info
+                    for store_info in stores_infos
+                    if store_info["storeId"] == delivery_person["storeId"]
+                ]
             for store_info in stores_infos:
                 store_info["total"]["price"] = 0
                 store_info["total"]["platePrice"] = 0
@@ -340,14 +354,12 @@ class OrderType(DjangoObjectType):
 
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
         if "VENDOR" in view_as:
-            if "VENDOR" in current_user.roles:
-                current_user_profile = current_user.profile
-                stores_infos = [
-                    store_info
-                    for store_info in stores_infos
-                    if store_info["storeId"]
-                    == current_user_profile.store.store_nickname
-                ]  # filter the stores_infos to only the store that the vendor is linked to
+            current_user_profile = current_user.profile
+            stores_infos = [
+                store_info
+                for store_info in stores_infos
+                if store_info["storeId"] == current_user_profile.store.store_nickname
+            ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos
 
@@ -380,11 +392,14 @@ class OrderType(DjangoObjectType):
 
     def resolve_linked_items(self, info):
         return self.linked_items.all()
+    
+    def resolve_linked_delivery_people(self, info):
+        return self.linked_delivery_people.all()
 
     def resolve_view_as(self, info):
         current_user_profile = info.context.user.profile
         return self.view_as(current_user_profile)
-    
+
     def resolve_confirm_pin(self, info):
         return self.get_confirm_pin()
 
