@@ -277,6 +277,7 @@ class OrderType(DjangoObjectType):
     customer_note = graphene.String()
     confirm_pin = graphene.String()
     delivery_people = graphene.List(OrderDeliveryPersonType)
+    order_status = graphene.String()
 
     class Meta:
         model = Order
@@ -432,6 +433,18 @@ class OrderType(DjangoObjectType):
 
     def resolve_confirm_pin(self, info):
         return self.get_confirm_pin()
+
+    def resolve_order_status(self, info):
+        order_status = self.order_status
+        current_user_profile = info.context.user.profile
+        view_as = self.view_as(current_user_profile)
+        if "DELIVERY_PERSON" in view_as:
+            delivery_person = self.get_delivery_person(
+                current_user_profile.delivery_person.id
+            )
+            if delivery_person:
+                order_status = delivery_person["status"]
+        return order_status.upper()
 
 
 class OrderNode(OrderType, DjangoObjectType):

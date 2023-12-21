@@ -399,15 +399,15 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             )
         view_as = order.view_as(user.profile)
 
-        if not "DELIVERY_PERSON" in view_as or not "VENDOR" in view_as:
+        if not "DELIVERY_PERSON" in view_as and not "VENDOR" in view_as:
             return MarkOrderAsMutation(
                 error="You are not authorized to interact with this order"
             )
-        delivery_person = order.get_delivery_person(current_delivery_person_id)
         current_delivery_person_id = user.profile.delivery_person.id
+        delivery_person = order.get_delivery_person(current_delivery_person_id)
 
         if "DELIVERY_PERSON" in view_as and delivery_person is not None:
-            order_delivery_people = json.loads(order.delivery_people)
+            order_delivery_people = order.delivery_people
 
             new_order_delivery_people_state = []
             all_delivered = True
@@ -424,24 +424,24 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             if all_delivered:
                 order.order_status = "delivered"
 
-            order.delivery_people = json.dumps(new_order_delivery_people_state)
+            order.delivery_people = new_order_delivery_people_state
 
             # get delivery_fee by dividing the delivery fee by the number of delivery people
             delivery_fee = order.delivery_fee / len(order_delivery_people)
-            print(delivery_fee)
 
             delivery_person = user.profile.delivery_person
 
             # credit delivery person wallet
             credit_kwargs = {
                 "amount": delivery_fee,
-                "title": "Delivery Fee for Order #{}".format(order.order_track_id.replace("order_", "")),
+                "title": "Delivery Fee for Order #{}".format(
+                    order.order_track_id.replace("order_", "")
+                ),
                 "order": order,
             }
             delivery_person.wallet.add_balance(**credit_kwargs)
 
             order.save()
-
 
             return MarkOrderAsMutation(success=True)
 
