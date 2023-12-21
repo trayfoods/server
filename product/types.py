@@ -242,24 +242,47 @@ class StoreNoteType(graphene.ObjectType):
     note = graphene.String(required=True)
 
 
+class OrderUserType(graphene.ObjectType):
+    image = graphene.String(default_value=None)
+    calling_code = graphene.String(required=True)
+    phone_number = graphene.String(required=True)
+
+    def resolve_image(self, info):
+        if not self.image:
+            return None
+        return info.context.build_absolute_uri(self.image.url)
+
+    def resolve_calling_code(self, info):
+        return self.calling_code
+
+    def resolve_phone_number(self, info):
+        return self.phone_number
+
+
+class OrderDeliveryPersonType(OrderUserType, graphene.ObjectType):
+    status = graphene.String()
+    storeId = graphene.String()
+
+
 class OrderType(DjangoObjectType):
     shipping = graphene.Field(ShippingType)
     stores_infos = graphene.List(StoreInfoType)
     linked_items = graphene.List(ItemType)
     linked_delivery_people = graphene.List("users.types.DeliveryPersonType")
     view_as = graphene.List(graphene.String)
-    users = graphene.List("users.types.ProfileType")
+    user = graphene.Field(OrderUserType, default_value=None)
     items_count = graphene.Int()
     items_images_urls = graphene.List(graphene.String)
     display_date = graphene.String()
     customer_note = graphene.String()
     confirm_pin = graphene.String()
+    delivery_people = graphene.List(OrderDeliveryPersonType)
 
     class Meta:
         model = Order
         fields = [
             "id",
-            "users",
+            "user",
             "view_as",
             "shipping",
             "updated_at",
@@ -279,6 +302,7 @@ class OrderType(DjangoObjectType):
             "order_payment_url",
             "items_images_urls",
             "confirm_pin",
+            "delivery_people",
         ]
 
     def resolve_id(self, info):
@@ -287,17 +311,31 @@ class OrderType(DjangoObjectType):
     def resolve_users(self, info):
         current_user = info.context.user
         if self.order_status == "delivered":
-            return []
+            return None
         delivery_people = self.delivery_people
         if self.user == current_user.profile and len(delivery_people) > 0:
-            # get all the delivery people that are linked to the order profiles
-            delivery_people_profiles = [
-                delivery_person.profile
-                for delivery_person in self.linked_delivery_people.all()
-            ]
-            return delivery_people_profiles
+            return None
         if self.user != current_user.profile:
-            return [self.user]
+            return self.user
+
+    def resolve_delivery_people(self, info):
+        delivery_people = self.delivery_people
+        delivery_people_infos = []
+        for delivery_person in delivery_people:
+            delivery_person_profile = (
+                DeliveryPerson.objects.filter(id=delivery_person["id"]).first().profile
+            )
+            delivery_people_infos.append(
+                OrderDeliveryPersonType(
+                    image=delivery_person_profile.image,
+                    calling_code=delivery_person_profile.calling_code,
+                    phone_number=delivery_person_profile.phone_number,
+                    status=delivery_person["status"],
+                    storeId=delivery_person["storeId"],
+                )
+            )
+
+        return delivery_people_infos
 
     def resolve_display_date(self, info):
         from trayapp.utils import convert_time_to_ago
