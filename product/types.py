@@ -4,7 +4,7 @@ import graphene
 from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
-from users.types import StoreType
+from users.types import StoreType, School
 from .filters import ItemFilter, OrderFilter
 
 from trayapp.custom_model import JSONField
@@ -188,6 +188,17 @@ class ShippingType(graphene.ObjectType):
 class ShippingInputType(graphene.InputObjectType):
     sch = graphene.String(default_value=None)
     address = graphene.String()
+
+    def resolve_sch(self, info):
+        sch = self.sch
+        print(sch)
+        sch = sch.lower().strip()
+        if sch == "":
+            sch = None
+        if sch:
+            print(sch)
+            sch = School.objects.filter(slug=sch).first().name
+        return sch
 
 
 class TotalOrder:
