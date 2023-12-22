@@ -322,7 +322,7 @@ class OrderType(DjangoObjectType):
 
     def resolve_user(self, info):
         current_user = info.context.user
-        if self.order_status == "delivered":
+        if self.order_status == "delivered" or self.order_status == "cancelled":
             return None
         delivery_people = self.delivery_people
         if self.user == current_user.profile and len(delivery_people) > 0:
