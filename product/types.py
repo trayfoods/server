@@ -320,7 +320,7 @@ class OrderType(DjangoObjectType):
     def resolve_id(self, info):
         return self.order_track_id
 
-    def resolve_users(self, info):
+    def resolve_user(self, info):
         current_user = info.context.user
         if self.order_status == "delivered":
             return None
