@@ -28,22 +28,49 @@ def send_async_sms(phone_number, message):
     except Exception as e:
         print(e)
 
-@shared_task
-def send_fcm_notification_task(user_id):
 
+@shared_task
+def send_fcm_notification_task(device_tokens):
     print("Sending notifications...")
 
     # try:
-    user = UserAccount.objects.get(pk=user_id)
-    active_devices = UserDevice.objects.filter(user=user, is_active=True)
-    device_tokens = [device.device_token for device in active_devices]
-
     message = messaging.MulticastMessage(
         tokens=device_tokens,
         data={"title": "Welcome To TrayFoods", "body": "Welcome to TrayFoods"},
+        android=messaging.AndroidConfig(
+            notification=messaging.AndroidNotification(
+                title="Welcome To TrayFoods",
+                body="Welcome to TrayFoods",
+                image="https://trayfoods.com/logo.png",
+            )
+        ),
+        apns=messaging.APNSConfig(
+            payload=messaging.APNSPayload(
+                aps=messaging.Aps(
+                    alert=messaging.ApsAlert(
+                        title="Welcome To TrayFoods",
+                        body="Welcome to TrayFoods",
+                    ),
+                    badge=1,
+                    sound="default",
+                )
+            )
+        ),
+        webpush=messaging.WebpushConfig(
+            notification=messaging.WebpushNotification(
+                title="Welcome To TrayFoods",
+                body="Welcome to TrayFoods",
+                icon="https://trayfoods.com/logo.png",
+            )
+        ),
+        # notification=messaging.Notification(
+        #     title="Welcome To TrayFoods",
+        #     body="Welcome to TrayFoods",
+        #     image="https://trayfoods.com/logo.png",
+        # ),
     )
 
-    response = messaging.send_multicast(message)
+    response = messaging.send_each_for_multicast(message)
     print(f"Successfully sent notifications: {response.success_count}")
     print(f"Failed notifications: {response.failure_count}")
     # except Exception as e:

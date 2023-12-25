@@ -356,61 +356,19 @@ class Profile(models.Model):
             print(e)
 
     def send_push_notification(self):
-        from firebase_admin import messaging
-
-        user_id = self.user.id
+        from .tasks import send_fcm_notification_task
         print("Sending notifications...")
 
-        # try:
-        user = UserAccount.objects.get(pk=user_id)
+        user = self.user
         user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
             "device_token", flat=True
         )
         print("active_devices", user_devices)
         device_tokens = list(user_devices)  # Convert QuerySet to a list of strings
 
-        message = messaging.MulticastMessage(
-            tokens=device_tokens,
-            data={"title": "Welcome To TrayFoods", "body": "Welcome to TrayFoods"},
-            android=messaging.AndroidConfig(
-                notification=messaging.AndroidNotification(
-                    title="Welcome To TrayFoods",
-                    body="Welcome to TrayFoods",
-                    image="https://trayfoods.com/logo.png",
-                )
-            ),
-
-            apns=messaging.APNSConfig(
-                payload=messaging.APNSPayload(
-                    aps=messaging.Aps(
-                        alert=messaging.ApsAlert(
-                            title="Welcome To TrayFoods",
-                            body="Welcome to TrayFoods",
-                        ),
-                        badge=1,
-                        sound="default",
-                    )
-                )
-            ),
-
-            webpush=messaging.WebpushConfig(
-                notification=messaging.WebpushNotification(
-                    title="Welcome To TrayFoods",
-                    body="Welcome to TrayFoods",
-                    icon="https://trayfoods.com/logo.png",
-                )
-            ),
-
-            # notification=messaging.Notification(
-            #     title="Welcome To TrayFoods",
-            #     body="Welcome to TrayFoods",
-            #     image="https://trayfoods.com/logo.png",
-            # ),
-        )
-
-        response = messaging.send_each_for_multicast(message)
-        print(f"Successfully sent notifications: {response.success_count}")
-        print(f"Failed notifications: {response.failure_count}")
+        logger.info(f"Sending FCM notification to user {self.user.username}")
+        send_fcm_notification_task.delay(device_tokens)
+        
 
     @property
     def is_delivery_person(self):
