@@ -13,13 +13,13 @@ from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
 from trayapp.utils import image_resized, image_exists
-from celery.utils.log import get_task_logger
 
 from product.models import Item, Order
 
 from django.conf import settings
 
 from trayapp.utils import get_twilio_client
+from celery.utils.log import get_task_logger
 
 logger = get_task_logger(__name__)
 
@@ -159,8 +159,6 @@ class UserDevice(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        # self.user.profile.send_push_notification()
-
         return f"{self.user.username}'s {self.device_type}"
 
 
@@ -355,20 +353,24 @@ class Profile(models.Model):
         except Exception as e:
             print(e)
 
-    def send_push_notification(self):
-        from .tasks import send_fcm_notification_task
-        print("Sending notifications...")
+    def send_push_notification(self, title, msg, data=None):
+        from .threads import FCMThread
 
         user = self.user
         user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
             "device_token", flat=True
         )
-        print("active_devices", user_devices)
-        device_tokens = list(user_devices)  # Convert QuerySet to a list of strings
+        device_tokens = list(user_devices)
 
-        logger.info(f"Sending FCM notification to user {self.user.username}")
-        send_fcm_notification_task.delay(device_tokens)
-        
+        FCMThread(
+            title=title,
+            msg=msg,
+            tokens=device_tokens,
+            data={
+                "priority": "high",
+                "sound": "default",
+            },
+        ).start()
 
     @property
     def is_delivery_person(self):
