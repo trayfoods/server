@@ -160,8 +160,9 @@ class ProcessPayment:
                 order.send_order_sms_to_delivery_people(delivery_people)
             else:
                 # send sms to user to pick up order
-                order.user.send_sms(
-                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup"
+                order.user.send_push_notification(
+                    "Updates on your order",
+                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup",
                 )
 
         return HttpResponse("Payment successful", status=200)
