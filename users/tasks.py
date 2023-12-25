@@ -33,45 +33,30 @@ def send_async_sms(phone_number, message):
 def send_fcm_notification_task(device_tokens):
     print("Sending notifications...")
 
-    # try:
-    message = messaging.MulticastMessage(
-        tokens=device_tokens,
-        data={"title": "Welcome To TrayFoods", "body": "Welcome to TrayFoods"},
-        android=messaging.AndroidConfig(
-            notification=messaging.AndroidNotification(
-                title="Welcome To TrayFoods",
-                body="Welcome to TrayFoods",
-                image="https://trayfoods.com/logo.png",
-            )
-        ),
-        apns=messaging.APNSConfig(
-            payload=messaging.APNSPayload(
-                aps=messaging.Aps(
-                    alert=messaging.ApsAlert(
-                        title="Welcome To TrayFoods",
-                        body="Welcome to TrayFoods",
-                    ),
-                    badge=1,
-                    sound="default",
-                )
-            )
-        ),
-        webpush=messaging.WebpushConfig(
-            notification=messaging.WebpushNotification(
-                title="Welcome To TrayFoods",
-                body="Welcome to TrayFoods",
-                icon="https://trayfoods.com/logo.png",
-            )
-        ),
-        # notification=messaging.Notification(
-        #     title="Welcome To TrayFoods",
-        #     body="Welcome to TrayFoods",
-        #     image="https://trayfoods.com/logo.png",
-        # ),
-    )
+    try:
+        # Send a important notification to the devices corresponding to the provided
+        message = messaging.MulticastMessage(
+            tokens=device_tokens,
+            data={
+                "title": "Welcome To TrayFoods",
+                "body": "Welcome to TrayFoods",
+                "image": "https://trayfoods.com/icon-192x192.png",
+                "click_action": "https://trayfoods.com/",
+                "icon": "https://trayfoods.com/favicon.ico",
+                "badge": "1",
+                "sound": "default",
+                "priority": "high",
+                "content_available": True,
+                "mutable_content": True,
+                "android_channel_id": "trayfoods",
+                "vibrate": "true",
+                "visibility": "public",
+                "importance": "high",
+            },
+        )
 
-    response = messaging.send_each_for_multicast(message)
-    print(f"Successfully sent notifications: {response.success_count}")
-    print(f"Failed notifications: {response.failure_count}")
-    # except Exception as e:
-    #     print(f"Error sending notifications: {e}")
+        # Send a message to the devices corresponding to the provided
+        messaging.send_each_for_multicast(message)
+
+    except Exception as e:
+        print(f"Error sending notifications: {e}")
