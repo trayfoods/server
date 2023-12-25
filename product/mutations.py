@@ -262,6 +262,7 @@ class AddProductClickMutation(graphene.Mutation):
         success = False
         item = Item.get_items().filter(product_slug=slug).first()
         if not item is None and info.context.user.is_authenticated:
+            info.context.user.profile.send_push_notification()
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
                 activity_type="added_to_cart",
