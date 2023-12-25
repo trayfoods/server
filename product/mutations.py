@@ -249,26 +249,28 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
         return UpdateItemMenuMutation(success=True)
 
 
-# This Mutation adds +1 to the product_clicks value,
-# Then also add rank to the store owner of the product
-class AddProductClickMutation(graphene.Mutation):
+class AddProductClickMutation(Output, graphene.Mutation):
     class Arguments:
         slug = graphene.String(required=True)
 
-    success = graphene.Boolean()
     item = graphene.Field(ItemType)
 
     def mutate(self, info, slug):
-        success = False
-        item = Item.get_items().filter(product_slug=slug).first()
-        if not item is None and info.context.user.is_authenticated:
-            info.context.user.profile.send_push_notification()
+        item = (
+            Item.get_items().filter(product_slug=slug, product_status="active").first()
+        )
+        if not item:
+            return AddProductClickMutation(error="Item does not exist")
+
+        if info.context.user.is_authenticated:
+            # Add the user activity
             new_activity = UserActivity.objects.create(
                 user_id=info.context.user.id,
                 activity_type="added_to_cart",
                 item=item,
                 timestamp=timezone.now(),
             )
+            # increase the rank of the creator store by 0.5
             if item.product_creator:
                 store = Store.objects.filter(
                     store_nickname=item.product_creator.store_nickname
@@ -276,12 +278,16 @@ class AddProductClickMutation(graphene.Mutation):
                 if not store is None:
                     store.store_rank += 0.5
                     store.save()
+            # increase the product clicks by 1
             item.product_clicks += 1
+
+            # save the changes
             item.save()
             new_activity.save()
-            success = True
 
-        return AddProductClickMutation(item=item, success=success)
+            return AddProductClickMutation(item=item, success=True)
+        else:
+            return AddProductClickMutation(success=True)
 
 
 class CreateOrderMutation(graphene.Mutation):
