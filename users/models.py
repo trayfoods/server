@@ -366,7 +366,12 @@ class Profile(models.Model):
             title=title,
             msg=msg,
             tokens=device_tokens,
-            data=data,
+            data=data
+            if data
+            else {
+                "priority": "high",
+                "sound": "default",
+            },
         ).start()
 
     @property
