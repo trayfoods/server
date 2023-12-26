@@ -139,6 +139,10 @@ class UserAccount(AbstractUser, models.Model):
     @property
     def devices(self):
         return UserDevice.objects.filter(user=self)
+    
+    @property
+    def has_token_device(self):
+        return UserDevice.objects.filter(user=self).exists()
 
     def add_device(self, **kwargs):
         # check if user is in kwargs

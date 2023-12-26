@@ -56,11 +56,17 @@ class ProfileType(DjangoObjectType):
     def resolve_has_required_fields(self, info, *args, **kwargs):
         return self.has_required_fields
 
+class UserSettingsType(graphene.ObjectType):
+    has_token_device = graphene.Boolean()
+
+    def resolve_has_token_device(self, info, *args, **kwargs):
+        return self.has_token_device
 
 class UserNodeType(UserNode, graphene.ObjectType):
     profile = graphene.Field(ProfileType)
     orders = graphene.List("product.types.OrderType")
     roles = graphene.List(graphene.String)
+    settings = graphene.Field("users.types.UserSettingsType")
 
     class Meta:
         model = UserAccount
@@ -74,6 +80,7 @@ class UserNodeType(UserNode, graphene.ObjectType):
             "roles",
             "profile",
             "orders",
+            "settings",
         ]
 
     def resolve_roles(self, info):
@@ -84,6 +91,9 @@ class UserNodeType(UserNode, graphene.ObjectType):
 
     def resolve_profile(self, info):
         return self.profile
+    
+    def resolve_settings(self, info):
+        return self
 
 
 class WalletInfoNode(graphene.ObjectType):
