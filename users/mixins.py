@@ -113,7 +113,7 @@ class ObtainJSONWebTokenMixin(Output):
     @classmethod
     def resolve(cls, root, info, **kwargs):
         unarchiving = kwargs.get("unarchiving", False)
-        return cls(user=info.context.user, unarchiving=unarchiving)
+        return cls(unarchiving=unarchiving)
 
     @classmethod
     def resolve_mutation(cls, root, info, **kwargs):

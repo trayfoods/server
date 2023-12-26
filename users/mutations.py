@@ -73,7 +73,6 @@ class LoginMutation(
     MutationMixin, ObtainJSONWebTokenMixin, graphql_jwt.JSONWebTokenMutation
 ):
     __doc__ = ObtainJSONWebTokenMixin.__doc__
-    user = graphene.Field(UserNodeType)
     unarchiving = graphene.Boolean(default_value=False)
 
     @classmethod
