@@ -366,10 +366,7 @@ class Profile(models.Model):
             title=title,
             msg=msg,
             tokens=device_tokens,
-            data={
-                "priority": "high",
-                "sound": "default",
-            },
+            data=data,
         ).start()
 
     @property

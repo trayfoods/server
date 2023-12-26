@@ -1001,7 +1001,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             # send sms to user
             try:
                 order_disp_id = order.order_track_id.replace("order_", "")
-                order.user.send_sms(
+                order.user.send_push_notification(
                     "Your order #{} is on its way and will be delivered soon".format(
                         order_disp_id
                     )

@@ -456,7 +456,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             order.order_status = "ready-for-pickup"
             order.save()
             order_disp_id = order.order_track_id.replace("order_", "")
-            order.user.send_sms("Order #{} is ready for pickup".format(order_disp_id))
+            order.user.send_push_notification("Order #{} is ready for pickup".format(order_disp_id))
 
             return MarkOrderAsMutation(success=True)
 
