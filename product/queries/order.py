@@ -11,6 +11,7 @@ class OrderQueries(graphene.ObjectType):
     store_orders = DjangoFilterConnectionField(OrderNode)
 
     deliveries = DjangoFilterConnectionField(OrderNode)
+    discover_deliveries = DjangoFilterConnectionField(OrderNode)
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
 
     @permission_checker([IsAuthenticated])
@@ -48,6 +49,16 @@ class OrderQueries(graphene.ObjectType):
     @permission_checker([IsAuthenticated])
     def resolve_orders(self, info, **kwargs):
         return info.context.user.orders.all()
+    
+    @permission_checker([IsAuthenticated])
+    def resolve_discover_deliveries(self, info, **kwargs):
+        user = info.context.user
+        if "DELIVERY_PERSON" in user.roles:
+            return Order.objects.filter(
+                linked_delivery_people__profile=user.profile
+            ).all()
+        else:
+            raise GraphQLError("You are not a delivery person")
 
     @permission_checker([IsAuthenticated])
     def resolve_store_orders(self, info, **kwargs):

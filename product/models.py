@@ -251,6 +251,7 @@ class Order(models.Model):
             ("cancelled", "cancelled"),
         ),
         default="not-started",
+        db_index=True,
     )
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
@@ -294,7 +295,7 @@ class Order(models.Model):
         choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
     )
 
-    delivery_person_note = models.TextField(blank=True, null=True)
+    delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
     order_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -411,7 +412,6 @@ class Order(models.Model):
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_delivery_person(cls, delivery_person):
-        print(cls.objects.filter(linked_delivery_people=delivery_person))
         return cls.objects.filter(linked_delivery_people=delivery_person)
 
     # get the number of active orders linked to a delivery person
