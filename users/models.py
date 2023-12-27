@@ -358,25 +358,30 @@ class Profile(models.Model):
             print(e)
 
     def send_push_notification(self, title, msg, data=None):
-        from .threads import FCMThread
 
         user = self.user
-        user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
-            "device_token", flat=True
-        )
-        device_tokens = list(user_devices)
+        if user.has_token_device:
+            from .threads import FCMThread
+            user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
+                "device_token", flat=True
+            )
+            device_tokens = list(user_devices)
 
-        FCMThread(
-            title=title,
-            msg=msg,
-            tokens=device_tokens,
-            data=data
-            if data
-            else {
-                "priority": "high",
-                "sound": "default",
-            },
-        ).start()
+            FCMThread(
+                title=title,
+                msg=msg,
+                tokens=device_tokens,
+                data=data
+                if data
+                else {
+                    "priority": "high",
+                    "sound": "default",
+                },
+            ).start()
+        else:
+            logger.info(f"User {user.username} has no token device, so sending SMS")
+            # send sms
+            self.send_sms(msg)
 
     @property
     def is_delivery_person(self):
