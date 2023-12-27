@@ -458,6 +458,17 @@ class OrderType(DjangoObjectType):
         return order_status.upper()
 
 
+class DiscoverDeliveryType(OrderType, DjangoObjectType):
+    class Meta:
+        model = Order
+
+    def resolve_user(self, info):
+        return None
+    
+    def resolve_confirm_pin(self, info):
+        return ""
+
+
 class OrderNode(OrderType, DjangoObjectType):
     class Meta:
         model = Order

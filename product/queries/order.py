@@ -3,15 +3,17 @@ from graphql import GraphQLError
 from product.models import Order
 from trayapp.permissions import IsAuthenticated, permission_checker
 from graphene_django.filter import DjangoFilterConnectionField
-from ..types import OrderNode, OrderType
+from ..types import OrderNode, OrderType, DiscoverDeliveryType
 
+from trayapp.utils import chunked_queryset
+import django.db
 
 class OrderQueries(graphene.ObjectType):
     orders = DjangoFilterConnectionField(OrderNode)
     store_orders = DjangoFilterConnectionField(OrderNode)
 
     deliveries = DjangoFilterConnectionField(OrderNode)
-    discover_deliveries = DjangoFilterConnectionField(OrderNode)
+    discover_deliveries = graphene.List(DiscoverDeliveryType)
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
 
     @permission_checker([IsAuthenticated])
@@ -49,14 +51,23 @@ class OrderQueries(graphene.ObjectType):
     @permission_checker([IsAuthenticated])
     def resolve_orders(self, info, **kwargs):
         return info.context.user.orders.all()
-    
+
     @permission_checker([IsAuthenticated])
     def resolve_discover_deliveries(self, info, **kwargs):
         user = info.context.user
+        available_deliveries = []
         if "DELIVERY_PERSON" in user.roles:
-            return Order.objects.filter(
-                linked_delivery_people__profile=user.profile
-            ).all()
+            for chunk in chunked_queryset(
+                Order.objects.filter(order_status="processing"), chunk_size=100
+            ):
+                django.db.reset_queries()
+                for order in chunk.iterator():
+                    if len(order.delivery_people) < 1:
+                        # check if delivery person can deliver order
+                        if user.profile.delivery_person.can_deliver(order):
+                            available_deliveries.append(order)
+            return available_deliveries
+            # order for order in new_orders if DeliveryPerson.can_deliver(order)
         else:
             raise GraphQLError("You are not a delivery person")
 

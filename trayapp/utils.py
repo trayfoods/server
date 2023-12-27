@@ -274,3 +274,41 @@ def get_twilio_client():
     # Your Account Sid and Auth Token from twilio.com/console
     # and set the environment variables. See http://twil.io/secure
     return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+def chunked_queryset(queryset, chunk_size=10000):
+    """
+    Slice a queryset into chunks. This is useful to avoid memory issues when
+    iterating through large querysets.
+    Code adapted from https://djangosnippets.org/snippets/10599/
+    """
+
+    # If the queryset is empty, return None
+    if not queryset.exists():
+        return
+
+    # Order the queryset by primary key (pk)
+    queryset = queryset.order_by("pk")
+
+    # Get a list of all primary keys in the queryset
+    pks = queryset.values_list("pk", flat=True)
+
+    # Start with the first primary key
+    start_pk = pks[0]
+
+    # Loop indefinitely
+    while True:
+        try:
+            # Try to get the primary key that is 'chunk_size' positions ahead of the current start_pk
+            end_pk = pks.filter(pk__gte=start_pk)[chunk_size]
+        except IndexError:
+            # If we get an IndexError, it means we've reached the end of the queryset, so we break the loop
+            break
+
+        # Yield a chunk of the queryset that includes all objects with a pk greater than or equal to start_pk and less than end_pk
+        yield queryset.filter(pk__gte=start_pk, pk__lt=end_pk)
+
+        # Move the start_pk to the end_pk for the next iteration
+        start_pk = end_pk
+
+    # Yield the last chunk of the queryset that includes all objects with a pk greater than or equal to the final start_pk
+    yield queryset.filter(pk__gte=start_pk)

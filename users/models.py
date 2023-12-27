@@ -139,7 +139,7 @@ class UserAccount(AbstractUser, models.Model):
     @property
     def devices(self):
         return UserDevice.objects.filter(user=self)
-    
+
     @property
     def has_token_device(self):
         return UserDevice.objects.filter(user=self).exists()
@@ -358,13 +358,13 @@ class Profile(models.Model):
             print(e)
 
     def send_push_notification(self, title, msg, data=None):
-
         user = self.user
         if user.has_token_device:
             from .threads import FCMThread
-            user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
-                "device_token", flat=True
-            )
+
+            user_devices = UserDevice.objects.filter(
+                user=user, is_active=True
+            ).values_list("device_token", flat=True)
             device_tokens = list(user_devices)
 
             FCMThread(
