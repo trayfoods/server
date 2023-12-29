@@ -859,14 +859,44 @@ class DeliveryPerson(models.Model):
             and order.linked_stores.filter(vendor=self.profile).exists()
         ):
             return False
+        
+        # check if the delivery person is a student and the order user is not a student
+        if self.profile.is_student and not order_user.is_student:
+            return False
+        
+        # check if the delivery person is not a student and the order user is a student
+        if not self.profile.is_student and order_user.is_student:
+            return False
 
         # check if the delivery person is a student and the order user is a student
         if self.profile.is_student and order_user.is_student:
             order_user_gender = order_user.gender.name
             delivery_person_gender = self.profile.gender.name
 
+            # check if the delivery person is not in the same school as the order user
+            if self.profile.student.school != order_user.student.school:
+                return False
+
             if order_user_gender != delivery_person_gender:
                 return False
+            
+            # check if the delivery person is not in the same campus as the order user
+            if self.profile.student.campus != order_user.student.campus:
+                return False
+        else:
+            # check if the delivery person is not in the same country as the order user
+            if self.profile.country != order_user.country:
+                return False
+            
+            # check if the delivery person is not in the same state as the order user
+            if self.profile.state != order_user.state:
+                return False
+            
+            # check if the delivery person is not in the same city as the order user
+            if self.profile.city != order_user.city:
+                return False
+            
+
 
         shipping = json.loads(order.shipping)
         sch = shipping.get("sch")
