@@ -423,7 +423,7 @@ class UpdateProfileMutation(graphene.Mutation):
         hostel_room = graphene.String()
 
     user = graphene.Field(UserNodeType)
-    is_profile_completed = graphene.Boolean()
+    required_fields = graphene.Boolean()
     need_verification = graphene.Boolean()
 
     @permission_checker([IsAuthenticated])
@@ -516,7 +516,7 @@ class UpdateProfileMutation(graphene.Mutation):
         profile.save()
         return UpdateProfileMutation(
             user=info.context.user,
-            is_profile_completed=profile.has_required_fields,
+            required_fields=profile.required_fields,
             need_verification=need_verification,
         )
 

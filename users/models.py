@@ -210,9 +210,6 @@ class Profile(models.Model):
     image = models.ImageField(
         upload_to=profile_image_directory_path, null=True, blank=True
     )
-    image_hash = models.CharField(
-        "Image Hash", editable=False, max_length=32, null=True, blank=True
-    )
     country = CountryField(null=True, blank=True, default="NG")
     city = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=10, null=True, blank=True)
@@ -255,37 +252,45 @@ class Profile(models.Model):
         return True if self.calling_code else False
 
     @property
-    def has_required_fields(self):
+    def required_fields(self):
         """
         Checking if user has the required fields, which are:
-        - School if the user roles is equals to 'student'
-        - gender
-        - country
-        - state
-        - city
-        - phone_number
+        - if the user roles is equals to 'student' check if the user has:
+            - school
+            - campus
+            - hostel
+            - room
+        - Phone Number
+        - Country
+        - State
+        - City
+        - Gender
+
+        Returns a list of the required fields that are not filled
         """
+        required_fields = []
 
         if self.is_student:
-            student = self.student
-            if (
-                student.school is None
-                or not student.campus
-                or student.hostel is None
-                or not student.room
-            ):
-                return False
+            if not self.student.school:
+                required_fields.append("school")
+            if not self.student.campus:
+                required_fields.append("campus")
+            if not self.student.hostel:
+                required_fields.append("hostel")
+            if not self.student.room:
+                required_fields.append("room")
 
-        if (
-            self.gender is None
-            or self.country is None
-            or self.state is None
-            or self.city is None
-            or self.phone_number is None
-        ):
-            return False
+        if not self.phone_number:
+            required_fields.append("phoneNumber")
+        if not self.country:
+            required_fields.append("country")
+        if not self.state:
+            required_fields.append("state")
+        if not self.city:
+            required_fields.append("city")
 
-        return True
+        return required_fields
+
 
     @property
     def is_vendor(self):

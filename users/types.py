@@ -32,6 +32,7 @@ class SchoolType(DjangoObjectType):
 class ProfileType(DjangoObjectType):
     store = graphene.Field("users.types.StoreType")
     gender = graphene.String()
+    required_fields = graphene.List(graphene.String)
     has_required_fields = graphene.Boolean()
 
     class Meta:
@@ -53,8 +54,11 @@ class ProfileType(DjangoObjectType):
         if self.gender:
             return self.gender.name
 
+    def resolve_required_fields(self, info, *args, **kwargs):
+        return self.required_fields
+    
     def resolve_has_required_fields(self, info, *args, **kwargs):
-        return self.has_required_fields
+        return self.required_fields is not None and len(self.required_fields) > 0
 
 class UserSettingsType(graphene.ObjectType):
     has_token_device = graphene.Boolean()
