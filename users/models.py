@@ -840,7 +840,7 @@ class DeliveryPerson(models.Model):
     def get_active_orders_count(self):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
-    # function to check if a order is able ti be delivered by a delivery person
+    # function to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
         import json
 
