@@ -426,7 +426,6 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         hostel_floor = graphene.String()
         hostel_room = graphene.String()
 
-    user = graphene.Field(UserNodeType)
     required_fields = graphene.Boolean()
     need_verification = graphene.Boolean()
 
@@ -527,8 +526,6 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                     student.delete()
         profile.save()
         return CompleteProfileMutation(
-            user=info.context.user,
-            required_fields=profile.required_fields,
             need_verification=need_verification,
         )
 

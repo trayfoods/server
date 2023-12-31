@@ -221,6 +221,7 @@ class Profile(models.Model):
     calling_code = models.CharField(max_length=5, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True, blank=True)
     phone_number_verified = models.BooleanField(default=False, editable=False)
+    has_required_fields = models.BooleanField(default=False, editable=False)
 
     def __str__(self) -> str:
         return self.user.username
@@ -269,10 +270,14 @@ class Profile(models.Model):
         - State
         - City
         - Gender
+        - Primary Address
 
         Returns a list of the required fields that are not filled
         """
         required_fields = []
+
+        if self.has_required_fields:
+            return required_fields
 
         if self.is_student:
             if not self.student.school:
@@ -293,8 +298,15 @@ class Profile(models.Model):
         if not self.city:
             required_fields.append("city")
 
-        return required_fields
+        if not self.primary_address:
+            required_fields.append("primaryAddress")
 
+        # set has_required_fields to True if required_fields is empty
+        if not required_fields:
+            self.has_required_fields = True
+            self.save()
+
+        return required_fields
 
     @property
     def is_vendor(self):
@@ -868,11 +880,11 @@ class DeliveryPerson(models.Model):
             and order.linked_stores.filter(vendor=self.profile).exists()
         ):
             return False
-        
+
         # check if the delivery person is a student and the order user is not a student
         if self.profile.is_student and not order_user.is_student:
             return False
-        
+
         # check if the delivery person is not a student and the order user is a student
         if not self.profile.is_student and order_user.is_student:
             return False
@@ -888,7 +900,7 @@ class DeliveryPerson(models.Model):
 
             if order_user_gender != delivery_person_gender:
                 return False
-            
+
             # check if the delivery person is not in the same campus as the order user
             if self.profile.student.campus != order_user.student.campus:
                 return False
@@ -896,16 +908,14 @@ class DeliveryPerson(models.Model):
             # check if the delivery person is not in the same country as the order user
             if self.profile.country != order_user.country:
                 return False
-            
+
             # check if the delivery person is not in the same state as the order user
             if self.profile.state != order_user.state:
                 return False
-            
+
             # check if the delivery person is not in the same city as the order user
             if self.profile.city != order_user.city:
                 return False
-            
-
 
         shipping = json.loads(order.shipping)
         sch = shipping.get("sch")
