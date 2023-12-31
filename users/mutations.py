@@ -524,8 +524,10 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                 if student.exists():
                     student = student.first()
                     student.delete()
+        profile.has_required_fields = True
         profile.save()
         return CompleteProfileMutation(
+            success=True,
             need_verification=need_verification,
         )
 
