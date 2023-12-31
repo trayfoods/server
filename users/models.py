@@ -271,6 +271,9 @@ class Profile(models.Model):
         - City
         - Gender
         - Primary Address
+        - Street Name
+        - Primary Address Lat
+        - Primary Address Lng
 
         Returns a list of the required fields that are not filled
         """
@@ -300,6 +303,12 @@ class Profile(models.Model):
 
         if not self.primary_address:
             required_fields.append("primaryAddress")
+        if not self.street_name:
+            required_fields.append("streetName")
+        if not self.primary_address_lat:
+            required_fields.append("primaryAddressLat")
+        if not self.primary_address_lng:
+            required_fields.append("primaryAddressLng")
 
         # set has_required_fields to True if required_fields is empty
         if not required_fields:
