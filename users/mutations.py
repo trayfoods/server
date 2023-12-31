@@ -407,7 +407,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         return UpdateSchoolInfoMutation(user=info.context.user, success=True)
 
 
-class CompleteProfileMutation(graphene.Mutation):
+class CompleteProfileMutation(Output, graphene.Mutation):
     class Arguments:
         gender = graphene.String(required=True)
         country = graphene.String(required=True)
@@ -470,16 +470,10 @@ class CompleteProfileMutation(graphene.Mutation):
             gender.save()
 
         if country:
-            required_fields = ["state", "city", "primary_address", "street_name"]
-            # check if the required fields provided
-            for required_field in required_fields:
-                if not info.context.POST.get(required_field):
-                    raise GraphQLError(
-                        "Please provide the required fields: {}".format(
-                            ", ".join(required_fields)
-                        )
-                    )
-            
+            # check if ["state", "city", "primary_address", "street_name"] is in the fields
+           
+            if not state or not city or not primary_address or not street_name:
+                raise GraphQLError("Please fill all the Loca fields")
             profile.state = state
             profile.city = city
             profile.primary_address = primary_address

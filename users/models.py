@@ -214,7 +214,7 @@ class Profile(models.Model):
     city = models.CharField(max_length=50, null=True, blank=True)
     state = models.CharField(max_length=10, null=True, blank=True)
     primary_address = models.CharField(max_length=100, null=True, blank=True)
-    streetName = models.CharField(max_length=50, null=True, blank=True)
+    street_name = models.CharField(max_length=50, null=True, blank=True)
     primary_address_lat = models.FloatField(null=True, blank=True)
     primary_address_lng = models.FloatField(null=True, blank=True)
     phone_number = models.CharField(max_length=15, null=True, blank=True)
