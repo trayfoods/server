@@ -407,14 +407,18 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         return UpdateSchoolInfoMutation(user=info.context.user, success=True)
 
 
-class UpdateProfileMutation(graphene.Mutation):
+class CompleteProfileMutation(graphene.Mutation):
     class Arguments:
         gender = graphene.String(required=True)
         country = graphene.String(required=True)
         phone_number = graphene.String(required=True)
+        roles = graphene.List(graphene.String, required=True)
         state = graphene.String(required=True)
         city = graphene.String(required=True)
-        roles = graphene.List(graphene.String, required=True)
+        primary_address = graphene.String(required=True)
+        street_name = graphene.String(required=True)
+        primary_address_lat = graphene.Float(required=True)
+        primary_address_lng = graphene.Float(required=True)
 
         school = graphene.String()
         campus = graphene.String()
@@ -435,6 +439,10 @@ class UpdateProfileMutation(graphene.Mutation):
         phone_number,
         state,
         city,
+        primary_address,
+        street_name,
+        primary_address_lat,
+        primary_address_lng,
         roles,
         school=None,
         campus=None,
@@ -462,16 +470,26 @@ class UpdateProfileMutation(graphene.Mutation):
             gender.save()
 
         if country:
+            required_fields = ["state", "city", "primary_address", "street_name"]
+            # check if the required fields provided
+            for required_field in required_fields:
+                if not info.context.POST.get(required_field):
+                    raise GraphQLError(
+                        "Please provide the required fields: {}".format(
+                            ", ".join(required_fields)
+                        )
+                    )
+            
+            profile.state = state
+            profile.city = city
+            profile.primary_address = primary_address
+            profile.street_name = street_name
+            profile.primary_address_lat = primary_address_lat
+            profile.primary_address_lng = primary_address_lng
             profile.country = country
 
         if phone_number:
             profile.phone_number = phone_number
-
-        if state:
-            profile.state = state
-
-        if city:
-            profile.city = city
 
         if roles:
             is_student = "STUDENT" in roles
@@ -514,7 +532,7 @@ class UpdateProfileMutation(graphene.Mutation):
                     student = student.first()
                     student.delete()
         profile.save()
-        return UpdateProfileMutation(
+        return CompleteProfileMutation(
             user=info.context.user,
             required_fields=profile.required_fields,
             need_verification=need_verification,
