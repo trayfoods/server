@@ -428,6 +428,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
 
     required_fields = graphene.Boolean()
     need_verification = graphene.Boolean()
+    user = graphene.Field(UserNodeType, default_value=None)
 
     @permission_checker([IsAuthenticated])
     def mutate(
@@ -528,6 +529,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         profile.save()
         return CompleteProfileMutation(
             success=True,
+            user=info.context.user,
             need_verification=need_verification,
         )
 
