@@ -279,8 +279,8 @@ class Profile(models.Model):
         """
         required_fields = []
 
-        if self.has_required_fields:
-            return required_fields
+        # if self.has_required_fields:
+        #     return required_fields
 
         if self.is_student:
             if not self.student.school:
