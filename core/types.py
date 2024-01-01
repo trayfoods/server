@@ -5,10 +5,6 @@ class CountryType(graphene.ObjectType):
     name = graphene.String(description="Country name")
     code = graphene.String(description="ISO 3166-1 alpha-2 country code")
     flag = graphene.String(description="URL to flag image")
-    idd_code = graphene.String(description="International Direct Dialing code")
-
-    def resolve_idd_code(self, info):
-        return f"+{self.idd_code}"
 
 
 class StateType(graphene.ObjectType):

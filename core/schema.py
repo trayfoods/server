@@ -3,6 +3,9 @@ import hashlib
 import graphene
 from django.utils.encoding import force_bytes
 
+# import django countries
+from django_countries import countries
+
 from restcountries import RestCountryApiV2 as rapi
 from django.conf import settings
 from core.types import (
@@ -77,15 +80,15 @@ class CoreQueries(graphene.ObjectType):
         return DELIVERY_TYPES
 
     def resolve_countries(self, info):
-        countries = rapi.get_all()
         return [
             CountryType(
-                name=country.name,
-                code=country.alpha2_code,
-                flag=country.flag,
-                idd_code=country.calling_codes[0],
+                name=name,
+                code=code,
+                flag=info.context.build_absolute_uri(
+                    f"{STATIC_URL}/flags/{code.lower()}.gif".replace("//", "/")
+                ),
             )
-            for country in countries
+            for code, name in list(countries)
         ]
 
     def resolve_country(self, info, code):
@@ -94,8 +97,6 @@ class CoreQueries(graphene.ObjectType):
             name=country.name,
             code=country.alpha2_code,
             flag=country.flag,
-            idd_code=country.calling_codes[0],
-        
         )
 
     def resolve_states(self, info, country):
