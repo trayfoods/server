@@ -450,7 +450,6 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         hostel_floor=None,
         hostel_room=None,
     ):
-        need_verification = False
         user = info.context.user
         profile = user.profile
         if profile is None:
@@ -480,9 +479,6 @@ class CompleteProfileMutation(Output, graphene.Mutation):
 
         if phone_number:
             profile.phone_number = phone_number
-
-        is_vendor = "VENDOR" in roles
-        need_verification = is_vendor or "DELIVERY_PERSON" in roles
 
         # check if the role includes "DELIVERY_PERSON", then create the delivery person instance or update it
         if "DELIVERY_PERSON" in roles:
@@ -528,7 +524,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         return CompleteProfileMutation(
             success=True,
             user=info.context.user,
-            need_verification=need_verification,
+            need_verification="VENDOR" in roles or "DELIVERY_PERSON" in roles,
         )
 
 
