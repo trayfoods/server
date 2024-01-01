@@ -470,10 +470,6 @@ class CompleteProfileMutation(Output, graphene.Mutation):
             gender.save()
 
         if country:
-            # check if ["state", "city", "primary_address", "street_name"] is in the fields
-           
-            if not state or not city or not primary_address or not street_name:
-                raise GraphQLError("Please fill all the Loca fields")
             profile.state = state
             profile.city = city
             profile.primary_address = primary_address
@@ -500,31 +496,37 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                     delivery_person = delivery_person.first()
                     delivery_person.delete()
             if is_student:
-                student = Student.objects.get_or_create(user=profile)
+                student = Student.objects.get_or_create(user=profile) # create the student instance if it does not exist
                 student = student[0]
 
                 if school:
-                    school = School.objects.filter(slug=school.strip()).first()
-                    if not school:
+                    # check if the school, campus, hostel, floor and room are not valid
+                    if not campus or not hostel or not hostel_floor or not hostel_room:
+                        raise GraphQLError("School, Campus, Hostel, Floor and Room are required")
+                    
+                    # check if the school can be found in the database
+                    school_qs = School.objects.filter(slug=school.strip())
+                    if not school_qs.exists():
                         raise GraphQLError("School does not exist")
-                    student.school = school
-                if campus:
-                    student.campus = campus
-                if hostel:
-                    hostel = Hostel.objects.filter(slug=hostel.strip()).first()
-                    if not hostel:
+                    
+                    # check if the hostel can be found in the database
+                    hostel_qs = Hostel.objects.filter(slug=hostel.strip())
+                    if not hostel_qs.exists():
                         raise GraphQLError("Hostel does not exist")
-                    student.hostel = hostel
-                if hostel_floor:
+                    
+                    # check if the campus can be found in the database
+                    school_campuses = school_qs.first().campuses # jsonfield list ['campus1', 'campus2']
+                    if not campus in school_campuses:
+                        raise GraphQLError("Campus does not exist")
+                    
+                    # save the student instance
+                    student.campus = campus
+                    student.hostel = hostel_qs
                     student.floor = hostel_floor
-                if hostel_room:
                     student.room = hostel_room
-                student.save()
-            else:
-                student = Student.objects.filter(user=profile)
-                if student.exists():
-                    student = student.first()
-                    student.delete()
+                    student.school = school_qs.first()
+                    student.save()
+
         profile.has_required_fields = True
         profile.save()
         return CompleteProfileMutation(
