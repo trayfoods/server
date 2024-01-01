@@ -85,7 +85,7 @@ class CoreQueries(graphene.ObjectType):
                 name=name,
                 code=code,
                 flag=info.context.build_absolute_uri(
-                    f"{STATIC_URL}/flags/{code.lower()}.gif".replace("//", "/")
+                    "https://flagcdn.com/{}.svg".format(code.lower())
                 ),
             )
             for code, name in list(countries)
@@ -97,6 +97,7 @@ class CoreQueries(graphene.ObjectType):
             name=country.name,
             code=country.alpha2_code,
             flag=country.flag,
+            idd_code=country.calling_codes[0],
         )
 
     def resolve_states(self, info, country):
