@@ -281,7 +281,7 @@ class Profile(models.Model):
 
         # if self.has_required_fields:
         #     return required_fields
-        
+
         if self.is_student:
             if not self.student.school:
                 required_fields.append("school")
@@ -292,8 +292,6 @@ class Profile(models.Model):
             if not self.student.room:
                 required_fields.append("room")
         else:  # check if the user is not a student
-            if not self.country:
-                required_fields.append("country")
             if not self.state:
                 required_fields.append("state")
             if not self.city:
@@ -308,6 +306,9 @@ class Profile(models.Model):
             if not self.primary_address_lng:
                 required_fields.append("primaryAddressLng")
 
+        if not self.country:
+            required_fields.append("country")
+            
         if not self.phone_number:
             required_fields.append("phoneNumber")
 
