@@ -281,7 +281,7 @@ class Profile(models.Model):
 
         # if self.has_required_fields:
         #     return required_fields
-
+        
         if self.is_student:
             if not self.student.school:
                 required_fields.append("school")
@@ -291,24 +291,25 @@ class Profile(models.Model):
                 required_fields.append("hostel")
             if not self.student.room:
                 required_fields.append("room")
+        else:  # check if the user is not a student
+            if not self.country:
+                required_fields.append("country")
+            if not self.state:
+                required_fields.append("state")
+            if not self.city:
+                required_fields.append("city")
+
+            if not self.primary_address:
+                required_fields.append("primaryAddress")
+            if not self.street_name:
+                required_fields.append("streetName")
+            if not self.primary_address_lat:
+                required_fields.append("primaryAddressLat")
+            if not self.primary_address_lng:
+                required_fields.append("primaryAddressLng")
 
         if not self.phone_number:
             required_fields.append("phoneNumber")
-        if not self.country:
-            required_fields.append("country")
-        if not self.state:
-            required_fields.append("state")
-        if not self.city:
-            required_fields.append("city")
-
-        if not self.primary_address:
-            required_fields.append("primaryAddress")
-        if not self.street_name:
-            required_fields.append("streetName")
-        if not self.primary_address_lat:
-            required_fields.append("primaryAddressLat")
-        if not self.primary_address_lng:
-            required_fields.append("primaryAddressLng")
 
         # set has_required_fields to True if required_fields is empty
         if not required_fields:
