@@ -222,7 +222,7 @@ class HostelField(models.Model):
 
         if self.loop_suffix == "number":
             return [f"{self.loop_prefix} {i}" for i in range(1, self.loop_range + 1)]
-        
+
         elif self.loop_suffix == "alphabet":
             # represent the self.loop_range in alphabets
             return [
@@ -875,6 +875,12 @@ class Student(models.Model):
 
     def __str__(self) -> str:
         return self.user.user.username
+
+    # validate hostel fields on save
+    def save(self, *args, **kwargs):
+        if self.hostel_fields:
+            self.validate_hostel_fields()
+        super().save(*args, **kwargs)
 
     # validate hostel fields
     def validate_hostel_fields(self):

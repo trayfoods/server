@@ -24,7 +24,9 @@ from .models import (
     UserAccount,
     Wallet,
     DeliveryPerson,
+    Profile,
 )
+from .inputs import HostelFieldInput
 from product.models import Order
 from django.conf import settings
 from core.utils import get_paystack_balance
@@ -423,8 +425,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         school = graphene.String()
         campus = graphene.String()
         hostel = graphene.String()
-        hostel_floor = graphene.String()
-        hostel_room = graphene.String()
+        hostel_fields = graphene.List(HostelFieldInput)
 
     required_fields = graphene.Boolean()
     need_verification = graphene.Boolean()
@@ -444,14 +445,13 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         primary_address_lat,
         primary_address_lng,
         roles,
-        school=None,
-        campus=None,
-        hostel=None,
-        hostel_floor=None,
-        hostel_room=None,
+        school: str = None,
+        campus: str = None,
+        hostel: str = None,
+        hostel_fields: list[HostelFieldInput] = None,
     ):
         user = info.context.user
-        profile = user.profile
+        profile: Profile = user.profile
         if profile is None:
             raise GraphQLError("Profile does not exist")
 
@@ -485,37 +485,39 @@ class CompleteProfileMutation(Output, graphene.Mutation):
             delivery_person = DeliveryPerson.objects.get_or_create(profile=profile)
             delivery_person = delivery_person[0]
             delivery_person.save()
-        
+
         # check if the user is a student, then create the student instance or update it
         if "STUDENT" in roles:
-            student = Student.objects.get_or_create(user=profile) # create the student instance if it does not exist
+            student = Student.objects.get_or_create(
+                user=profile
+            )  # create the student instance if it does not exist
             student = student[0]
 
             if school:
-                # check if the school, campus, hostel, floor and room are not valid
-                if not campus or not hostel or not hostel_floor or not hostel_room:
-                    raise GraphQLError("School, Campus, Hostel, Floor and Room are required")
-                
+                if not campus or not hostel or not hostel_fields:
+                    raise GraphQLError("Campus, Hostel and Hostel Fields are required")
+
                 # check if the school can be found in the database
                 school_qs = School.objects.filter(slug=school.strip())
                 if not school_qs.exists():
                     raise GraphQLError("School does not exist")
-                
+
                 # check if the hostel can be found in the database
                 hostel_qs = Hostel.objects.filter(slug=hostel.strip())
                 if not hostel_qs.exists():
                     raise GraphQLError("Hostel does not exist")
-                
+
                 # check if the campus can be found in the database
-                school_campuses = school_qs.first().campuses # jsonfield list ['campus1', 'campus2']
+                school_campuses = (
+                    school_qs.first().campuses
+                )  # jsonfield list ['campus1', 'campus2']
                 if not campus in school_campuses:
                     raise GraphQLError("Campus does not exist")
-                
+
                 # save the student instance
                 student.campus = campus
                 student.hostel = hostel_qs
-                student.floor = hostel_floor
-                student.room = hostel_room
+                student.hostel_fields = hostel_fields
                 student.school = school_qs.first()
                 student.save()
 
