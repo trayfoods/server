@@ -10,7 +10,8 @@ from users.models import (
     Wallet,
     School,
     Transaction,
-    UserDevice
+    UserDevice,
+    HostelField
 )
 
 ROLE_CHOICES = (
@@ -94,6 +95,36 @@ class WalletAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
+class HostelFieldInline(admin.TabularInline):
+    model = HostelField
+    extra = 0
+
+class SchoolAdmin(admin.ModelAdmin):
+    inlines = [HostelFieldInline]
+    list_display = ("name", "country", "date_created")
+    search_fields = ("name", "country")
+    list_filter = ("country",)
+    readonly_fields = ("slug", "date_created")
+
+class HostelAdmin(admin.ModelAdmin):
+    list_display = ("name", "school", "date_created")
+    search_fields = ("name", "school__name")
+    list_filter = ("school__name",)
+    readonly_fields = ("slug", "date_created")
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "fields":
+            # get the hostel school
+            hostel_id = request.resolver_match.kwargs.get("object_id")
+            if not hostel_id:
+                kwargs["queryset"] = HostelField.objects.none()
+                return super().formfield_for_manytomany(db_field, request, **kwargs)
+            hostel = Hostel.objects.get(id=hostel_id)
+            # get the school fields
+            fields = hostel.school.hostel_fields.all()
+            # set the fields
+            kwargs["queryset"] = fields
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ("wallet", "amount", "status", "_type", "created_at")
@@ -108,11 +139,11 @@ admin.site.register(Gender)
 admin.site.register(Profile, ProfileAdmin)
 admin.site.register(Store)
 admin.site.register(Student)
-admin.site.register(Hostel)
+admin.site.register(Hostel, HostelAdmin)
 admin.site.register(DeliveryPerson, DeliveryPersonAdmin)
 
 admin.site.register(UserAccount, UserAccountAdmin)
 admin.site.register(Wallet, WalletAdmin)
-admin.site.register(School)
+admin.site.register(School, SchoolAdmin)
 admin.site.register(UserDevice)
 admin.site.register(Transaction, TransactionAdmin)

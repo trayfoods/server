@@ -168,18 +168,9 @@ class UserDevice(models.Model):
 
 class School(models.Model):
     name = models.CharField(max_length=50)
-    email = models.EmailField(null=True, blank=True)
+    slug = models.SlugField(max_length=50, null=True, blank=True, unique=True)
     country = CountryField(default="NG")
     campuses = models.JSONField(default=list, null=True, blank=True, editable=True)
-    slug = models.SlugField(max_length=50, null=True, blank=True, unique=True)
-    phone_numbers = models.JSONField(
-        default=list, null=True, blank=True, editable=False
-    )
-    domains = models.JSONField(default=list, null=True, blank=True, editable=False)
-    logo = models.ImageField(
-        upload_to=school_logo_directory_path, null=True, blank=True
-    )
-    is_verified = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
@@ -190,6 +181,54 @@ class School(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
             self.save()
+
+    @property
+    def hostels(self):
+        return Hostel.objects.filter(school=self)
+
+    @property
+    def hostel_fields(self):
+        return HostelField.objects.filter(school=self)
+
+
+class HostelField(models.Model):
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100)
+    field_type = models.CharField(max_length=10)
+    placeholder = models.CharField(max_length=100, blank=True)
+    options = models.JSONField(default=list, null=True, blank=True)
+    loop_prefix = models.CharField(max_length=10, blank=True)
+    is_loop = models.BooleanField(default=False)
+    loop_range = models.IntegerField(blank=True, null=True)
+    loop_suffix = models.CharField(
+        max_length=10,
+        choices=(("number", "number"), ("alphabet", "alphabet")),
+        blank=True,
+    )
+
+    def __str__(self) -> str:
+        return f"{self.name}".upper()
+
+    class Meta:
+        # set singular and plural names
+        verbose_name = "Hostel Arrangement Field"
+        verbose_name_plural = "Hostel Arrangement Fields"
+
+    @property
+    def loop_options(self):
+        # check if the field is not a loop
+        if not self.is_loop:
+            return None
+
+        if self.loop_suffix == "number":
+            return [f"{self.loop_prefix} {i}" for i in range(1, self.loop_range + 1)]
+        
+        elif self.loop_suffix == "alphabet":
+            # represent the self.loop_range in alphabets
+            return [
+                f"{self.loop_prefix} {chr(64 + i)}"
+                for i in range(1, self.loop_range + 1)
+            ]
 
 
 class Gender(models.Model):
@@ -308,7 +347,7 @@ class Profile(models.Model):
 
         if not self.country:
             required_fields.append("country")
-            
+
         if not self.phone_number:
             required_fields.append("phoneNumber")
 
@@ -805,8 +844,8 @@ class Hostel(models.Model):
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     gender = models.ForeignKey(Gender, on_delete=models.SET_NULL, null=True)
-    is_floor = models.BooleanField(default=False)
-    floor_count = models.IntegerField(default=0)
+    fields = models.ManyToManyField("HostelField", blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
         return self.name
@@ -817,29 +856,74 @@ class Hostel(models.Model):
             self.slug = slugify(self.name)
             self.save()
 
-    @property
-    def floors(self):
-        # if the hostel is not a floor...we return the floor count in a list
-        # else we return the floors in abc order
-
-        if not self.is_floor:
-            return [f"flat {i}" for i in range(1, self.floor_count + 1)]
-        else:
-            # represent the floor_count in alphabets
-            floor_count = self.floor_count
-            floors = []
-            for i in range(1, floor_count + 1):
-                floors.append(f"floor {chr(64 + i)}")
-            return floors
-
 
 class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
-    floor = models.CharField(max_length=50, null=True, blank=True)
-    room = models.CharField(max_length=50, null=True, blank=True)
+    hostel_fields = models.JSONField(default=list, null=True, blank=True)
+    """
+    hostel_fields = [
+        {
+        field_id: 1,
+        value: "value"
+        },
+        ...
+    ]
+    """
+
+    def __str__(self) -> str:
+        return self.user.user.username
+
+    # validate hostel fields
+    def validate_hostel_fields(self):
+        hostel_fields = self.hostel_fields
+        for field in hostel_fields:
+            field_id = field.get("field_id")
+            value = field.get("value")
+            hostel_field = HostelField.objects.filter(id=field_id).first()
+            if not hostel_field:
+                raise Exception("Hostel field_id={} does not exist".format(field_id))
+            if hostel_field:
+                if hostel_field.field_type == "number":
+                    if not value.isnumeric():
+                        raise Exception(f"{hostel_field.name} must be a number")
+                if hostel_field.field_type == "select":
+                    options = hostel_field.options
+                    if not value in options:
+                        raise Exception(f"{hostel_field.name} must be one of {options}")
+                if hostel_field.field_type == "radio":
+                    options = hostel_field.options
+                    if not value in options:
+                        raise Exception(f"{hostel_field.name} must be one of {options}")
+                if hostel_field.field_type == "checkbox":
+                    options = hostel_field.options
+                    if not value in options:
+                        raise Exception(f"{hostel_field.name} must be one of {options}")
+                if hostel_field.field_type == "text":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "textarea":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "date":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "time":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "file":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "image":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+                if hostel_field.field_type == "loop":
+                    if not value:
+                        raise Exception(f"{hostel_field.name} is required")
+
+        return True
 
 
 class DeliveryPerson(models.Model):

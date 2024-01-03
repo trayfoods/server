@@ -14,7 +14,8 @@ from .models import (
     Hostel,
     Gender,
     Transaction,
-    DeliveryPerson
+    DeliveryPerson,
+    HostelField
 )
 
 
@@ -28,6 +29,10 @@ class SchoolType(DjangoObjectType):
     def resolve_campuses(self, info):
         return self.campuses
 
+class HostelFieldType(DjangoObjectType):
+    class Meta:
+        model = HostelField
+        fields = "__all__"
 
 class ProfileType(DjangoObjectType):
     store = graphene.Field("users.types.StoreType")
