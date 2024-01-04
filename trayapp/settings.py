@@ -341,7 +341,7 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if DEBUG == True:
+if DEBUG != True:
     CORS_ORIGIN_ALLOW_ALL = True
 else:
     CORS_ORIGIN_WHITELIST = (

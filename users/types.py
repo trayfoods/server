@@ -154,6 +154,9 @@ class StudentType(DjangoObjectType):
         for field in hostel_fields:
             print(field)
             hostel_address += field["value"] + " - "
+            # remove - if it is the last character
+        if hostel_address[-1] == "- ":
+            hostel_address = hostel_address[:-2]
         return hostel_address
 
 
