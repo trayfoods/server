@@ -14,16 +14,6 @@ load_dotenv(BASE_DIR / ".env")
 
 import sentry_sdk
 
-sentry_sdk.init(
-    dsn="https://5d2f9bd6b5edff68cfe4d9d412b6e507@o4506274783756288.ingest.sentry.io/4506274786443279",
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-)
 
 # FIREBASE SETTINGS
 from firebase_admin import initialize_app, credentials
@@ -52,15 +42,20 @@ APP_VERSION = os.getenv("APP_VERSION")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = "True" in os.environ.get("DEBUG", "True")
 
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://5d2f9bd6b5edff68cfe4d9d412b6e507@o4506274783756288.ingest.sentry.io/4506274786443279",
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
+
 USE_S3 = "True" in os.environ.get("USE_S3", "False")
 USE_DB = "True" in os.environ.get("USE_DB", "False")
-
-if not DEBUG:
-    CSRF_TRUSTED_ORIGINS = [
-        "https://*.trayfoods.com",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
-    ]
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
@@ -341,12 +336,20 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if DEBUG != True:
+if not DEBUG:
+    CSRF_TRUSTED_ORIGINS = [
+        "https://*.trayfoods.com",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ]
+
+if DEBUG == True:
     CORS_ORIGIN_ALLOW_ALL = True
 else:
     CORS_ORIGIN_WHITELIST = (
         "http://localhost:3000",
         "http://127.0.0.1:3000",
+        "http://localhost:8000",
         "http://192.168.137.1:3000",
         "https://trayfoods.com",
         f"{FRONTEND_URL}",
