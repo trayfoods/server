@@ -129,11 +129,18 @@ class HostelType(DjangoObjectType):
         model = Hostel
         fields = "__all__"
 
+class StudentHostelFieldType(graphene.ObjectType):
+    field_id = graphene.String()
+    value = graphene.String()
 
 class StudentType(DjangoObjectType):
+    hostel_fields = graphene.List(StudentHostelFieldType)
     class Meta:
         model = Student
         fields = "__all__"
+
+    def resolve_hostel_fields(self, info):
+        return self.hostel_fields
 
 
 class TransactionType(DjangoObjectType):
