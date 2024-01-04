@@ -32,6 +32,7 @@ class SchoolType(DjangoObjectType):
 
 class HostelFieldType(DjangoObjectType):
     options = graphene.List(graphene.String)
+
     class Meta:
         model = HostelField
         fields = "__all__"
@@ -129,18 +130,30 @@ class HostelType(DjangoObjectType):
         model = Hostel
         fields = "__all__"
 
+
 class StudentHostelFieldType(graphene.ObjectType):
     field_id = graphene.String()
     value = graphene.String()
 
+
 class StudentType(DjangoObjectType):
     hostel_fields = graphene.List(StudentHostelFieldType)
+    hostel_address = graphene.String()
+
     class Meta:
         model = Student
         fields = "__all__"
 
     def resolve_hostel_fields(self, info):
         return self.hostel_fields
+
+    def resolve_hostel_address(self, info):
+        # get all the hostel fields values and append them to the address
+        hostel_fields = self.hostel_fields
+        hostel_address = ""
+        for field in hostel_fields:
+            hostel_address += field.value + " - "
+        return hostel_address
 
 
 class TransactionType(DjangoObjectType):
