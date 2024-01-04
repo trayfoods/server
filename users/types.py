@@ -152,7 +152,8 @@ class StudentType(DjangoObjectType):
         hostel_fields = self.hostel_fields
         hostel_address = ""
         for field in hostel_fields:
-            hostel_address += field.value + " - "
+            print(field)
+            hostel_address += field["value"] + " - "
         return hostel_address
 
 
