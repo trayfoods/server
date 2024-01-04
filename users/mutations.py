@@ -367,8 +367,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         school = graphene.String()
         campus = graphene.String()
         hostel = graphene.String()
-        floor = graphene.String()
-        room = graphene.String()
+        hostel_fields = graphene.List(HostelFieldInput)
 
     user = graphene.Field(UserNodeType, default_value=None)
 
@@ -379,8 +378,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         school=None,
         campus=None,
         hostel=None,
-        floor=None,
-        room=None,
+        hostel_fields: list[HostelFieldInput] = None,
     ):
         user = info.context.user
 
@@ -401,10 +399,8 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
             if not hostel:
                 return UpdateSchoolInfoMutation(error="Hostel does not exist")
             student.hostel = hostel
-        if floor:
-            student.floor = floor
-        if room:
-            student.room = room
+        if hostel_fields:
+            student.hostel_fields = hostel_fields
         student.save()
         return UpdateSchoolInfoMutation(user=info.context.user, success=True)
 

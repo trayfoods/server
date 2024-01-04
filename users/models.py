@@ -303,7 +303,7 @@ class Profile(models.Model):
             - school
             - campus
             - hostel
-            - room
+            - hostel fields
         - Phone Number
         - Country
         - State
@@ -328,8 +328,8 @@ class Profile(models.Model):
                 required_fields.append("campus")
             if not self.student.hostel:
                 required_fields.append("hostel")
-            if not self.student.room:
-                required_fields.append("room")
+            if not self.student.hostel_fields or len(self.student.hostel_fields) == 0:
+                required_fields.append("hostelFields")
         else:  # check if the user is not a student
             if not self.state:
                 required_fields.append("state")
