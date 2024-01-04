@@ -26,7 +26,7 @@ from .models import (
     DeliveryPerson,
     Profile,
 )
-from .inputs import HostelFieldInput
+from .inputs import StudentHostelFieldInput
 from product.models import Order
 from django.conf import settings
 from core.utils import get_paystack_balance
@@ -367,7 +367,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         school = graphene.String()
         campus = graphene.String()
         hostel = graphene.String()
-        hostel_fields = graphene.List(HostelFieldInput)
+        hostel_fields = graphene.List(StudentHostelFieldInput)
 
     user = graphene.Field(UserNodeType, default_value=None)
 
@@ -378,7 +378,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         school=None,
         campus=None,
         hostel=None,
-        hostel_fields: list[HostelFieldInput] = None,
+        hostel_fields: list[StudentHostelFieldInput] = None,
     ):
         user = info.context.user
 
@@ -421,7 +421,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         school = graphene.String()
         campus = graphene.String()
         hostel = graphene.String()
-        hostel_fields = graphene.List(HostelFieldInput)
+        hostel_fields = graphene.List(StudentHostelFieldInput)
 
     required_fields = graphene.Boolean()
     need_verification = graphene.Boolean()
@@ -444,7 +444,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
         school: str = None,
         campus: str = None,
         hostel: str = None,
-        hostel_fields: list[HostelFieldInput] = None,
+        hostel_fields: list[StudentHostelFieldInput] = None,
     ):
         user = info.context.user
         profile: Profile = user.profile
