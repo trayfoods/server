@@ -37,8 +37,8 @@ class HostelFieldType(DjangoObjectType):
         model = HostelField
         fields = "__all__"
 
-    def resolve_options(self, info):
-        return self.options
+    def resolve_options(self:HostelField, info):
+        return self.get_options()
 
 
 class ProfileType(DjangoObjectType):

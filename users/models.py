@@ -214,11 +214,11 @@ class HostelField(models.Model):
         verbose_name = "Hostel Arrangement Field"
         verbose_name_plural = "Hostel Arrangement Fields"
 
-    @property
-    def loop_options(self):
+ 
+    def get_options(self):
         # check if the field is not a loop
         if not self.is_loop:
-            return None
+            return self.options
 
         if self.loop_suffix == "number":
             return [f"{self.loop_prefix} {i}" for i in range(1, self.loop_range + 1)]
