@@ -529,7 +529,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
 
                 # save the student instance
                 student.campus = campus
-                student.hostel = hostel_qs
+                student.hostel = hostel_first_qs
                 student.hostel_fields = hostel_fields
                 student.school = school_qs.first()
                 student.save()
