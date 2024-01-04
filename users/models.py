@@ -900,15 +900,15 @@ class Student(models.Model):
                     if not value.isnumeric():
                         raise Exception(f"{hostel_field.name} must be a number")
                 if hostel_field.field_type == "select":
-                    options = hostel_field.options
+                    options = hostel_field.get_options()
                     if not value in options:
                         raise Exception(f"{hostel_field.name} must be one of {options}")
                 if hostel_field.field_type == "radio":
-                    options = hostel_field.options
+                    options = hostel_field.get_options()
                     if not value in options:
                         raise Exception(f"{hostel_field.name} must be one of {options}")
                 if hostel_field.field_type == "checkbox":
-                    options = hostel_field.options
+                    options = hostel_field.get_options()
                     if not value in options:
                         raise Exception(f"{hostel_field.name} must be one of {options}")
                 if hostel_field.field_type == "text":
