@@ -490,7 +490,12 @@ class CompleteProfileMutation(Output, graphene.Mutation):
             student = student[0]
 
             if school:
-                if not campus or not hostel or not hostel_fields:
+                if (
+                    not campus
+                    or not hostel
+                    or not hostel_fields
+                    or len(hostel_fields) < 1
+                ):
                     raise GraphQLError("Campus, Hostel and Hostel Fields are required")
 
                 # check if the school can be found in the database
@@ -502,6 +507,18 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                 hostel_qs = Hostel.objects.filter(slug=hostel.strip())
                 if not hostel_qs.exists():
                     raise GraphQLError("Hostel does not exist")
+                
+                hostel_first_qs: Hostel = hostel_qs.first()
+
+                qs_hostel_fields = hostel_first_qs.hostel_fields.all()
+
+                # check if the hostel fields can be found in the database
+                for hostel_field in hostel_fields:
+                    hostel_field_qs = qs_hostel_fields.filter(
+                        id=hostel_field.field_id.strip()
+                    )
+                    if not hostel_field_qs.exists():
+                        raise GraphQLError("{} is not a related field of {}".format(hostel_field_qs, hostel_first_qs.name))
 
                 # check if the campus can be found in the database
                 school_campuses = (

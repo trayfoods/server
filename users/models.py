@@ -856,6 +856,10 @@ class Hostel(models.Model):
             self.slug = slugify(self.name)
             self.save()
 
+    @property
+    def hostel_fields(self):
+        return HostelField.objects.filter(school=self.school)
+
 
 class Student(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
