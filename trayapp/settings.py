@@ -349,6 +349,7 @@ else:
         "http://127.0.0.1:3000",
         "http://192.168.137.1:3000",
         "https://trayfoods.com",
+        "https://www.trayfoods.com",
         f"{FRONTEND_URL}",
     )
 
