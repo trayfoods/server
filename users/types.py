@@ -15,7 +15,7 @@ from .models import (
     Gender,
     Transaction,
     DeliveryPerson,
-    HostelField
+    HostelField,
 )
 
 
@@ -29,10 +29,16 @@ class SchoolType(DjangoObjectType):
     def resolve_campuses(self, info):
         return self.campuses
 
+
 class HostelFieldType(DjangoObjectType):
+    options = graphene.List(graphene.String)
     class Meta:
         model = HostelField
         fields = "__all__"
+
+    def resolve_options(self, info):
+        return self.options
+
 
 class ProfileType(DjangoObjectType):
     store = graphene.Field("users.types.StoreType")
@@ -61,15 +67,17 @@ class ProfileType(DjangoObjectType):
 
     def resolve_required_fields(self, info, *args, **kwargs):
         return self.required_fields
-    
+
     def resolve_has_required_fields(self, info, *args, **kwargs):
         return self.required_fields is not None and len(self.required_fields) > 0
+
 
 class UserSettingsType(graphene.ObjectType):
     has_token_device = graphene.Boolean()
 
     def resolve_has_token_device(self, info, *args, **kwargs):
         return self.has_token_device
+
 
 class UserNodeType(UserNode, graphene.ObjectType):
     profile = graphene.Field(ProfileType)
@@ -100,7 +108,7 @@ class UserNodeType(UserNode, graphene.ObjectType):
 
     def resolve_profile(self, info):
         return self.profile
-    
+
     def resolve_settings(self, info):
         return self
 
@@ -246,7 +254,7 @@ class StoreType(DjangoObjectType):
         except:
             pass
         return cover_image
-    
+
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
 
@@ -256,6 +264,7 @@ class StoreNode(StoreType, graphene.ObjectType):
         model = Store
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreFilter
+
 
 class DeliveryPersonType(DjangoObjectType):
     class Meta:

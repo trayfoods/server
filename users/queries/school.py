@@ -1,5 +1,5 @@
 import graphene
-from users.types import HostelType, SchoolType
+from users.types import HostelType, HostelFieldType, SchoolType
 from users.models import Hostel, School
 from django.db.models import Q
 from graphql import GraphQLError
@@ -18,18 +18,18 @@ class SchoolQueries(graphene.ObjectType):
     )
     hostels = graphene.List(HostelType, school=graphene.String(required=True), gender=graphene.String(required=True), campus=graphene.String(required=False))
 
-    hostel_floors = graphene.List(graphene.String, hostel=graphene.String(required=True))
+    hostel_fields = graphene.List(HostelFieldType, hostel=graphene.String(required=True))
 
     def resolve_hostels(self, info, school, gender, campus=None):
         gender = gender.upper()
         campus = campus.strip()
         return Hostel.objects.filter(school__slug=school, gender__name=gender, campus=campus).all()
     
-    def resolve_hostel_floors(self, info, hostel):
+    def resolve_hostel_fields(self, info, hostel):
         hostel = Hostel.objects.filter(slug=hostel).first()
         if hostel is None:
             raise GraphQLError("hostel does not exist")
-        return hostel.floors
+        return hostel.fields.all()
     
     def resolve_schools(self, info, name=None, country=None, count=None):
         schools = []
