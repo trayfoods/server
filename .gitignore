@@ -143,3 +143,5 @@ settings/
 
 # javascript
 node_modules/
+
+requirements_.txt
