@@ -98,8 +98,8 @@ class CreateStoreMutation(Output, graphene.Mutation):
         has_physical_store = graphene.Boolean(required=True)
 
         store_bio = graphene.String(required=False)
-        store_school = graphene.String(required=False)
-        store_campus = graphene.String(required=False)
+        school = graphene.String(required=False)
+        campus = graphene.String(required=False)
         store_address = graphene.String(required=False)
 
     user = graphene.Field(UserNodeType)
@@ -118,8 +118,8 @@ class CreateStoreMutation(Output, graphene.Mutation):
         store_open_hours,
         has_physical_store,
         store_bio=None,
-        store_school=None,
-        store_campus=None,
+        school=None,
+        campus=None,
         store_address=None,
     ):
         user = info.context.user
@@ -135,9 +135,9 @@ class CreateStoreMutation(Output, graphene.Mutation):
             return CreateStoreMutation(
                 error="Store Nickname Already Exists, Please use a unique name"
             )
-        if store_school:
-            store_school = School.objects.filter(slug=store_school.strip())
-            if not store_school.exists():
+        if school:
+            school = School.objects.filter(slug=school.strip())
+            if not school.exists():
                 return CreateStoreMutation(
                     error="School does not exist, please try again"
                 )
@@ -150,10 +150,10 @@ class CreateStoreMutation(Output, graphene.Mutation):
             store_phone_numbers=store_phone_numbers,
             store_open_hours=store_open_hours,
             has_physical_store=has_physical_store,
-            store_campus=store_campus,
+            campus=campus,
             store_bio=store_bio,
             store_nickname=store_nickname,
-            store_school=store_school.first(),
+            school=school.first(),
             vendor=user.profile,
         )  # create the store
         store.save()
@@ -225,7 +225,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         store_phone_numbers = graphene.List(graphene.String)
         store_bio = graphene.String()
         store_nickname = graphene.String()
-        store_school = graphene.String()
+        school = graphene.String()
         store_cover_image = Upload()
 
     user = graphene.Field(UserNodeType)
@@ -243,7 +243,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         store_phone_numbers=None,
         store_bio=None,
         store_nickname=None,
-        store_school=None,
+        school=None,
         store_cover_image=None,
     ):
         success = False
@@ -270,11 +270,11 @@ class UpdateStoreMutation(Output, graphene.Mutation):
             store.store_bio = store_bio
         if store_nickname:
             store.store_nickname = store_nickname
-        if store_school:
-            store_school_qs = School.objects.filter(slug=store_school.strip())
-            if not store_school_qs.exists():
+        if school:
+            school_qs = School.objects.filter(slug=school.strip())
+            if not school_qs.exists():
                 raise GraphQLError("School does not exist, please try again")
-            store.store_school = store_school_qs.first()
+            store.school = school_qs.first()
         if store_cover_image:
             store.store_cover_image = store_cover_image
         store.save()

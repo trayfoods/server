@@ -12,7 +12,7 @@ class ItemFilter(FilterSet):
         field_name="product_creator__store_nickname", lookup_expr="exact"
     )
     school = CharFilter(
-        field_name="product_creator__store_school__slug", lookup_expr="exact"
+        field_name="product_creator__school__slug", lookup_expr="exact"
     )
     country = CharFilter(
         field_name="product_creator__store_country", lookup_expr="icontains"

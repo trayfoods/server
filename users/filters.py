@@ -28,7 +28,7 @@ class TransactionFilter(FilterSet):
 
 class StoreFilter(FilterSet):
     store_category = CharFilter(field_name="store_categories", lookup_expr="icontains")
-    store_school = CharFilter(field_name="store_school__slug", lookup_expr="exact")
+    school = CharFilter(field_name="school__slug", lookup_expr="exact")
 
     class Meta:
         model = Store

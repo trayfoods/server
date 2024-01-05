@@ -14,7 +14,7 @@ from users.models import (
     UserDevice,
     HostelField,
 )
-from .forms import HostelForm
+from .forms import HostelForm, StudentForm
 
 STATIC_URL = settings.STATIC_URL
 
@@ -69,7 +69,7 @@ class UserAccountAdmin(admin.ModelAdmin):
 class StoreInline(admin.TabularInline):
     model = Store
     extra = 0
-    readonly_fields = ("store_name", "store_country", "store_address", "store_school")
+    readonly_fields = ("store_name", "store_country", "store_address", "school")
 
 
 class UserInline(admin.TabularInline):
@@ -132,13 +132,6 @@ class HostelAdmin(admin.ModelAdmin):
     class Media:
         js = (f"{STATIC_URL}js/custom-admin.js",)
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "school":
-            if "widget" in kwargs:
-                print(kwargs["widget"].attrs)
-                kwargs["widget"].attrs.update({"class": "school-field"})
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "fields":
             # get the hostel school
@@ -177,10 +170,21 @@ class DeliveryPersonAdmin(admin.ModelAdmin):
     list_display = ("__str__", "is_on_delivery", "is_verified", "is_available")
 
 
+class StudentAdmin(admin.ModelAdmin):
+    list_display = ("__str__", "school", "campus", "hostel")
+    search_fields = ("user__user__username", "user__user__email")
+    list_filter = ("school", "campus", "hostel")
+    readonly_fields = ("user",)
+    form = StudentForm
+
+    class Media:
+        js = (f"{STATIC_URL}js/custom-admin.js",)
+
+
 admin.site.register(Gender)
 admin.site.register(Profile, ProfileAdmin)
 admin.site.register(Store)
-admin.site.register(Student)
+admin.site.register(Student, StudentAdmin)
 admin.site.register(Hostel, HostelAdmin)
 admin.site.register(DeliveryPerson, DeliveryPersonAdmin)
 

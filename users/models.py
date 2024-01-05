@@ -753,9 +753,9 @@ class Store(models.Model):
     )
     store_bio = models.CharField(null=True, blank=True, max_length=150)
     store_address = models.CharField(max_length=60, null=True, blank=True)
-    store_campus = models.CharField(max_length=50, null=True, blank=True)
+    campus = models.CharField(max_length=50, null=True, blank=True)
     store_nickname = models.CharField(max_length=50, null=True, blank=True)
-    store_school = models.ForeignKey(
+    school = models.ForeignKey(
         School, on_delete=models.SET_NULL, null=True, blank=True
     )
     store_cover_image = models.ImageField(
@@ -822,7 +822,7 @@ class Store(models.Model):
     # is store a school store
     @property
     def is_school_store(self):
-        return True if self.store_school else False
+        return True if self.school else False
 
     # get store's products
     @property
@@ -867,6 +867,7 @@ class Student(models.Model):
     campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
     hostel_fields = models.JSONField(default=list, null=True, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
     """
     hostel_fields = [
         {
