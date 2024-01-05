@@ -321,7 +321,7 @@ if USE_S3:
     AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
     AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
 
-    CUSTOM_DOMAIN = "cdn.trayfoods.com"
+    CUSTOM_DOMAIN = "cdn4trayfoods.blob.core.windows.net"
 
     # s3 static settings
     STATIC_LOCATION = "static"
