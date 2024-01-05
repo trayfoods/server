@@ -181,9 +181,24 @@ class StudentAdmin(admin.ModelAdmin):
         js = (f"{STATIC_URL}js/custom-admin.js",)
 
 
+class StoreAdmin(admin.ModelAdmin):
+    list_display = ("store_name", "__str__", "has_physical_store", "store_country")
+    search_fields = (
+        "vendor__user__user__username",
+        "vendor__user__user__email",
+        "store_name",
+        "store_nickname",
+    )
+    list_filter = ("school", "campus")
+    readonly_fields = ("vendor",)
+
+    class Media:
+        js = (f"{STATIC_URL}js/custom-admin.js",)
+
+
 admin.site.register(Gender)
 admin.site.register(Profile, ProfileAdmin)
-admin.site.register(Store)
+admin.site.register(Store, StoreAdmin)
 admin.site.register(Student, StudentAdmin)
 admin.site.register(Hostel, HostelAdmin)
 admin.site.register(DeliveryPerson, DeliveryPersonAdmin)
