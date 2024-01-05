@@ -1,0 +1,4 @@
+{
+  "appService.defaultWebAppToDeploy": "/subscriptions/67db1e0d-eb26-4eef-9f20-b95735e8f587/resourceGroups/appsvc_linux_centralus_premium/providers/Microsoft.Web/sites/trayfoods",
+  "appService.deploySubpath": "."
+}
