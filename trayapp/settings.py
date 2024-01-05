@@ -3,7 +3,6 @@ from pathlib import Path
 import os
 import json
 from dotenv import load_dotenv
-import dj_database_url
 
 # import django secret key generator
 from django.core.management.utils import get_random_secret_key
@@ -261,19 +260,30 @@ ASGI_APPLICATION = "trayapp.asgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": "trayfoods",
-        "USER": "postgres",
-        "PASSWORD": "1234",
-        "HOST": "localhost",
-        "PORT": "5432",
-    },
-}
+
 if USE_DB == True:
-    db_from_env = dj_database_url.config(conn_max_age=600)
-    DATABASES["default"].update(db_from_env)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "HOST": os.getenv("DB_HOST"),
+            "PORT": "5432",
+            "OPTIONS": {"sslmode": "require"},
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "trayfoods",
+            "USER": "postgres",
+            "PASSWORD": "1234",
+            "HOST": "localhost",
+            "PORT": "5432",
+        },
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
