@@ -15,6 +15,7 @@ urlpatterns = [
     path("admin/", admin.site.urls, name="admin"),
     path("", index_view, name="index"),
     path("api/", include("core.urls"), name="rest-api"),
+    path("users/", include("users.urls"), name="users-api"),
     path(
         "graphql/",
         csrf_exempt(FileUploadGraphQLView.as_view(graphiql=True)),

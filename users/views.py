@@ -1,15 +1,12 @@
 from django.http import JsonResponse
-import requests
+from .models import School
 
 
-def get_bank_list(request) -> JsonResponse:
-    if request.user.is_authenticated:
-        url = "https://api.paystack.co/bank?country=nigeria&currency=NGN"
-        headers = {
-            'Authorization': 'Bearer sk_test_6f9d6c2c6b0f6e1c1a8a2a2f0e5d0a5f6c8f1b9a',
-            'Content-Type': 'application/json',
-        }
-        response = requests.request("GET", url, headers=headers)
-        return JsonResponse(response.json()['data'], safe=False)
-    else:
-        return JsonResponse({'error': 'Not logged in'}, safe=False)
+def get_filtered_campus(request):
+    selected_school_id = request.GET.get("selected_school", None)
+    # campuses looks like this: ["Campus 1", "Campus 2", "Campus 3"]
+    data = School.objects.filter(id=selected_school_id).values_list(
+        "campuses", flat=True
+    )
+    campuses = list(data)
+    return JsonResponse(campuses[0], safe=False)

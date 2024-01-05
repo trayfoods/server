@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import admin
 from users.models import (
     Student,
@@ -11,15 +12,17 @@ from users.models import (
     School,
     Transaction,
     UserDevice,
-    HostelField
+    HostelField,
 )
+from .forms import HostelForm
+
+STATIC_URL = settings.STATIC_URL
 
 ROLE_CHOICES = (
     ("VENDOR", "VENDOR"),
     ("CLIENT", "CLIENT"),
     ("DELIVERY_PERSON", "DELIVERY_PERSON"),
     ("STUDENT", "STUDENT"),
-    ("SCHOOL", "SCHOOL"),
 )
 
 
@@ -39,10 +42,19 @@ class RolesFilter(admin.SimpleListFilter):
                     list_of_users.append(user.id)
             return queryset.filter(id__in=list_of_users)
 
+
 class ProfileInline(admin.TabularInline):
     model = Profile
     extra = 0
-    readonly_fields = ("gender", "country", "address", "school", "hostel", "phone_number")
+    readonly_fields = (
+        "gender",
+        "country",
+        "address",
+        "school",
+        "hostel",
+        "phone_number",
+    )
+
 
 class UserAccountAdmin(admin.ModelAdmin):
     list_display = ("email", "first_name", "last_name", "username", "roles")
@@ -58,6 +70,7 @@ class StoreInline(admin.TabularInline):
     model = Store
     extra = 0
     readonly_fields = ("store_name", "store_country", "store_address", "store_school")
+
 
 class UserInline(admin.TabularInline):
     model = UserAccount
@@ -95,9 +108,11 @@ class WalletAdmin(admin.ModelAdmin):
         "updated_at",
     )
 
+
 class HostelFieldInline(admin.TabularInline):
     model = HostelField
     extra = 0
+
 
 class SchoolAdmin(admin.ModelAdmin):
     inlines = [HostelFieldInline]
@@ -106,11 +121,23 @@ class SchoolAdmin(admin.ModelAdmin):
     list_filter = ("country",)
     readonly_fields = ("slug", "date_created")
 
+
 class HostelAdmin(admin.ModelAdmin):
-    list_display = ("name", "school", "date_created")
+    list_display = ("name", "school", "gender")
     search_fields = ("name", "school__name")
-    list_filter = ("school__name",)
+    list_filter = ("school", "gender")
     readonly_fields = ("slug", "date_created")
+    form = HostelForm
+
+    class Media:
+        js = (f"{STATIC_URL}js/custom-admin.js",)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "school":
+            if "widget" in kwargs:
+                print(kwargs["widget"].attrs)
+                kwargs["widget"].attrs.update({"class": "school-field"})
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "fields":
@@ -126,14 +153,29 @@ class HostelAdmin(admin.ModelAdmin):
             kwargs["queryset"] = fields
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ("wallet", "amount", "status", "_type", "created_at")
-    search_fields = ("wallet__user__user__username", "wallet__user__user__email", "transaction_id", "gateway_transfer_id")
+    search_fields = (
+        "wallet__user__user__username",
+        "wallet__user__user__email",
+        "transaction_id",
+        "gateway_transfer_id",
+    )
     list_filter = ("created_at", "_type")
-    readonly_fields = ("wallet", "amount", "transaction_id", "gateway_transfer_id", "_type", "created_at")
+    readonly_fields = (
+        "wallet",
+        "amount",
+        "transaction_id",
+        "gateway_transfer_id",
+        "_type",
+        "created_at",
+    )
+
 
 class DeliveryPersonAdmin(admin.ModelAdmin):
     list_display = ("__str__", "is_on_delivery", "is_verified", "is_available")
+
 
 admin.site.register(Gender)
 admin.site.register(Profile, ProfileAdmin)
