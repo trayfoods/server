@@ -214,7 +214,6 @@ class HostelField(models.Model):
         verbose_name = "Hostel Arrangement Field"
         verbose_name_plural = "Hostel Arrangement Fields"
 
- 
     def get_options(self):
         # check if the field is not a loop
         if not self.is_loop:
@@ -755,9 +754,7 @@ class Store(models.Model):
     store_address = models.CharField(max_length=60, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     store_nickname = models.CharField(max_length=50, null=True, blank=True)
-    school = models.ForeignKey(
-        School, on_delete=models.SET_NULL, null=True, blank=True
-    )
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
