@@ -15,7 +15,11 @@ window.addEventListener("load", function () {
           url: url,
           success: function (data) {
             var dropdown = $("#id_campus");
+            // add the empty option
             dropdown.empty();
+            dropdown.append(
+              $("<option></option>").attr("value", "").text("---------")
+            );
             $.each(data, function (index, item) {
               if (item === currentValue) {
                 dropdown.append(
