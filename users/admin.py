@@ -14,7 +14,7 @@ from users.models import (
     UserDevice,
     HostelField,
 )
-from .forms import HostelForm, StudentForm
+from .forms import HostelForm, StudentForm, StoreForm
 
 STATIC_URL = settings.STATIC_URL
 
@@ -191,6 +191,7 @@ class StoreAdmin(admin.ModelAdmin):
     )
     list_filter = ("school", "campus")
     readonly_fields = ("vendor",)
+    form = StoreForm
 
     class Media:
         js = (f"{STATIC_URL}js/custom-admin.js",)
