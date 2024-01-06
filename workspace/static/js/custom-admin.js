@@ -23,11 +23,37 @@ window.addEventListener("load", function () {
         loader.style.height = "100%";
         loader.style.overflow = "visible";
         loader.style.backgroundColor = "rgba(0,0,0,0.5)";
-        loader.innerHTML =
-          '<div class="spinner" style="position: absolute; top: 50%; left: 50%; width: 50px; height: 50px; background-color: #333; border-radius: 50%; animation: spin 1s infinite linear; transform: translate(-50%, -50%);"></div>';
+
+        // Create spinner element
+        var spinner = document.createElement("div");
+        spinner.style.position = "absolute";
+        spinner.style.top = "50%";
+        spinner.style.left = "50%";
+        spinner.style.width = "50px";
+        spinner.style.height = "50px";
+        spinner.style.backgroundColor = "#333";
+        spinner.style.borderRadius = "50%";
+        spinner.style.border = "3px solid #fff";
+        spinner.style.borderTop = "3px solid transparent";
+        spinner.style.animation = "spin 1s infinite linear";
+        spinner.style.transform = "translate(-50%, -50%)";
+
+        // Add spinner to loader
+        loader.appendChild(spinner);
+
+        // Add loader to body
         document.body.appendChild(loader);
 
-        loader.style.display = "block"; // Show the loader
+        // Add spin animation to stylesheet
+        var style = document.createElement("style");
+        style.type = "text/css";
+        style.innerHTML =
+          "@keyframes spin { 0% { transform: translate(-50%, -50%) rotate(0deg); } 100% { transform: translate(-50%, -50%) rotate(360deg); } }";
+        document.getElementsByTagName("head")[0].appendChild(style);
+
+        // Show loader
+        loader.style.display = "block";
+
         $.ajax({
           url: url,
           success: function (data) {
