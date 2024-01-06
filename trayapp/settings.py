@@ -195,7 +195,7 @@ AUTHENTICATION_BACKENDS = [
 GRAPHQL_JWT = {
     "JWT_ALLOW_ARGUMENT": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-    "JWT_EXPIRATION_DELTA": timedelta(days=10),
+    "JWT_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
         "graphql_auth.mutations.VerifyAccount",
@@ -212,7 +212,7 @@ GRAPHQL_JWT = {
 GRAPHQL_AUTH = {
     "EMAIL_FROM": DEFAULT_FROM_EMAIL,
     "EMAIL_TEMPLATE_VARIABLES": {"frontend_domain": FRONTEND_URL},
-    "SEND_ACTIVATION_EMAIL": True,
+    "SEND_ACTIVATION_EMAIL": DEBUG == False,
     "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
     "SEND_PASSWORD_RESET_EMAIL": True,
     "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password/reset",
