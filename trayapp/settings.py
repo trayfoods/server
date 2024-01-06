@@ -92,7 +92,7 @@ if "localhost" in FRONTEND_URL:
 else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
 
-ALLOWED_HOSTS = ["trayfoods.azurewebsites.net", "api.trayfoods.com", "localhost"]
+ALLOWED_HOSTS = ["api.trayfoods.com", "localhost"]
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
