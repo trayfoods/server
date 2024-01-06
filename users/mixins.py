@@ -47,6 +47,7 @@ class RegisterMixin(Output):
 
     token = graphene.String()
     refresh_token = graphene.String()
+    refresh_expires_in = graphene.Int()
     user = graphene.Field(UserNodeType)
 
     @classmethod
