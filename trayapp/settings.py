@@ -225,6 +225,7 @@ GRAPHQL_AUTH = {
     "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
     "EMAIL_ASYNC_TASK": "users.tasks.graphql_auth_async_email",
 }
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -236,6 +237,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.http.ConditionalGetMiddleware",
+    "trayapp.middlewares.LogHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "trayapp.urls"
