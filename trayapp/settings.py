@@ -193,8 +193,10 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    "JWT_ALLOW_ARGUMENT": True,
-    "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_COOKIE_SECURE": True,
+    "JWT_HIDE_TOKEN_FIELDS": True,
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_REUSE_REFRESH_TOKENS": True,
     "JWT_EXPIRATION_DELTA": timedelta(days=7),
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
@@ -360,7 +362,6 @@ else:
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
-        "http://192.168.137.1:3000",
         "https://trayfoods.com",
         f"{FRONTEND_URL}",
     )
@@ -380,8 +381,6 @@ CORS_ALLOW_HEADERS = (
     "origin",
     "user-agent",
     "x-csrftoken",
-    "baggage",
-    "sentry-trace",
     "x-requested-with",
 )
 
