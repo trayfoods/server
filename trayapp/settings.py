@@ -193,11 +193,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    # "JWT_COOKIE_SECURE": True,
-    # "JWT_HIDE_TOKEN_FIELDS": True,
-    "JWT_VERIFY_EXPIRATION": True,
-    "JWT_REUSE_REFRESH_TOKENS": True,
+    "JWT_ALLOW_ARGUMENT": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
+    "JWT_EXPIRATION_DELTA": timedelta(days=10),
     "JWT_AUTH_HEADER_NAME": "HTTP_X_AUTHORIZATION",
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
@@ -315,7 +313,7 @@ TIME_ZONE = "UTC"
 
 USE_I18N = True
 
-USE_TZ = False
+USE_TZ = True
 
 
 # Amazon S3 settings
