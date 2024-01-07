@@ -193,9 +193,11 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 GRAPHQL_JWT = {
-    "JWT_ALLOW_ARGUMENT": True,
+    "JWT_COOKIE_SECURE": True,
+    "JWT_HIDE_TOKEN_FIELDS": True,
+    "JWT_VERIFY_EXPIRATION": True,
+    "JWT_REUSE_REFRESH_TOKENS": True,
     "JWT_LONG_RUNNING_REFRESH_TOKEN": True,
-    "JWT_EXPIRATION_DELTA": timedelta(days=10),
     "JWT_AUTH_HEADER_NAME": "HTTP_X_AUTHORIZATION",
     "JWT_ALLOW_ANY_CLASSES": [
         "graphql_auth.mutations.Register",
@@ -223,7 +225,6 @@ GRAPHQL_AUTH = {
     "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
     "EMAIL_ASYNC_TASK": "users.tasks.graphql_auth_async_email",
 }
-
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -235,7 +236,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "django.middleware.http.ConditionalGetMiddleware",
-    "trayapp.middlewares.LogHeadersMiddleware",
 ]
 
 ROOT_URLCONF = "trayapp.urls"
