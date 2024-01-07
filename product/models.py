@@ -90,6 +90,7 @@ class Item(models.Model):
         related_name="product_category",
         on_delete=models.SET_NULL,
         null=True,
+        blank=True,
     )
 
     product_type = models.ForeignKey(
