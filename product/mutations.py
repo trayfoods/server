@@ -36,13 +36,13 @@ class AddProductMutation(Output, graphene.Mutation):
         is_groupable = graphene.Boolean()
         product_calories = graphene.Float()
         product_qty_unit = graphene.String()
+        product_category = graphene.String()
         product_images = Upload(required=True)
         product_name = graphene.String(required=True)
         product_slug = graphene.String(required=True)
         product_type = graphene.String(required=True)
         product_price = graphene.Decimal(required=True)
         store_menu_name = graphene.String(required=True)
-        product_category = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
 
     product = graphene.Field(ItemType, default_value=None)
@@ -54,7 +54,6 @@ class AddProductMutation(Output, graphene.Mutation):
             "product_name",
             "product_price",
             "product_type",
-            "product_category",
             "product_share_visibility",
             "product_images",
             "store_menu_name",
@@ -80,7 +79,7 @@ class AddProductMutation(Output, graphene.Mutation):
         product_slug = kwargs.get("product_slug")
         product_name = kwargs.get("product_name")
         product_images = kwargs.get("product_images")
-        product_category_val = kwargs.get("product_category")
+        product_category_val = kwargs.get("product_category", None)
         product_type_val = kwargs.get("product_type")
 
         # Remove category, type and images from kwargs
@@ -109,9 +108,11 @@ class AddProductMutation(Output, graphene.Mutation):
 
         with transaction.atomic():
             try:
-                product_category = ItemAttribute.objects.get(
-                    urlParamName=product_category_val
-                )
+                product_category = None
+                if product_category_val:
+                    product_category = ItemAttribute.objects.get(
+                        urlParamName=product_category_val
+                    )
                 product_type = ItemAttribute.objects.get(urlParamName=product_type_val)
 
                 if product is None and not profile is None:
