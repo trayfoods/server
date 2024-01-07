@@ -135,8 +135,9 @@ class CreateStoreMutation(Output, graphene.Mutation):
             return CreateStoreMutation(
                 error="Store Nickname Already Exists, Please use a unique name"
             )
+        school_qs = None
         if school:
-            school = School.objects.filter(slug=school.strip())
+            school_qs = School.objects.filter(slug=school.strip())
             if not school.exists():
                 return CreateStoreMutation(
                     error="School does not exist, please try again"
@@ -153,7 +154,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
             campus=campus,
             store_bio=store_bio,
             store_nickname=store_nickname,
-            school=school.first(),
+            school=school_qs,
             vendor=user.profile,
         )  # create the store
         store.save()
