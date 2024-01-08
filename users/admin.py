@@ -61,9 +61,9 @@ class UserAccountAdmin(admin.ModelAdmin):
     search_fields = ("username", "first_name", "last_name", "email")
     list_filter = (RolesFilter,)
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.exclude(is_staff=True)
+    # def get_queryset(self, request):
+    #     qs = super().get_queryset(request)
+    #     return qs.exclude(is_staff=True)
 
 
 class StoreInline(admin.TabularInline):
