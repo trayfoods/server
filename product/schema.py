@@ -10,7 +10,7 @@ from product.mutations import (
     HelpfulReviewMutation,
     InitializeTransactionMutation,
     UpdateItemMenuMutation,
-    MarkOrderAsMutation
+    MarkOrderAsMutation,
 )
 from product.models import ItemAttribute
 
@@ -25,21 +25,29 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
 
     def resolve_all_item_attributes(self, info, **kwargs):
         food_categories = [
-            "Fast Food",
-            "Asian Cuisine",
-            "Italian Cuisine",
-            "American Cuisine",
-            "Mexican Cuisine",
-            "Healthy and Salad Options",
-            "Desserts and Sweets",
-            "Breakfast and Brunch",
-            "Middle Eastern Cuisine",
+            "Snacks",
+            "Soups",
+            "Stews",
+            "Rice",
+            "Pasta",
+            "Bread",
+            "Pastries",
+            "Cakes",
+            "Pies",
+            "Protein",
+            "Zero Sugar",
             "Beverages",
-        ]
+            "Chinese Food",
+            "African Food",
+            "Drink and Smoothies",
+            "Ice Cream and Yogurt",
+        ].sort()
         item_types = [
             "Dish",
             "Not Dish",
-        ]
+            "Combo",
+            "Package",
+        ].sort()
         item_attributes = ItemAttribute.objects.all()
         if item_attributes.count() > 0:
             pass
@@ -97,5 +105,6 @@ class Mutation(graphene.ObjectType):
     create_order = CreateOrderMutation.Field()
     initialize_transaction = InitializeTransactionMutation.Field()
     mark_order_as = MarkOrderAsMutation.Field()
+
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
