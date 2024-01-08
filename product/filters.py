@@ -4,9 +4,9 @@ from product.models import Item, Order
 
 class ItemFilter(FilterSet):
     type = CharFilter(field_name="product_type__urlParamName", lookup_expr="exact")
-    category = CharFilter(
-        field_name="product_category__urlParamName", lookup_expr="exact"
-    )
+    # category = CharFilter(
+    #     field_name="product_categories__urlParamName", lookup_expr="exact"
+    # )
 
     store_nickname = CharFilter(
         field_name="product_creator__store_nickname", lookup_expr="exact"

@@ -1077,14 +1077,6 @@ class UserActivity(models.Model):
     def item_idx(self):
         return self.item.id
 
-    @property
-    def product_category__name(self):
-        return self.item.product_category__name
-
-    @property
-    def product_type__name(self):
-        return self.item.product_type__name
-
 
 # Signals
 @receiver(post_save, sender=UserAccount)

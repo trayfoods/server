@@ -85,11 +85,10 @@ class Item(models.Model):
         default="Others",
         blank=True,
     )
-    product_category = models.ForeignKey(
+
+    product_categories = models.ManyToManyField(
         "ItemAttribute",
-        related_name="product_category",
-        on_delete=models.SET_NULL,
-        null=True,
+        related_name="product_categories",
         blank=True,
     )
 

@@ -17,12 +17,12 @@ class ItemAdmin(admin.ModelAdmin):
     inlines = [ItemImageInlineAdmin, RatingInlineAdmin]
     list_display = (
         "product_name",
-        "product_category",
+        "product_qty_unit",
         "product_type",
         "product_price",
     )
     prepopulated_fields = {
-        "product_slug": ("product_name", "product_category", "product_type")
+        "product_slug": ("product_name", "id", "product_type")
     }
     readonly_fields = ("product_images",)
 

@@ -36,7 +36,7 @@ class AddProductMutation(Output, graphene.Mutation):
         is_groupable = graphene.Boolean()
         product_calories = graphene.Float()
         product_qty_unit = graphene.String()
-        product_category = graphene.String()
+        product_categories = graphene.List(graphene.String)
         product_images = Upload(required=True)
         product_name = graphene.String(required=True)
         product_slug = graphene.String(required=True)
@@ -79,11 +79,11 @@ class AddProductMutation(Output, graphene.Mutation):
         product_slug = kwargs.get("product_slug")
         product_name = kwargs.get("product_name")
         product_images = kwargs.get("product_images")
-        product_category_val = kwargs.get("product_category", None)
+        product_categories_vals = kwargs.get("product_categories", None)
         product_type_val = kwargs.get("product_type")
 
         # Remove category, type and images from kwargs
-        kwargs.pop("product_category")
+        kwargs.pop("product_categories")
         kwargs.pop("product_type")
         kwargs.pop("product_images")
 
@@ -108,10 +108,10 @@ class AddProductMutation(Output, graphene.Mutation):
 
         with transaction.atomic():
             try:
-                product_category = None
-                if product_category_val:
-                    product_category = ItemAttribute.objects.get(
-                        urlParamName=product_category_val
+                product_categories = None
+                if product_categories_vals and len(product_categories_vals) > 0:
+                    product_categories = ItemAttribute.objects.filter(
+                        urlParamName__in=product_categories_vals
                     )
                 product_type = ItemAttribute.objects.get(urlParamName=product_type_val)
 
@@ -120,7 +120,7 @@ class AddProductMutation(Output, graphene.Mutation):
                     save_data = {
                         **kwargs,
                         "product_creator": profile.store,
-                        "product_category": product_category,
+                        "product_categories": product_categories,
                         "product_type": product_type,
                         "has_qty": kwargs.get("product_qty")
                         and kwargs.get("product_qty", 0) > 0,

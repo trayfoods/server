@@ -82,7 +82,7 @@ class ItemType(DjangoObjectType):
             "product_qty_unit",
             "is_groupable",
             "product_share_visibility",
-            "product_category",
+            "product_categories",
             "product_type",
             "product_images",
             "product_desc",
