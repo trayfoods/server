@@ -247,9 +247,8 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         school=None,
         store_cover_image=None,
     ):
-        success = False
         user = info.context.user
-        profile = user.profile
+        profile: Profile = user.profile
         if profile.store is None:
             raise GraphQLError("You are not a vendor")
         store = Store.objects.filter(vendor=profile).first()
@@ -279,17 +278,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         if store_cover_image:
             store.store_cover_image = store_cover_image
         store.save()
-        success = True
-
-        return UpdateStoreMutation(success=success, user=user)
-
-    @verification_required
-    def resolve_mutation(cls, root, info, **kwargs):
-        user = info.context.user
-        if user.profile and user.profile.store:
-            return cls(success=True, user=user)
-        else:
-            return cls(success=False, user=user)
+        return UpdateStoreMutation(success=True, user=info.context.user)
 
 
 class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
