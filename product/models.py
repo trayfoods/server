@@ -145,7 +145,7 @@ class Item(models.Model):
         """
         return cls.objects.exclude(product_status="deleted").exclude(
             product_creator__is_active=False
-        ).exclude(product_type__slug__icontains="Pack")
+        ).exclude(product_type__slug__icontains="package")
 
     # filter the product available in a store
     @classmethod
