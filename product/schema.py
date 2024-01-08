@@ -31,7 +31,6 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
             "Rice",
             "Pasta",
             "Bread",
-            "Pastries",
             "Cakes",
             "Pies",
             "Protein",
