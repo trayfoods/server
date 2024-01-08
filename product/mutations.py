@@ -120,7 +120,6 @@ class AddProductMutation(Output, graphene.Mutation):
                     save_data = {
                         **kwargs,
                         "product_creator": profile.store,
-                        "product_categories": product_categories,
                         "product_type": product_type,
                         "has_qty": kwargs.get("product_qty")
                         and kwargs.get("product_qty", 0) > 0,
@@ -133,6 +132,8 @@ class AddProductMutation(Output, graphene.Mutation):
                         .exists()
                     ):
                         product = Item.objects.create(**save_data)
+                        if not product_categories is None:
+                            product.product_categories.set(product_categories)
                         product.save()
                     else:
                         save_data.pop("product_slug")
@@ -457,7 +458,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             order.order_status = "ready-for-pickup"
             order.save()
             order_disp_id = order.order_track_id.replace("order_", "")
-            order.user.send_push_notification("Order #{} is ready for pickup".format(order_disp_id))
+            order.user.send_push_notification(
+                "Order #{} is ready for pickup".format(order_disp_id)
+            )
 
             return MarkOrderAsMutation(success=True)
 
