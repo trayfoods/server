@@ -53,7 +53,7 @@ def store_cover_image_directory_path(instance, filename):
         the final destination path.
     :result str: Directory path.file_extension.
     """
-    username = slugify(instance.vendor.user.user.username)
+    username = slugify(instance.vendor.user.username)
     _, extension = os.path.splitext(filename)
     return f"images/vendors/{username}/{instance.store_nickname}-store-cover{extension}"
 

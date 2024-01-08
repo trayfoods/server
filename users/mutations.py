@@ -247,8 +247,8 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         school=None,
         store_cover_image=None,
     ):
-        user = info.context.user
-        profile: Profile = user.profile
+        user: UserAccount = info.context.user
+        profile = user.profile
         if profile.store is None:
             raise GraphQLError("You are not a vendor")
         store = Store.objects.filter(vendor=profile).first()
