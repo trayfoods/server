@@ -145,7 +145,7 @@ class Item(models.Model):
         """
         return cls.objects.exclude(product_status="deleted").exclude(
             product_creator__is_active=False
-        ).exclude(product_type__icontain="Pack")
+        ).exclude(product_type__url__icontain="Pack")
 
     # filter the product available in a store
     @classmethod
@@ -221,16 +221,16 @@ class Rating(models.Model):
 
 class ItemAttribute(models.Model):
     name = models.CharField(max_length=50)
-    urlParamName = models.SlugField(null=False, unique=True)
+    slug = models.SlugField(null=False, unique=True)
     _type = models.CharField(max_length=10, choices=PRODUCT_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
 
-    def save(self, *args, **kwargs):  # auto create urlParamName
-        if not self.urlParamName:
-            self.urlParamName = slugify(self.urlParamName)
+    def save(self, *args, **kwargs):  # auto create slug
+        if not self.slug:
+            self.slug = slugify(self.slug)
         return super().save(*args, **kwargs)
 
 

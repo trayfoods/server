@@ -21,7 +21,7 @@ from product.queries.order import OrderQueries
 class Query(ItemQueries, OrderQueries, graphene.ObjectType):
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
-    item_attribute = graphene.Field(ItemAttributeType, urlParamName=graphene.String())
+    item_attribute = graphene.Field(ItemAttributeType, slug=graphene.String())
 
     def resolve_all_item_attributes(self, info, **kwargs):
         food_categories = [
@@ -56,7 +56,7 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
                 new_item_attribute = ItemAttribute.objects.create(
                     name=food_category,
                     _type="CATEGORY",
-                    urlParamName=food_category.replace(" ", "-").lower(),
+                    slug=food_category.replace(" ", "-").lower(),
                 )
                 new_item_attribute.save()
             item_attributes = ItemAttribute.objects.all()
@@ -65,7 +65,7 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
                 new_item_attribute = ItemAttribute.objects.create(
                     name=item_type,
                     _type="TYPE",
-                    urlParamName=item_type.replace(" ", "-").lower(),
+                    slug=item_type.replace(" ", "-").lower(),
                 )
                 new_item_attribute.save()
 
@@ -83,8 +83,8 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
         item_attributes = ItemAttribute.objects.filter(_type=_type)
         return item_attributes
 
-    def resolve_item_attribute(self, info, urlParamName):
-        item_attribute = ItemAttribute.objects.filter(urlParamName=urlParamName).first()
+    def resolve_item_attribute(self, info, slug):
+        item_attribute = ItemAttribute.objects.filter(slug=slug).first()
         return item_attribute
 
 

@@ -111,9 +111,9 @@ class AddProductMutation(Output, graphene.Mutation):
                 product_categories = None
                 if product_categories_vals and len(product_categories_vals) > 0:
                     product_categories = ItemAttribute.objects.filter(
-                        urlParamName__in=product_categories_vals
+                        slug__in=product_categories_vals
                     )
-                product_type = ItemAttribute.objects.get(urlParamName=product_type_val)
+                product_type = ItemAttribute.objects.get(slug=product_type_val)
 
                 if product is None and not profile is None:
                     # Spread the kwargs

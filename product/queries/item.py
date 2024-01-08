@@ -22,8 +22,8 @@ class ItemQueries(graphene.ObjectType):
     def resolve_hero_data(self, info):
         items = (
             Item.get_items().exclude(product_creator__is_active=False)
-            .filter(product_type__urlParamName__icontains="dish")
-            .exclude(product_type__urlParamName__icontains="not")
+            .filter(product_type__slug__icontains="dish")
+            .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]
         )
         return items

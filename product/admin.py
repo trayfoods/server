@@ -32,7 +32,7 @@ class ItemAttributeAdmin(admin.ModelAdmin):
         "name",
         "_type",
     )
-    prepopulated_fields = {"urlParamName": ("_type", "name")}
+    prepopulated_fields = {"slug": ("_type", "name")}
 
 
 # ItemImage
