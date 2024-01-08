@@ -41,13 +41,15 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
             "African Food",
             "Drink and Smoothies",
             "Ice Cream and Yogurt",
-        ].sort()
+        ]
+        food_categories.sort()
         item_types = [
             "Dish",
             "Not Dish",
             "Combo",
             "Package",
-        ].sort()
+        ]
+        item_types.sort()
         item_attributes = ItemAttribute.objects.all()
         if item_attributes.count() > 0:
             pass
