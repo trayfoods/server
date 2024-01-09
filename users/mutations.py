@@ -497,7 +497,7 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                 hostel_qs = Hostel.objects.filter(slug=hostel.strip())
                 if not hostel_qs.exists():
                     raise GraphQLError("Hostel does not exist")
-                
+
                 hostel_first_qs: Hostel = hostel_qs.first()
 
                 qs_hostel_fields = hostel_first_qs.hostel_fields.all()
@@ -508,7 +508,11 @@ class CompleteProfileMutation(Output, graphene.Mutation):
                         id=hostel_field.field_id.strip()
                     )
                     if not hostel_field_qs.exists():
-                        raise GraphQLError("{} is not a related field of {}".format(hostel_field_qs, hostel_first_qs.name))
+                        raise GraphQLError(
+                            "{} is not a related field of {}".format(
+                                hostel_field_qs, hostel_first_qs.name
+                            )
+                        )
 
                 # check if the campus can be found in the database
                 school_campuses = (
@@ -1027,51 +1031,46 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
 class UpdateStoreMenuMutation(Output, graphene.Mutation):
     class Arguments:
-        name = graphene.String(required=True)
-        action = graphene.String(required=True)
+        menus = graphene.List(graphene.String, required=True)
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, name, action):
+    def mutate(self, info, menus: list[str]):
         user = info.context.user
         user_profile = user.profile
         store = user_profile.store
 
-        name = name.strip()
-
         if not "VENDOR" in user.roles or store is None:
             return UpdateStoreMenuMutation(error="You are not a vendor")
 
-        # check if the name exists in the store menu json list
-        exist_name = False
+        store_menu = store.store_menu
 
-        name_in_lower_case = name.strip().lower()
-        for menu in store.store_menu:
-            menu = menu.strip().lower()
-            if menu == name_in_lower_case:
-                exist_name = True
-                break
+        new_menu = []
+        # set all the menu names to upper case
+        for name in menus:
+            new_menu.append(name.upper())
 
-        if action == "add":
-            if exist_name:
-                return UpdateStoreMenuMutation(error="This menu already exists")
-            store.store_menu.append(name)
-            store.save()
-            return UpdateStoreMenuMutation(success=True)
-        elif action == "remove":
-            # check of the name is 'all', then don't allow it
-            if name_in_lower_case == "others":
-                return UpdateStoreMenuMutation(error="You cannot remove 'all' menu")
+        # remove duplicates
+        new_menu = list(set(new_menu))
 
-            if not exist_name:
-                return UpdateStoreMenuMutation(error="This menu does not exist")
+        # check if OTHERS is missing in the menu
+        if not "OTHERS" in new_menu:
+            new_menu.append("OTHERS")
 
-            # check if store_products are already using the menu as store_menu_name
-            store.store_products.filter(store_menu_name=name).update(
-                store_menu_name="Others"
+        removed_menu = []
+        # check the removed menu
+        for name in store_menu:
+            if not name in new_menu:
+                removed_menu.append(name)
+
+        if len(removed_menu) > 0:
+            # check if the menu is in the store_products, if not update the store_products store_menu_name to 'OTHERS'
+            store_products = store.store_products.filter(
+                store_menu_name__in=removed_menu
             )
+            if store_products.exists():
+                store_products.update(store_menu_name="OTHERS")
 
-            store.store_menu.remove(name)
-            store.save()
-            return UpdateStoreMenuMutation(success=True)
-        else:
-            return UpdateStoreMenuMutation(error="Invalid action")
+        # save the store menu
+        store.store_menu = new_menu
+        store.save()
+        return UpdateStoreMenuMutation(success=True)

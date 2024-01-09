@@ -773,12 +773,12 @@ class Store(models.Model):
         # check if all is not in store menu
         all_exists = False
         for menu in self.store_menu:
-            name = menu.lower()
-            if name == "others":
+            name = menu.upper()
+            if name == "OTHERS":
                 all_exists = True
                 break
         if not all_exists:
-            self.store_menu.append("Others")
+            self.store_menu.append("OTHERS")
             self.save()
 
         return f"{self.store_nickname}"
