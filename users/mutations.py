@@ -1044,6 +1044,11 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         store_menu = store.store_menu
 
+        # check if OTHERS is missing in the menu
+        if not "OTHERS" in menus:
+            return UpdateStoreMenuMutation(
+                error="Others menu cannot be removed"
+            )
         new_menu = []
         # set all the menu names to upper case
         for name in menus:
@@ -1051,10 +1056,6 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         # remove duplicates
         new_menu = list(set(new_menu))
-
-        # check if OTHERS is missing in the menu
-        if not "OTHERS" in new_menu:
-            new_menu.append("OTHERS")
 
         removed_menu = []
         # check the removed menu
