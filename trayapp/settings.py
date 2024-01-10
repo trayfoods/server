@@ -19,6 +19,8 @@ from firebase_admin import initialize_app, credentials
 from cryptography.fernet import Fernet
 
 FIREBASE_CONFIG_KEY = os.environ.get("FIREBASE_CONFIG_KEY")
+if not "=" in FIREBASE_CONFIG_KEY:
+    FIREBASE_CONFIG_KEY = f"{FIREBASE_CONFIG_KEY}="
 fernet = Fernet(FIREBASE_CONFIG_KEY)
 
 with open(BASE_DIR / "configs/firebaseServiceAccountKey.bin", "rb") as f:
