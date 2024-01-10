@@ -308,7 +308,7 @@ class OrderType(DjangoObjectType):
             "order_status",
             "display_date",
             "overall_price",
-            "transaction_fee",
+            "service_fee",
             "order_payment_currency",
             "order_payment_status",
             "order_payment_url",

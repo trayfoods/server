@@ -320,8 +320,8 @@ class CreateOrderMutation(graphene.Mutation):
         delivery_fee = Decimal(delivery_fee)
         delivery_fee = delivery_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
-        transaction_fee = Decimal(0.05) * overall_price
-        transaction_fee = transaction_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        service_fee = Decimal(0.15) * overall_price
+        service_fee = service_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         shipping = json.dumps(shipping)
         stores_infos = json.dumps(stores_infos)
@@ -363,7 +363,7 @@ class CreateOrderMutation(graphene.Mutation):
             user=current_user_profile,
             overall_price=overall_price,
             delivery_fee=delivery_fee,
-            transaction_fee=transaction_fee,
+            service_fee=service_fee,
             shipping=shipping,
             stores_infos=stores_infos,
             store_notes=store_notes,

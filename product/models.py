@@ -262,7 +262,7 @@ class Order(models.Model):
     delivery_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
-    transaction_fee = models.DecimalField(
+    service_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
     shipping = models.JSONField(default=dict)
@@ -467,7 +467,7 @@ class Order(models.Model):
         amount = (
             Decimal(self.overall_price)
             + Decimal(self.delivery_fee)
-            + Decimal(self.transaction_fee)
+            + Decimal(self.service_fee)
         )
         amount = amount * 100
 

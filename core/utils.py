@@ -86,7 +86,7 @@ class ProcessPayment:
 
         # get the overall price of the order
         overall_price = Decimal(order.overall_price)
-        order_price = order_price - delivery_fee - Decimal(order.transaction_fee)
+        order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
         # calculate the total price of the stores
         # and compare it with the overall price
