@@ -45,8 +45,8 @@ class RegisterMixin(Output):
 
     form = RegisterForm
 
-    token = graphene.String()
-    refresh_token = graphene.String()
+    token = graphene.String(default_value=None)
+    refresh_token = graphene.String(default_value=None)
     refresh_expires_in = graphene.Int()
     user = graphene.Field(UserNodeType)
 
@@ -108,8 +108,8 @@ class ObtainJSONWebTokenMixin(Output):
     return `unarchiving=True` on output.
     """
 
-    token = graphene.String(default_value="")
-    refresh_token = graphene.String(default_value="")
+    token = graphene.String(default_value=None)
+    refresh_token = graphene.String(default_value=None)
 
     @classmethod
     def resolve(cls, root, info, **kwargs):
