@@ -59,7 +59,7 @@ USE_S3 = "True" in os.environ.get("USE_S3", "False")
 USE_DB = "True" in os.environ.get("USE_DB", "False")
 
 PAYSTACK_SECRET_KEY = os.environ.get(
-    "PAYSTACK_SECRET_KEY", "sk_test_5ade8b7c938c7a772a9b3716edc14d3ba8ce61ff"
+    "PAYSTACK_SECRET_KEY", "sk_test_a6bda9447b792ea9cdd71c8c656b879e7ae2f407"
 )
 PAYSTACK_PUBLIC_KEY = os.environ.get(
     "PAYSTACK_PUBLIC_KEY", "pk_test_6babc1ce63e8962d226e26a591af69d2f2067893"
