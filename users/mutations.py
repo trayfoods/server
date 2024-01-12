@@ -297,23 +297,25 @@ class UpdatePersonalInfoMutation(Output, graphene.Mutation):
 
     user = graphene.Field(UserNodeType)
 
-    @staticmethod
     @permission_checker([IsAuthenticated])
     def mutate(
         self,
         info,
-        first_name=None,
-        email=None,
-        last_name=None,
-        country=None,
-        profile_image=None,
-        state=None,
-        city=None,
-        primary_address=None,
-        street_name=None,
-        primary_address_lat=None,
-        primary_address_lng=None,
+        **kwargs,
     ):
+        print(kwargs)
+        first_name = kwargs.get("first_name")
+        last_name = kwargs.get("last_name")
+        email = kwargs.get("email")
+        profile_image = kwargs.get("profile_image")
+        country = kwargs.get("country")
+        state = kwargs.get("state")
+        city = kwargs.get("city")
+        primary_address = kwargs.get("primary_address")
+        street_name = kwargs.get("street_name")
+        primary_address_lat = kwargs.get("primary_address_lat")
+        primary_address_lng = kwargs.get("primary_address_lng")
+
         user: UserAccount = info.context.user
         profile: Profile = user.profile
 
@@ -322,6 +324,10 @@ class UpdatePersonalInfoMutation(Output, graphene.Mutation):
 
         if last_name:
             user.last_name = last_name
+
+        print(first_name, last_name)
+
+        user.save()
 
         # update the profile values
         if country:
@@ -363,7 +369,6 @@ class UpdatePersonalInfoMutation(Output, graphene.Mutation):
                     error="Error trying to send confirmation mail to %s" % email
                 )
 
-        user.save()
         return UpdatePersonalInfoMutation(success=True, user=info.context.user)
 
 
