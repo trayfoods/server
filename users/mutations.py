@@ -732,47 +732,51 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
 
 class ChangePinMutation(Output, graphene.Mutation):
     class Arguments:
-        old_pin = graphene.Int(required=True)
+        old_pin = graphene.Int()
+        pwd = graphene.String()
         new_pin = graphene.Int(required=True)
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, old_pin, new_pin):
+    def mutate(self, info, new_pin, old_pin=None, pwd=None):
+        # check if pwd and old_pin is not empty
+        if pwd is None and old_pin is None:
+            return ChangePinMutation(error="Old Pin or Password cannot be empty")
+
         user = info.context.user
         profile = user.profile
         error = None
-        success = False
         wallet = Wallet.objects.filter(user=profile).first()
 
         new_pin = str(new_pin)
-        old_pin = str(old_pin)
 
         # check if wallet exists
         if wallet is None:
-            raise GraphQLError("Wallet does not exist, Please contact support")
-
-        # check if old pin is empty
-        if old_pin is None:
-            raise GraphQLError("Old Pin cannot be empty")
+            return ChangePinMutation(
+                error="Wallet does not exist, Please contact support or try again later"
+            )
 
         # check if new pin is empty
         if new_pin is None:
-            raise GraphQLError("New Pin cannot be empty")
-
-        is_old_pin = False
-        try:
+            return ChangePinMutation(error="New Pin cannot be empty")
+        if old_pin:
+            old_pin = str(old_pin)
             is_old_pin = wallet.check_passcode(old_pin)
-        except Exception as e:
-            raise GraphQLError(e)
 
-        if is_old_pin == False:
-            raise GraphQLError("Wrong Old Pin")
+            if is_old_pin == False:
+                return ChangePinMutation(error="Wrong Old Pin")
+        elif pwd:
+            is_pwd = wallet.user.user.check_password(pwd)
+
+            if is_pwd == False:
+                return ChangePinMutation(error="Wrong Password")
+        else:
+            return ChangePinMutation(error="Old Pin or Password cannot be empty")
 
         wallet.set_passcode(new_pin)
         wallet.save()
 
-        success = True
-        return ChangePinMutation(success=success, error=error)
+        return ChangePinMutation(success=True, error=error)
 
 
 class UserDeviceMutation(Output, graphene.Mutation):
@@ -1046,9 +1050,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         # check if OTHERS is missing in the menu
         if not "OTHERS" in menus:
-            return UpdateStoreMenuMutation(
-                error="Others menu cannot be removed"
-            )
+            return UpdateStoreMenuMutation(error="Others menu cannot be removed")
         new_menu = []
         # set all the menu names to upper case
         for name in menus:
