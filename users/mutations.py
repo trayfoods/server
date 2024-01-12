@@ -759,17 +759,20 @@ class ChangePinMutation(Output, graphene.Mutation):
         # check if new pin is empty
         if new_pin is None:
             return ChangePinMutation(error="New Pin cannot be empty")
+        
         if old_pin:
             old_pin = str(old_pin)
             is_old_pin = wallet.check_passcode(old_pin)
 
             if is_old_pin == False:
                 return ChangePinMutation(error="Wrong Old Pin")
+            
         elif pwd:
             is_pwd = wallet.user.user.check_password(pwd)
 
             if is_pwd == False:
                 return ChangePinMutation(error="Wrong Password")
+            
         else:
             return ChangePinMutation(error="Old Pin or Password cannot be empty")
 
