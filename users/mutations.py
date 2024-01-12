@@ -290,6 +290,10 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
         country = graphene.String()
         state = graphene.String()
         city = graphene.String()
+        primary_address = graphene.String()
+        street_name = graphene.String()
+        primary_address_lat = graphene.Float()
+        primary_address_lng = graphene.Float()
 
     user = graphene.Field(UserNodeType)
 
@@ -307,10 +311,13 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
         profile_image=None,
         state=None,
         city=None,
+        primary_address=None,
+        street_name=None,
+        primary_address_lat=None,
+        primary_address_lng=None,
     ):
-        user = info.context.user
-        send_email = False
-        profile = user.profile
+        user: UserAccount = info.context.user
+        profile: Profile = user.profile
 
         if first_name:
             user.first_name = first_name
@@ -331,23 +338,33 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
         if state:
             profile.state = state
 
+        if primary_address:
+            # check if the primary_address_lat and primary_address_lng and street_name are empty
+            if not primary_address_lat or not primary_address_lng or not street_name:
+                raise GraphQLError(
+                    "Use another address, the address you entered is not valid, please try again"
+                )
+
+            profile.primary_address = primary_address
+            profile.street_name = street_name
+            profile.primary_address_lat = primary_address_lat
+            profile.primary_address_lng = primary_address_lng
+
         profile.save()
 
-        if user.email != email:
-            send_email = True
+        if email and user.email != email:
             user.status.verified = False
+            try:
+                user_status = UserStatus.objects.filter(user=user).first()
+                user_status.clean_email(email)
+                user.email = email
+                user.save()
+                user_status.send_activation_email(info)
+            except Exception as e:
+                raise GraphQLError(
+                    "Error trying to send confirmation mail to %s" % email
+                )
 
-        if send_email == True:
-            # try:
-            user_status = UserStatus.objects.filter(user=user).first()
-            user_status.clean_email(email)
-            user.email = email
-            user.save()
-            user_status.send_activation_email(info)
-            # except Exception as e:
-            #     raise GraphQLError(
-            #         "Error trying to send confirmation mail to %s" % email
-            #     )
         user.save()
         return UpdatePersonalInfoMutation(user=info.context.user)
 
@@ -759,20 +776,20 @@ class ChangePinMutation(Output, graphene.Mutation):
         # check if new pin is empty
         if new_pin is None:
             return ChangePinMutation(error="New Pin cannot be empty")
-        
+
         if old_pin:
             old_pin = str(old_pin)
             is_old_pin = wallet.check_passcode(old_pin)
 
             if is_old_pin == False:
                 return ChangePinMutation(error="Wrong Old Pin")
-            
+
         elif pwd:
             is_pwd = wallet.user.user.check_password(pwd)
 
             if is_pwd == False:
                 return ChangePinMutation(error="Wrong Password")
-            
+
         else:
             return ChangePinMutation(error="Old Pin or Password cannot be empty")
 
