@@ -281,7 +281,7 @@ class UpdateStoreMutation(Output, graphene.Mutation):
         return UpdateStoreMutation(success=True, user=info.context.user)
 
 
-class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
+class UpdatePersonalInfoMutation(Output, graphene.Mutation):
     class Arguments:
         first_name = graphene.String()
         last_name = graphene.String()
@@ -296,8 +296,6 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
         primary_address_lng = graphene.Float()
 
     user = graphene.Field(UserNodeType)
-
-    __doc__ = UpdateAccountMixin.__doc__
 
     @staticmethod
     @permission_checker([IsAuthenticated])
@@ -341,8 +339,8 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
         if primary_address:
             # check if the primary_address_lat and primary_address_lng and street_name are empty
             if not primary_address_lat or not primary_address_lng or not street_name:
-                raise GraphQLError(
-                    "Use another address, the address you entered is not valid, please try again"
+                return UpdatePersonalInfoMutation(
+                    error="Use another address, the address you entered is not valid, please try again"
                 )
 
             profile.primary_address = primary_address
@@ -361,12 +359,12 @@ class UpdatePersonalInfoMutation(UpdateAccountMixin, graphene.Mutation):
                 user.save()
                 user_status.send_activation_email(info)
             except Exception as e:
-                raise GraphQLError(
-                    "Error trying to send confirmation mail to %s" % email
+                return UpdatePersonalInfoMutation(
+                    error="Error trying to send confirmation mail to %s" % email
                 )
 
         user.save()
-        return UpdatePersonalInfoMutation(user=info.context.user)
+        return UpdatePersonalInfoMutation(success=True, user=info.context.user)
 
 
 class UpdateSchoolInfoMutation(Output, graphene.Mutation):
