@@ -88,7 +88,7 @@ class LoginMutation(
 
 class CreateUpdateStoreMutation(Output, graphene.Mutation):
     class Arguments:
-        event_type = graphene.String()
+        event_type = graphene.String(required=True)
         # store details
         store_name = graphene.String()
         store_nickname = graphene.String()
@@ -126,7 +126,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         self,
         info,
         event_type,
-        store_open_hours: list[StoreOpenHoursInput],
+        store_open_hours: list[StoreOpenHoursInput] = None,
         **kwargs,
     ):
         user = info.context.user
@@ -141,6 +141,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             "store_cover_image",
             "has_physical_store",
             "country",
+            "store_open_hours",
         ]
         address_fields = [
             "primary_address",
