@@ -7,8 +7,7 @@ from users.queries.school import SchoolQueries
 from users.queries.store import StoreQueries
 
 from .mutations import (
-    CreateStoreMutation,
-    UpdateStoreMutation,
+    CreateUpdateStoreMutation,
     CreateTransferRecipient,
     WithdrawFromWalletMutation,
     ChangePinMutation,
@@ -98,8 +97,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     change_pin = ChangePinMutation.Field()
     accept_delivery = AcceptDeliveryMutation.Field()
 
-    create_store = CreateStoreMutation.Field()
-    update_store = UpdateStoreMutation.Field()
+    create_update_store = CreateUpdateStoreMutation.Field()
     update_store_menu = UpdateStoreMenuMutation.Field()
 
 

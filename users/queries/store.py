@@ -9,7 +9,7 @@ class StoreQueries(graphene.ObjectType):
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
 
     def resolve_stores(self, info, **kwargs):
-        return Store.objects.all().exclude(is_active=False)
+        return Store.objects.all().exclude(is_approved=False)
 
     def resolve_get_store(self, info, store_nickname):
         user = info.context.user
@@ -18,7 +18,7 @@ class StoreQueries(graphene.ObjectType):
             if store.vendor == user.profile:
                 return store
 
-        if not store.is_active:
+        if not store.is_approved:
             return None
 
         if not store is None:

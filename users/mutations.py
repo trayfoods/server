@@ -17,6 +17,7 @@ from .types import UserNodeType, StoreOpenHoursInput
 from .models import (
     Transaction,
     Store,
+    StoreOpenHours,
     School,
     Student,
     Hostel,
@@ -85,22 +86,37 @@ class LoginMutation(
         return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
 
 
-class CreateStoreMutation(Output, graphene.Mutation):
+class CreateUpdateStoreMutation(Output, graphene.Mutation):
     class Arguments:
-        # The input arguments for this mutation
-        store_name = graphene.String(required=True)
-        store_country = graphene.String(required=True)
-        store_type = graphene.String(required=True)
-        store_categories = graphene.List(graphene.String, required=True)
-        store_phone_numbers = graphene.List(graphene.String, required=True)
-        store_nickname = graphene.String(required=True)
-        store_open_hours = graphene.List(StoreOpenHoursInput, required=True)
-        has_physical_store = graphene.Boolean(required=True)
+        event_type = graphene.String()
+        # store details
+        store_name = graphene.String()
+        store_nickname = graphene.String()
+        store_type = graphene.String()
+        store_categories = graphene.List(graphene.String)
+        store_bio = graphene.String()
+        store_cover_image = Upload()
+        has_physical_store = graphene.Boolean()
 
-        store_bio = graphene.String(required=False)
-        school = graphene.String(required=False)
-        campus = graphene.String(required=False)
-        store_address = graphene.String(required=False)
+        # store location
+        country = graphene.String()
+        state = graphene.String()
+        city = graphene.String()
+        primary_address = graphene.String()
+        street_name = graphene.String()
+        primary_address_lat = graphene.Float()
+        primary_address_lng = graphene.Float()
+        school = graphene.String()
+        campus = graphene.String()
+        timezone = graphene.String()
+
+        # store contact
+        whatsapp_numbers = graphene.List(graphene.String)
+        instagram_handle = graphene.String()
+        twitter_handle = graphene.String()
+        facebook_handle = graphene.String()
+
+        store_open_hours = graphene.List(StoreOpenHoursInput)
 
     user = graphene.Field(UserNodeType)
 
@@ -109,55 +125,105 @@ class CreateStoreMutation(Output, graphene.Mutation):
     def mutate(
         self,
         info,
-        store_name,
-        store_country,
-        store_type,
-        store_categories,
-        store_phone_numbers,
-        store_nickname,
-        store_open_hours,
-        has_physical_store,
-        store_bio=None,
-        school=None,
-        campus=None,
-        store_address=None,
+        event_type,
+        store_open_hours: list[StoreOpenHoursInput],
+        **kwargs,
     ):
         user = info.context.user
 
-        # check if the user is a vendor
-        if "VENDOR" in user.roles:
-            return CreateStoreMutation(error="You already have a store")
+        allowed_event_types = ["CREATE", "UPDATE"]
 
-        # check if the store nickname is already taken
-        if Store.objects.filter(
-            store_nickname=store_nickname.strip()
-        ).exists():  # if not taken
-            return CreateStoreMutation(
-                error="Store Nickname Already Exists, Please use a unique name"
-            )
+        required_fields = [
+            "store_name",
+            "store_nickname",
+            "store_type",
+            "store_categories",
+            "store_cover_image",
+            "has_physical_store",
+            "country",
+        ]
+        address_fields = [
+            "primary_address",
+            "state",
+            "city",
+            "street_name",
+            "primary_address_lat",
+            "primary_address_lng",
+        ]
+        if (
+            "primary_address" in kwargs
+            or "primary_address_lat" in kwargs
+            or "primary_address_lng" in kwargs
+        ):
+            # add state, city, street_name, primary_address_lat, primary_address_lng to the required fields
+            required_fields.extend(address_fields)
+        if not event_type in allowed_event_types:
+            return CreateUpdateStoreMutation(error="Invalid event type")
+
+        store_nickname = kwargs.get("store_nickname")
+        school = kwargs.get("school")
+        campus = kwargs.get("campus")
+
+        if event_type == "CREATE":
+            # check if the user is a vendor
+            if "VENDOR" in user.roles:
+                return CreateUpdateStoreMutation(error="You already have a store")
+                # check if the store nickname is already taken
+            if Store.objects.filter(store_nickname=store_nickname.strip()).exists():
+                return CreateUpdateStoreMutation(
+                    error="Nickname already exists, please use a unique name"
+                )
+            # check if the required fields are valid
+            for field in required_fields:
+                if not field in kwargs:
+                    if field in address_fields:
+                        return CreateUpdateStoreMutation(
+                            error="Valid Address is required, please try again".format(
+                                field
+                            )
+                        )
+                    return CreateUpdateStoreMutation(
+                        error="{} is required".format(field)
+                    )
+
         school_qs = None
         if school:
+            if not campus:
+                return CreateUpdateStoreMutation(
+                    error="Campus is required, please try again"
+                )
             school_qs = School.objects.filter(slug=school.strip())
             if not school.exists():
-                return CreateStoreMutation(
+                return CreateUpdateStoreMutation(
                     error="School does not exist, please try again"
                 )
-        store = Store.objects.create(
-            store_name=store_name,
-            store_country=store_country,
-            store_address=store_address,
-            store_type=store_type,
-            store_categories=store_categories,
-            store_phone_numbers=store_phone_numbers,
-            store_open_hours=store_open_hours,
-            has_physical_store=has_physical_store,
-            campus=campus,
-            store_bio=store_bio,
-            store_nickname=store_nickname,
-            school=school_qs,
+            # check if the campus can be found in the school campuses list
+            school_campuses = school_qs.first().campuses
+            if not campus in school_campuses:
+                return CreateUpdateStoreMutation(
+                    error="Campus does not exist, please try again"
+                )
+
+        store = Store.objects.update_or_create(
             vendor=user.profile,
-        )  # create the store
-        store.save()
+            school=school_qs,
+            **kwargs,
+        )
+        store = store[0]
+
+        try:
+            # loop and create store open hours
+            for store_open_hour in store_open_hours:
+                StoreOpenHours.objects.create(
+                    store=store,
+                    day=store_open_hour.day,
+                    open_time=store_open_hour.open_time,
+                    close_time=store_open_hour.close_time,
+                )
+        except Exception as e:
+            # delete the store if there is an error
+            store.delete()
+            return CreateUpdateStoreMutation(error=str(e))
 
         # get all admin users email and send them a plain text email
         # to verify the store
@@ -203,82 +269,7 @@ class CreateStoreMutation(Output, graphene.Mutation):
             print(e)
 
         # return the vendor and user
-        return CreateStoreMutation(success=True, user=info.context.user)
-
-    @verification_required
-    def resolve_mutation(cls, root, info, **kwargs):
-        user = info.context.user
-        # check if the store is was not created then delete the vendor
-        if user.profile and not user.profile.store:
-            user.profile.store.delete()
-            return cls(success=False, user=user)
-        else:
-            return cls(success=True, user=user)
-
-
-class UpdateStoreMutation(Output, graphene.Mutation):
-    class Arguments:
-        store_name = graphene.String()
-        store_country = graphene.String()
-        store_address = graphene.String()
-        store_type = graphene.String()
-        store_categories = graphene.List(graphene.String)
-        store_phone_numbers = graphene.List(graphene.String)
-        store_bio = graphene.String()
-        store_nickname = graphene.String()
-        school = graphene.String()
-        store_cover_image = Upload()
-
-    user = graphene.Field(UserNodeType)
-
-    @staticmethod
-    @permission_checker([IsAuthenticated])
-    def mutate(
-        self,
-        info,
-        store_name=None,
-        store_country=None,
-        store_address=None,
-        store_type=None,
-        store_categories=None,
-        store_phone_numbers=None,
-        store_bio=None,
-        store_nickname=None,
-        school=None,
-        store_cover_image=None,
-    ):
-        user = info.context.user
-        profile: Profile = user.profile
-        if profile.store is None:
-            raise GraphQLError("You are not a vendor")
-        store = Store.objects.filter(vendor=profile).first()
-        if store is None:
-            raise GraphQLError("You do not have a store")
-        if store_name:
-            store.store_name = store_name
-        if store_country:
-            store.store_country = store_country
-        if store_address:
-            store.store_address = store_address
-        if store_type:
-            store.store_type = store_type
-        if store_categories:
-            store.store_categories = store_categories
-        if store_phone_numbers:
-            store.store_phone_numbers = store_phone_numbers
-        if store_bio:
-            store.store_bio = store_bio
-        if store_nickname:
-            store.store_nickname = store_nickname
-        if school:
-            school_qs = School.objects.filter(slug=school.strip())
-            if not school_qs.exists():
-                raise GraphQLError("School does not exist, please try again")
-            store.school = school_qs.first()
-        if store_cover_image:
-            store.store_cover_image = store_cover_image
-        store.save()
-        return UpdateStoreMutation(success=True, user=info.context.user)
+        return CreateUpdateStoreMutation(success=True, user=info.context.user)
 
 
 class UpdatePersonalInfoMutation(Output, graphene.Mutation):

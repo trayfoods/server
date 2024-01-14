@@ -737,37 +737,64 @@ class Wallet(models.Model):
             transaction.save()
         return transaction
 
+class StoreOpenHours(models.Model):
+    store = models.ForeignKey("Store", on_delete=models.CASCADE)
+    day = models.CharField(max_length=10)
+    open_time = models.TimeField()
+    close_time = models.TimeField()
+
+    def __str__(self) -> str:
+        return f"{self.store.store_name} - {self.day}"
 
 class Store(models.Model):
     vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
+
+    # store details
     store_name = models.CharField(max_length=100)
-    store_country = CountryField(default="NG")
-    store_timezone = models.CharField(max_length=50, null=True, blank=True)
-    store_type = models.CharField(max_length=20, null=True, blank=True)
+    store_nickname = models.CharField(max_length=50)
+    store_type = models.CharField(max_length=20)
     store_categories = models.JSONField(
-        default=list, null=True, blank=True, editable=False
+        default=list, blank=True, editable=False
     )
-    store_phone_numbers = models.JSONField(
-        default=list, null=True, blank=True, editable=False
-    )
-    store_bio = models.CharField(null=True, blank=True, max_length=150)
-    store_address = models.CharField(max_length=60, null=True, blank=True)
-    campus = models.CharField(max_length=50, null=True, blank=True)
-    store_nickname = models.CharField(max_length=50, null=True, blank=True)
-    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
+    store_rank = models.FloatField(default=0, editable=False)
+    store_menu = models.JSONField(default=list, blank=True)
+    has_physical_store = models.BooleanField(default=False)
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
-    store_rank = models.FloatField(default=0, editable=False)
+    store_bio = models.CharField(null=True, blank=True, max_length=150)
 
-    store_open_hours = models.JSONField(default=list, null=True, blank=True)
+    # store location
+    country = CountryField(blank=True, default="NG")
+    state = models.CharField(max_length=50, null=True, blank=True)
+    city = models.CharField(max_length=50, null=True, blank=True)
+    primary_address = models.CharField(max_length=255, null=True, blank=True)
+    street_name = models.CharField(max_length=50, null=True, blank=True)
+    primary_address_lat = models.FloatField(null=True, blank=True)
+    primary_address_lng = models.FloatField(null=True, blank=True)
+    school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
+    campus = models.CharField(max_length=50, null=True, blank=True)
+    timezone = models.CharField(max_length=50, null=True, blank=True)
 
-    store_menu = models.JSONField(default=list, blank=True)
+    # contact details
+    whatsapp_numbers = models.JSONField(
+        default=list, null=True, blank=True, editable=False
+    )
+    instagram_handle = models.CharField(max_length=50, null=True, blank=True)
+    twitter_handle = models.CharField(max_length=50, null=True, blank=True)
+    facebook_handle = models.CharField(max_length=50, null=True, blank=True)
 
+    is_approved = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ("offline", "offline"),
+            ("online", "online"),
+            ("suspended", "suspended"),
+        ),
+        default="offline",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
-    has_physical_store = models.BooleanField(default=False)
-
-    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         # check if all is not in store menu
@@ -825,6 +852,11 @@ class Store(models.Model):
     @property
     def store_products(self):
         return Item.get_items_by_store(store=self)
+    
+    # get store's open hours
+    @property
+    def store_open_hours(self):
+        return StoreOpenHours.objects.filter(store=self)
 
     # credit store wallet
     def credit_wallet(self, **kwargs):

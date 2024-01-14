@@ -37,7 +37,7 @@ class HostelFieldType(DjangoObjectType):
         model = HostelField
         fields = "__all__"
 
-    def resolve_options(self:HostelField, info):
+    def resolve_options(self: HostelField, info):
         return self.get_options()
 
 
@@ -203,42 +203,18 @@ class StoreOpenHoursInput(graphene.InputObjectType):
 
 
 class StoreType(DjangoObjectType):
-    store_country = graphene.String()
     store_categories = graphene.List(graphene.String)
-    store_phone_numbers = graphene.List(graphene.String)
     store_image = graphene.String()
     store_cover_image = graphene.String()
     store_products = graphene.List("product.types.ItemType")
     store_menu = graphene.List(graphene.String)
-
     store_open_hours = graphene.List(StoreOpenHours)
+
+    country = graphene.String()
 
     class Meta:
         model = Store
-        fields = [
-            "vendor",
-            "store_name",
-            "store_country",
-            "store_timezone",
-            "store_type",
-            "store_categories",
-            "store_menu",
-            "store_phone_numbers",
-            "store_bio",
-            "store_address",
-            "store_nickname",
-            "school",
-            "campus",
-            "store_image",
-            "store_cover_image",
-            "has_physical_store",
-            "is_active",
-            "store_products",
-            "store_rank",
-        ]
-
-    def resolve_store_country(self, info):
-        return self.store_country.name
+        fields = "__all__"
 
     def resolve_store_categories(self, info):
         return self.store_categories
@@ -248,12 +224,6 @@ class StoreType(DjangoObjectType):
         if store_menu is None:
             return []
         return store_menu
-
-    def resolve_store_phone_numbers(self, info):
-        try:
-            return self.store_phone_numbers
-        except:
-            return []
 
     def resolve_store_products(self, info):
         return self.store_products.all()
@@ -280,6 +250,9 @@ class StoreType(DjangoObjectType):
 
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
+
+    def resolve_country(self, info):
+        return self.country.name
 
 
 class StoreNode(StoreType, graphene.ObjectType):

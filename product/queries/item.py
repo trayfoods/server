@@ -17,11 +17,11 @@ class ItemQueries(graphene.ObjectType):
     hero_data = graphene.List(ItemType)
 
     def resolve_items(self, info, **kwargs):
-        return Item.get_items().exclude(product_creator__is_active=False)
+        return Item.get_items().exclude(product_creator__is_approved=False)
 
     def resolve_hero_data(self, info):
         items = (
-            Item.get_items().exclude(product_creator__is_active=False)
+            Item.get_items().exclude(product_creator__is_approved=False)
             .filter(product_type__slug__icontains="dish")
             .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]

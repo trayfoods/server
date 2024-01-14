@@ -29,6 +29,7 @@ class TransactionFilter(FilterSet):
 class StoreFilter(FilterSet):
     store_category = CharFilter(field_name="store_categories", lookup_expr="icontains")
     school = CharFilter(field_name="school__slug", lookup_expr="exact")
+    state = CharFilter(field_name="vendor__state__slug", lookup_expr="exact")
 
     class Meta:
         model = Store
@@ -36,6 +37,7 @@ class StoreFilter(FilterSet):
             "store_name": ["icontains"],
             "store_nickname": ["icontains"],
             "store_type": ["exact"],
-            "store_country": ["exact"],
-            "store_address": ["icontains"],
+            "country": ["exact"],
+            "state": ["exact"],
+            "campus": ["exact"],
         }

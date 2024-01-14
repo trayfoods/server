@@ -3,6 +3,7 @@ from django.contrib import admin
 from users.models import (
     Student,
     Store,
+    StoreOpenHours,
     Profile,
     Hostel,
     Gender,
@@ -69,7 +70,7 @@ class UserAccountAdmin(admin.ModelAdmin):
 class StoreInline(admin.TabularInline):
     model = Store
     extra = 0
-    readonly_fields = ("store_name", "store_country", "store_address", "school")
+    readonly_fields = ("store_name", "country", "primary_address", "school")
 
 
 class UserInline(admin.TabularInline):
@@ -180,9 +181,13 @@ class StudentAdmin(admin.ModelAdmin):
     class Media:
         js = (f"{STATIC_URL}js/custom-admin.js",)
 
+class StoreOpenHoursInline(admin.TabularInline):
+    model = StoreOpenHours
+    extra = 0
 
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ("store_name", "__str__", "has_physical_store", "store_country")
+    inlines = [StoreOpenHoursInline]
+    list_display = ("store_name", "__str__", "has_physical_store", "country")
     search_fields = (
         "vendor__user__user__username",
         "vendor__user__user__email",

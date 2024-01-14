@@ -144,7 +144,7 @@ class Item(models.Model):
         eg: Item.get_items()
         """
         return cls.objects.exclude(product_status="deleted").exclude(
-            product_creator__is_active=False
+            product_creator__is_approved=False
         ).exclude(product_type__slug__icontains="package")
 
     # filter the product available in a store
@@ -191,7 +191,7 @@ class Item(models.Model):
     @property
     def is_avaliable(self):
         if self.product_creator:
-            if not self.product_creator.is_active:
+            if not self.product_creator.is_approved:
                 return False
         return self.product_status == "active"
 

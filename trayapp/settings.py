@@ -267,7 +267,7 @@ ASGI_APPLICATION = "trayapp.asgi.application"
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
 
-if USE_DB == True:
+if USE_DB:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
