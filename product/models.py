@@ -236,20 +236,7 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 
-ALLOWED_STORES_STATUS = [
-    "pending",
-    "accepted",
-    "rejected",
-    "ready-for-pickup",  # also know as "Awaiting Pickup"
-    "ready-for-delivery",
-    "out-for-delivery",  # also know as "Assigned to Delivery Person"
-    "picked-up",
-    "delivered",
-    "no-delivery-person",
-    "cancelled",
-    "refunded",
-    "failed",
-]
+ALLOWED_STORES_STATUS = settings.ALLOWED_ORDER_STATUS
 
 
 class Order(models.Model):
