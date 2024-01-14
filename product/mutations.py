@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store
+from users.models import UserActivity, Store, Profile
 from graphene_file_upload.scalars import Upload
 from .types import ShippingInputType, OrderType, RatingInputType
 
@@ -392,9 +392,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             return MarkOrderAsMutation(error="Order does not exists")
 
         order = order.first()
+        order.user: Profile = order.user
 
         action = action.lower().replace("_", "-")
-        allowed_actions = ["delivered", "ready-for-pickup"]
+        allowed_actions = ["delivered", "ready-for-pickup", "accepted"]
 
         if not action in allowed_actions:
             return MarkOrderAsMutation(error="Invalid action")
@@ -412,54 +413,56 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             return MarkOrderAsMutation(
                 error="You are not authorized to interact with this order"
             )
-        current_delivery_person_id = user.profile.delivery_person.id
-        delivery_person = order.get_delivery_person(current_delivery_person_id)
+        if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
+            current_delivery_person_id = user.profile.delivery_person.id
+            delivery_person = order.get_delivery_person(current_delivery_person_id)
 
-        if "DELIVERY_PERSON" in view_as and delivery_person is not None:
-            order_delivery_people = order.delivery_people
+            if delivery_person is not None:
+                order_delivery_people = order.delivery_people
 
-            new_order_delivery_people_state = []
-            all_delivered = True
-            # update the current delivery person status
-            for delivery_person in order_delivery_people:
-                if delivery_person["id"] == current_delivery_person_id:
-                    delivery_person["status"] = action
-                # check if all delivery people have been delivered
-                if delivery_person["status"] != "delivered":
-                    all_delivered = False
+                new_order_delivery_people_state = []
+                all_delivered = True
+                # update the current delivery person status
+                for delivery_person in order_delivery_people:
+                    if delivery_person["id"] == current_delivery_person_id:
+                        delivery_person["status"] = action
+                    # check if all delivery people have been delivered
+                    if delivery_person["status"] != "delivered":
+                        all_delivered = False
 
-                new_order_delivery_people_state.append(delivery_person)
+                    new_order_delivery_people_state.append(delivery_person)
 
-            if all_delivered:
-                order.order_status = "delivered"
+                if all_delivered:
+                    order.order_status = "delivered"
 
-            order.delivery_people = new_order_delivery_people_state
+                order.delivery_people = new_order_delivery_people_state
 
-            # get delivery_fee by dividing the delivery fee by the number of delivery people
-            delivery_fee = order.delivery_fee / len(order_delivery_people)
+                # get delivery_fee by dividing the delivery fee by the number of delivery people
+                delivery_fee = order.delivery_fee / len(order_delivery_people)
 
-            delivery_person = user.profile.delivery_person
+                delivery_person = user.profile.delivery_person
 
-            # credit delivery person wallet
-            credit_kwargs = {
-                "amount": delivery_fee,
-                "title": "Delivery Fee for Order #{}".format(
-                    order.order_track_id.replace("order_", "")
-                ),
-                "order": order,
-            }
-            delivery_person.wallet.add_balance(**credit_kwargs)
+                # credit delivery person wallet
+                credit_kwargs = {
+                    "amount": delivery_fee,
+                    "title": "Delivery Fee for Order #{}".format(
+                        order.order_track_id.replace("order_", "")
+                    ),
+                    "order": order,
+                }
+                delivery_person.wallet.add_balance(**credit_kwargs)
 
-            order.save()
+                order.save()
 
-            return MarkOrderAsMutation(success=True)
+                return MarkOrderAsMutation(success=True)
 
         elif "VENDOR" in view_as:
             order.order_status = "ready-for-pickup"
             order.save()
             order_disp_id = order.order_track_id.replace("order_", "")
             order.user.send_push_notification(
-                "Order #{} is ready for pickup".format(order_disp_id)
+                title="Order Ready",
+                msg="Order #{} is ready for pickup".format(order_disp_id)
             )
 
             return MarkOrderAsMutation(success=True)

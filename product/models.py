@@ -435,7 +435,7 @@ class Order(models.Model):
 
         is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
 
-        if current_user_profile == self.user:
+        if current_user_profile == self.user and not is_vendor:
             return []
 
         if is_vendor:
