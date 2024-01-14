@@ -827,15 +827,6 @@ class Store(models.Model):
                 self.store_nickname = slugify(self.store_name)
                 self.save()
 
-            if not self.store_timezone:
-                # get the timezone from the country
-                from restcountries import RestCountryApiV2 as rapi
-
-                country = rapi.get_country_by_country_code(self.store_country.code)
-                timezone = country.timezones[0]
-                self.store_timezone = timezone
-                self.save()
-
         super().save(*args, **kwargs)
 
     # store's wallet

@@ -161,9 +161,28 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         if not event_type in allowed_event_types:
             return CreateUpdateStoreMutation(error="Invalid event type")
 
+        # get kwargs values
+        store_name = kwargs.get("store_name")
         store_nickname = kwargs.get("store_nickname")
+        store_type = kwargs.get("store_type")
+        store_categories = kwargs.get("store_categories")
+        store_cover_image = kwargs.get("store_cover_image")
+        store_bio = kwargs.get("store_bio")
+        has_physical_store = kwargs.get("has_physical_store")
+        country = kwargs.get("country")
+        city = kwargs.get("city")
+        state = kwargs.get("state")
+        primary_address = kwargs.get("primary_address")
+        street_name = kwargs.get("street_name")
+        primary_address_lat = kwargs.get("primary_address_lat")
+        primary_address_lng = kwargs.get("primary_address_lng")
         school = kwargs.get("school")
         campus = kwargs.get("campus")
+        timezone = kwargs.get("timezone")
+        whatsapp_numbers = kwargs.get("whatsapp_numbers")
+        instagram_handle = kwargs.get("instagram_handle")
+        twitter_handle = kwargs.get("twitter_handle")
+        facebook_handle = kwargs.get("facebook_handle")
 
         if event_type == "CREATE":
             # check if the user is a vendor
@@ -186,15 +205,33 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                     return CreateUpdateStoreMutation(
                         error="{} is required".format(field)
                     )
+        else:
+            # check if the user is a vendor
+            if not "VENDOR" in user.roles:
+                return CreateUpdateStoreMutation(error="You are not a vendor")
+            # check if the store exists
+            if not user.profile.store:
+                return CreateUpdateStoreMutation(error="Store does not exist")
+            # check if the store nickname is already taken
+            if (
+                store_nickname
+                and Store.objects.filter(store_nickname=store_nickname.strip())
+                .exclude(vendor=user.profile)
+                .exists()
+            ):
+                return CreateUpdateStoreMutation(
+                    error="Nickname already exists, please use a unique name"
+                )
 
         school_qs = None
+
         if school:
             if not campus:
                 return CreateUpdateStoreMutation(
                     error="Campus is required, please try again"
                 )
             school_qs = School.objects.filter(slug=school.strip())
-            if not school.exists():
+            if not school_qs.exists():
                 return CreateUpdateStoreMutation(
                     error="School does not exist, please try again"
                 )
@@ -205,26 +242,101 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                     error="Campus does not exist, please try again"
                 )
 
-        store = Store.objects.update_or_create(
-            vendor=user.profile,
-            school=school_qs,
-            **kwargs,
-        )
-        store = store[0]
+        if event_type == "CREATE":
+            store = Store.objects.create(
+                vendor=user.profile,
+                # store details
+                store_name=store_name,
+                store_nickname=store_nickname,
+                store_type=store_type,
+                store_categories=store_categories,
+                store_cover_image=store_cover_image,
+                store_bio=store_bio,
+                has_physical_store=has_physical_store,
+                # store location
+                country=country,
+                city=city,
+                state=state,
+                primary_address=primary_address,
+                street_name=street_name,
+                primary_address_lat=primary_address_lat,
+                primary_address_lng=primary_address_lng,
+                school=school_qs,
+                campus=campus,
+                timezone=timezone,
+                # store contact
+                whatsapp_numbers=whatsapp_numbers,
+                instagram_handle=instagram_handle,
+                twitter_handle=twitter_handle,
+                facebook_handle=facebook_handle,
+            )
+        else:
+            store: Store = user.profile.store
+            # update the store details
+            if store_name:
+                store.store_name = store_name
+            if store_nickname:
+                store.store_nickname = store_nickname
+            if store_type:
+                store.store_type = store_type
+            if store_categories:
+                store.store_categories = store_categories
+            if store_cover_image:
+                store.store_cover_image = store_cover_image
+            if store_bio:
+                store.store_bio = store_bio
+            if has_physical_store:
+                store.has_physical_store = has_physical_store
+            # update the store location
+            if country:
+                store.country = country
+            if city:
+                store.city = city
+            if state:
+                store.state = state
+            if primary_address:
+                store.primary_address = primary_address
+            if street_name:
+                store.street_name = street_name
+            if primary_address_lat:
+                store.primary_address_lat = primary_address_lat
+            if primary_address_lng:
+                store.primary_address_lng = primary_address_lng
+            if school_qs:
+                store.school = school_qs
+            if campus:
+                store.campus = campus
+            if timezone:
+                store.timezone = timezone
+            # update the store contact
+            if whatsapp_numbers:
+                store.whatsapp_numbers = whatsapp_numbers
+            if instagram_handle:
+                store.instagram_handle = instagram_handle
+            if twitter_handle:
+                store.twitter_handle = twitter_handle
+            if facebook_handle:
+                store.facebook_handle = facebook_handle
+        store.save()
 
-        try:
-            # loop and create store open hours
-            for store_open_hour in store_open_hours:
-                StoreOpenHours.objects.create(
-                    store=store,
-                    day=store_open_hour.day,
-                    open_time=store_open_hour.open_time,
-                    close_time=store_open_hour.close_time,
-                )
-        except Exception as e:
-            # delete the store if there is an error
-            store.delete()
-            return CreateUpdateStoreMutation(error=str(e))
+        print(store)
+        if store_open_hours:
+            # delete all the store open hours
+            store.store_open_hours.all().delete()
+            try:
+                # loop and create store open hours
+                for store_open_hour in store_open_hours:
+                    StoreOpenHours.objects.create(
+                        store=store,
+                        day=store_open_hour.day,
+                        open_time=store_open_hour.open_time,
+                        close_time=store_open_hour.close_time,
+                    )
+            except Exception as e:
+                # delete the store if there is an error
+                if event_type == "CREATE":
+                    store.delete()
+                return CreateUpdateStoreMutation(error=str(e))
 
         # get all admin users email and send them a plain text email
         # to verify the store
