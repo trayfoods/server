@@ -209,7 +209,7 @@ class StoreType(DjangoObjectType):
     store_products = graphene.List("product.types.ItemType")
     store_menu = graphene.List(graphene.String)
     store_open_hours = graphene.List(StoreOpenHours)
-    whatsappNumbers = graphene.List(graphene.String)
+    whatsapp_numbers = graphene.List(graphene.String)
 
     country = graphene.String()
 
@@ -252,8 +252,8 @@ class StoreType(DjangoObjectType):
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
     
-    def resolve_whatsappNumbers(self, info):
-        return self.whatsappNumbers
+    def resolve_whatsapp_numbers(self, info):
+        return self.whatsapp_numbers
     
     def resolve_country(self, info):
         return self.country.name
