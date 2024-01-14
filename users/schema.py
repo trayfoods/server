@@ -20,7 +20,7 @@ from .mutations import (
     VerifyPhoneMutation,
     AcceptDeliveryMutation,
     UpdateStoreMenuMutation,
-    UpdateSchoolInfoMutation
+    UpdateSchoolInfoMutation,
 )
 from .models import Student
 from .types import (
@@ -34,7 +34,14 @@ from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 User = get_user_model()
 
 
-class Query(BankListQuery, WalletQueries, StoreQueries, TransactionQueries, SchoolQueries, graphene.ObjectType):
+class Query(
+    BankListQuery,
+    WalletQueries,
+    StoreQueries,
+    TransactionQueries,
+    SchoolQueries,
+    graphene.ObjectType,
+):
     me = graphene.Field(UserNodeType)
 
     check_email_verification = graphene.Field(
@@ -42,7 +49,6 @@ class Query(BankListQuery, WalletQueries, StoreQueries, TransactionQueries, Scho
     )
 
     client = graphene.Field(StudentType, client_id=graphene.Int())
-
 
     def resolve_me(self, info):
         user = info.context.user
