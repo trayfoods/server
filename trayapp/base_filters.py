@@ -1,7 +1,8 @@
 from django.utils import timezone
 from django_filters import CharFilter
 
-DATE_FILTER_TYPES = ["today", "7days", "30days", "Alldays"]
+DATE_FILTER_TYPES = ["today", "7days", "30days"]
+STORE_ORDER_FILTER_TYPES = ["New Orders", ""]
 
 
 class DateTypeFilter(CharFilter):

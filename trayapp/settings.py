@@ -405,3 +405,20 @@ imports = ("users.tasks",)
 
 # CELERY_BEAT
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+
+# Global settings
+ALLOWED_ORDER_STATUS = [
+    "pending",
+    "accepted",
+    "rejected",
+    "ready-for-pickup",  # also know as "Awaiting Pickup"
+    "ready-for-delivery",
+    "out-for-delivery",  # also know as "Assigned to Delivery Person"
+    "picked-up",
+    "delivered",
+    "no-delivery-person",
+    "cancelled",
+    "refunded",
+    "failed",
+]

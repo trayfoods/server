@@ -143,9 +143,11 @@ class Item(models.Model):
         """
         eg: Item.get_items()
         """
-        return cls.objects.exclude(product_status="deleted").exclude(
-            product_creator__is_approved=False
-        ).exclude(product_type__slug__icontains="package")
+        return (
+            cls.objects.exclude(product_status="deleted")
+            .exclude(product_creator__is_approved=False)
+            .exclude(product_type__slug__icontains="package")
+        )
 
     # filter the product available in a store
     @classmethod
@@ -234,6 +236,22 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 
+ALLOWED_STORES_STATUS = [
+    "pending",
+    "accepted",
+    "rejected",
+    "ready-for-pickup",  # also know as "Awaiting Pickup"
+    "ready-for-delivery",
+    "out-for-delivery",  # also know as "Assigned to Delivery Person"
+    "picked-up",
+    "delivered",
+    "no-delivery-person",
+    "cancelled",
+    "refunded",
+    "failed",
+]
+
+
 class Order(models.Model):
     order_track_id = models.CharField(
         max_length=24,
@@ -245,8 +263,6 @@ class Order(models.Model):
         choices=(
             ("not-started", "not-started"),
             ("processing", "processing"),
-            ("out-for-delivery", "out-for-delivery"),
-            ("no-delivery-person", "no-delivery-person"),
             ("ready-for-pickup", "ready-for-pickup"),
             ("delivered", "delivered"),
             ("cancelled", "cancelled"),
@@ -254,12 +270,22 @@ class Order(models.Model):
         default="not-started",
         db_index=True,
     )
+    stores_status = models.JSONField(default=dict, blank=True)
+    # the stores_status json format is as follows
+    # {
+    #     "storeId": store.id,
+    #     "status": "processing",
+    # }
+
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
     overall_price = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
     delivery_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
+    extra_delivery_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
     service_fee = models.DecimalField(
@@ -285,7 +311,7 @@ class Order(models.Model):
         "users.DeliveryPerson", editable=False, related_name="linked_delivery_people"
     )
 
-    order_payment_currency = models.CharField(max_length=20, default="NGN")
+    order_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_url = models.CharField(max_length=200, editable=False, blank=True)
     order_payment_status = models.CharField(
@@ -301,6 +327,13 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
+    activities_log = models.JSONField(default=list, blank=True)
+    # the activities_log json format is as follows
+    # [{
+    #   "title": "Order Created",
+    #   "description": "The order was created by the user",
+    #   "timestamp": "2021-09-01 12:00:00"
+    # }]
 
     class Meta:
         ordering = ["-created_at", "-updated_at"]
@@ -312,6 +345,10 @@ class Order(models.Model):
             while Order.objects.filter(order_track_id=order_track_id).exists():
                 order_track_id = "order_" + str(uuid.uuid4().hex)[:17]
             self.order_track_id = order_track_id
+
+        # validate the stores_status format is correct
+        if not self.validate_stores_status():
+            raise ValueError("Invalid stores_status format")
 
         # validate the delivery people format is correct
         if not self.validate_delivery_people():
@@ -342,6 +379,33 @@ class Order(models.Model):
     def __str__(self):
         return "Order #" + str(self.order_track_id)
 
+    # validate the order store status format is correct
+    def validate_stores_status(self):
+        stores_status = self.stores_status
+        if not isinstance(stores_status, list):
+            return False
+        if len(stores_status) == 0:
+            return True
+
+        for store_status in stores_status:
+            if not store_status.get("storeId"):
+                return False
+            if not store_status.get("status"):
+                return False
+            if store_status.get("status") not in ALLOWED_STORES_STATUS:
+                return False
+            # check if the stores_status are linked to the order
+            if not self.linked_stores.filter(
+                store_nickname=store_status.get("storeId")
+            ).exists():
+                return False
+        # check of there is any duplicate store_status ["storeId"]
+        stores_status_ids = [store_status["storeId"] for store_status in stores_status]
+        if len(stores_status_ids) != len(set(stores_status_ids)):
+            return False
+
+        return True
+
     # validate the order delivery people format is correct
     def validate_delivery_people(self):
         delivery_people = self.delivery_people
@@ -359,7 +423,7 @@ class Order(models.Model):
                 return False
             # check if the delivery people are linked to the order
             if not self.linked_delivery_people.filter(
-                id=delivery_person.get("id")
+                store_nickname=delivery_person.get("id")
             ).exists():
                 return False
         # check of there is any duplicate delivery person ["id"]
@@ -368,6 +432,24 @@ class Order(models.Model):
         ]
         if len(delivery_people_ids) != len(set(delivery_people_ids)):
             return False
+
+        return True
+
+    # validate the activities_log format is correct
+    def validate_activities_log(self):
+        activities_log = self.activities_log
+        if not isinstance(activities_log, list):
+            return False
+        if len(activities_log) == 0:
+            return True
+
+        for activity in activities_log:
+            if not activity.get("title"):
+                return False
+            if not activity.get("description"):
+                return False
+            if not activity.get("timestamp"):
+                return False
 
         return True
 
@@ -476,7 +558,7 @@ class Order(models.Model):
             "email": self.user.user.email
             if self.user.user.email
             else f"{self.user.user.username}@gmail.com",
-            "currency": self.order_payment_currency,
+            "currency": self.order_currency,
             "amount": Decimal(amount),
             "reference": f"{order_track_id}",
         }

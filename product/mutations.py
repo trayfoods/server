@@ -7,7 +7,13 @@ from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter
 from product.types import ItemType
 from users.models import UserActivity, Store, Profile
 from graphene_file_upload.scalars import Upload
-from .types import ShippingInputType, OrderType, RatingInputType
+from .types import (
+    ShippingInputType,
+    OrderType,
+    RatingInputType,
+    StoreInfoInputType,
+    StoreItemInputType,
+)
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
@@ -292,29 +298,32 @@ class AddProductClickMutation(Output, graphene.Mutation):
             return AddProductClickMutation(success=True)
 
 
-class CreateOrderMutation(graphene.Mutation):
+class CreateOrderMutation(Output, graphene.Mutation):
     class Arguments:
         overall_price = graphene.Decimal(required=True)
         delivery_fee = graphene.Decimal(required=True)
         shipping = ShippingInputType(required=True)
-        linked_items = graphene.List(graphene.String, required=True)
-        stores_infos = graphene.JSONString(required=True)
+        stores_infos = graphene.List(StoreInfoInputType, required=True)
+
         store_notes = graphene.JSONString()
         delivery_person_note = graphene.String()
+        extra_delivery_fee = graphene.Decimal()
 
-    order = graphene.Field(OrderType)
-    success = graphene.Boolean(default_value=False)
-    unavailable_items = graphene.List(graphene.String)
+    order_id = graphene.String()
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, **kwargs):
-        overall_price = kwargs.get("overall_price", 0.00)
-        delivery_fee = kwargs.get("delivery_fee", 0.00)
-        shipping = kwargs.get("shipping")
-        linked_items = kwargs.get("linked_items")
-        stores_infos = kwargs.get("stores_infos")
-        store_notes = kwargs.get("store_notes")
-        delivery_person_note = kwargs.get("delivery_person_note")
+    def mutate(
+        self,
+        info,
+        overall_price,
+        delivery_fee,
+        shipping,
+        stores_infos: list[StoreInfoInputType],
+        store_notes=None,
+        delivery_person_note=None,
+        extra_delivery_fee=None,
+    ):
+        current_user_profile = info.context.user.profile
 
         overall_price = Decimal(overall_price)
         delivery_fee = Decimal(delivery_fee)
@@ -324,57 +333,72 @@ class CreateOrderMutation(graphene.Mutation):
         service_fee = service_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         shipping = json.dumps(shipping)
-        stores_infos = json.dumps(stores_infos)
 
-        # check if all the items are avaliable
-        unavailable_items = []
-        available_items = []
-        for item in linked_items:
-            item = Item.get_items().filter(product_slug=item).first()
-            if item is None:
-                raise GraphQLError(
-                    "Order contains invalid items, clear cart and retry."
+        # get all the items slugs and check if they exist
+        linked_items = []
+        for store_info in stores_infos:
+            store_items: list[StoreItemInputType] = store_info.items
+            for item in store_items:
+                item_slug = item.slug
+                item = (
+                    Item.objects.filter(product_slug=item_slug, product_status="active")
+                    .exclude(product_status="deleted")
+                    .exclude(product_creator__is_approved=False)
+                    .first()
                 )
-            if item.product_status != "active":
-                unavailable_items.append(item.product_slug)
+                if item is None:
+                    raise GraphQLError(
+                        "Order contains invalid items, clear cart and retry."
+                    )
+                linked_items.append(item)
 
-            available_items.append(item)
+        # check if there are linked items
+        if len(linked_items) == 0:
+            raise GraphQLError("Order contains no items")
 
-        available_stores = []
-        stores_infos_json = json.loads(stores_infos)
-        for store in stores_infos_json:
-            storeId = store["storeId"]
-            store = Store.objects.filter(store_nickname=storeId).first()
+        # get all the stores and check if they exist
+        linked_stores: list[Store] = []
+        for store_info in stores_infos:
+            storeId = store_info.storeId
+            store = Store.objects.filter(
+                store_nickname=storeId, is_approved=True, status="online"
+            ).first()
             if store is None:
                 raise GraphQLError(
-                    "Order contains invalid stores, clear cart and retry."
+                    f"Store with nickname '{storeId}' does not exist or is not approved"
                 )
-            available_stores.append(store)
+            linked_stores.append(store)
 
-        if len(unavailable_items) > 0:
-            return CreateOrderMutation(
-                order=None, success=False, unavailable_items=unavailable_items
-            )
+        # check if there are linked stores
+        if len(linked_stores) == 0:
+            raise GraphQLError("Order contains no stores")
 
-        current_user_profile = info.context.user.profile
-        order_payment_status = None
+        # create status for each linked store
+        stores_status = []
+        for store in linked_stores:
+            store_status = {
+                "storeId": store.store_nickname,
+                "status": "pending",
+            }
+            stores_status.append(store_status)
 
-        create_order = Order.objects.create(
+        new_order = Order.objects.create(
             user=current_user_profile,
             overall_price=overall_price,
             delivery_fee=delivery_fee,
             service_fee=service_fee,
             shipping=shipping,
-            stores_infos=stores_infos,
+            stores_infos=json.dumps(stores_infos),
             store_notes=store_notes,
-            order_payment_status=order_payment_status,
+            stores_status=json.dumps(stores_status),
             delivery_person_note=delivery_person_note,
+            extra_delivery_fee=extra_delivery_fee,
         )
-        create_order.linked_stores.set(available_stores)
-        create_order.linked_items.set(available_items)
-        create_order.save()
+        new_order.linked_stores.set(linked_stores)
+        new_order.linked_items.set(linked_items)
+        new_order.save()
 
-        return CreateOrderMutation(order=create_order, success=True)
+        return CreateOrderMutation(order_id=new_order.order_track_id, success=True)
 
 
 class MarkOrderAsMutation(Output, graphene.Mutation):
@@ -462,7 +486,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             order_disp_id = order.order_track_id.replace("order_", "")
             order.user.send_push_notification(
                 title="Order Ready",
-                msg="Order #{} is ready for pickup".format(order_disp_id)
+                msg="Order #{} is ready for pickup".format(order_disp_id),
             )
 
             return MarkOrderAsMutation(success=True)

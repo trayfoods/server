@@ -132,7 +132,7 @@ class ProcessPayment:
                     store_qs.credit_wallet(**kwargs)
                     store_qs.save()
                     store_qs.vendor.send_sms(
-                        f"New Order of {order.order_payment_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/"
+                        f"New Order of {order.order_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/"
                     )
                 else:
                     stores_with_issues.append(store_id)

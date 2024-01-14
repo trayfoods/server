@@ -792,7 +792,7 @@ class Store(models.Model):
             ("online", "online"),
             ("suspended", "suspended"),
         ),
-        default="offline",
+        default="online",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

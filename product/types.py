@@ -227,13 +227,48 @@ class CountOrderInputType(CountOrder, graphene.InputObjectType):
     pass
 
 
-class StoreInfoType(graphene.ObjectType):
+class StoreItemPlate:
+    idx = graphene.Int(required=True)
+    how_much = graphene.Int(required=True)
+    plate_num = graphene.Int(required=True)
+
+
+class StoreItemPlateType(StoreItemPlate, graphene.ObjectType):
+    pass
+
+
+class StoreItemPlateInputType(StoreItemPlate, graphene.InputObjectType):
+    pass
+
+
+class StoreItem:
+    product_name = graphene.String(required=True)
+    product_slug = graphene.String(required=True)
+    product_price = graphene.Int(required=True)
+    product_image = graphene.String(required=True)
+    product_cart_qty = graphene.Int(required=True)
+    # plates =
+
+
+class StoreItemType(StoreItem, graphene.ObjectType):
+    plates = graphene.List(StoreItemPlateType)
+
+
+class StoreItemInputType(StoreItem, graphene.InputObjectType):
+    plates = graphene.List(StoreItemPlateInputType)
+
+
+class StoreInfo:
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
+    hasPhysicalStore = graphene.Boolean(required=True)
+    items = graphene.List(StoreItemType, required=True)
+
+
+class StoreInfoType(StoreInfo, graphene.ObjectType):
     total = graphene.Field(TotalOrderType, required=True)
     count = graphene.Field(CountOrderType, required=True)
-    items = graphene.List(JSONField, required=True)
-
+    items = graphene.List(StoreItemType, required=True)
     store = graphene.Field(StoreType)
 
     def resolve_store(self, info):
@@ -243,9 +278,9 @@ class StoreInfoType(graphene.ObjectType):
 class StoreInfoInputType(graphene.InputObjectType):
     id = graphene.ID(required=True)
     storeId = graphene.String(required=True)
+    items = graphene.List(StoreItemInputType, required=True)
     total = TotalOrderInputType(required=True)
     count = CountOrderInputType(required=True)
-    items = graphene.List(JSONField, required=True)
 
 
 class StoreNoteType(graphene.ObjectType):
@@ -464,7 +499,7 @@ class DiscoverDeliveryType(OrderType, DjangoObjectType):
 
     def resolve_user(self, info):
         return None
-    
+
     def resolve_confirm_pin(self, info):
         return ""
 
