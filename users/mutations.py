@@ -188,7 +188,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             # check if the user is a vendor
             if "VENDOR" in user.roles:
                 return CreateUpdateStoreMutation(error="You already have a store")
-                # check if the store nickname is already taken
+            # check if the store nickname is already taken
             if Store.objects.filter(store_nickname=store_nickname.strip()).exists():
                 return CreateUpdateStoreMutation(
                     error="Nickname already exists, please use a unique name"
@@ -1124,7 +1124,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order.linked_delivery_people.add(delivery_person)
             # get the stores that have not been taken
             stores = order.linked_stores.exclude(
-                store_nickname__in=[
+                id__in=[
                     order_delivery_person["storeId"]
                     for order_delivery_person in order_delivery_people
                 ]
@@ -1136,7 +1136,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
                 {
                     "id": delivery_person.id,
                     "status": "out-for-delivery",
-                    "storeId": store.store_nickname,
+                    "storeId": store.id,
                 }
             )
             order.delivery_people = order_delivery_people

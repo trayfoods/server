@@ -116,11 +116,11 @@ class ProcessPayment:
             stores_with_issues = []
             # update the balance of the stores
             for store in stores__ids__with_credits:
-                store_nickname = store["id"]
+                storeId = store["id"]
                 # get the store from the database
                 # and update its credit
                 store_qs = Store.objects.filter(
-                    store_nickname=store_nickname.strip()
+                    id=storeId.strip()
                 ).first()
                 if store_qs:
                     kwargs = {

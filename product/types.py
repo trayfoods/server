@@ -272,7 +272,7 @@ class StoreInfoType(StoreInfo, graphene.ObjectType):
     store = graphene.Field(StoreType)
 
     def resolve_store(self, info):
-        return Store.objects.filter(store_nickname=self.get("storeId")).first()
+        return Store.objects.filter(id=self.get("storeId")).first()
 
 
 class StoreInfoInputType(graphene.InputObjectType):
@@ -283,9 +283,17 @@ class StoreInfoInputType(graphene.InputObjectType):
     count = CountOrderInputType(required=True)
 
 
-class StoreNoteType(graphene.ObjectType):
+class StoreNote:
     storeId = graphene.String(required=True)
     note = graphene.String(required=True)
+
+
+class StoreNoteType(StoreNote, graphene.ObjectType):
+    pass
+
+
+class StoreNoteInputType(StoreNote, graphene.InputObjectType):
+    pass
 
 
 class OrderUserType(graphene.ObjectType):
@@ -442,7 +450,7 @@ class OrderType(DjangoObjectType):
             stores_infos = [
                 store_info
                 for store_info in stores_infos
-                if store_info["storeId"] == current_user_profile.store.store_nickname
+                if store_info["storeId"] == current_user_profile.store.id
             ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos
@@ -461,7 +469,7 @@ class OrderType(DjangoObjectType):
             store_note = [
                 store_note
                 for store_note in store_notes
-                if store_note["storeId"] == current_user_profile.store.store_nickname
+                if store_note["storeId"] == current_user_profile.store.id
             ]  # filter the stores_infos to only the store that the vendor is linked to
             if len(store_note) > 0:
                 customer_note = store_note[0]["note"]

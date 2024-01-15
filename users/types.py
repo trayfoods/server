@@ -203,6 +203,7 @@ class StoreOpenHoursInput(graphene.InputObjectType):
 
 
 class StoreType(DjangoObjectType):
+    store_id = graphene.String()
     store_categories = graphene.List(graphene.String)
     store_image = graphene.String()
     store_cover_image = graphene.String()
@@ -216,6 +217,9 @@ class StoreType(DjangoObjectType):
     class Meta:
         model = Store
         fields = "__all__"
+
+    def resolve_store_id(self, info):
+        return self.id
 
     def resolve_store_categories(self, info):
         return self.store_categories
@@ -251,10 +255,10 @@ class StoreType(DjangoObjectType):
 
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
-    
+
     def resolve_whatsapp_numbers(self, info):
         return self.whatsapp_numbers
-    
+
     def resolve_country(self, info):
         return self.country.name
 

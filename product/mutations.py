@@ -9,7 +9,7 @@ from users.models import UserActivity, Store, Profile
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
-    OrderType,
+    StoreNoteInputType,
     RatingInputType,
     StoreInfoInputType,
     StoreItemInputType,
@@ -280,9 +280,7 @@ class AddProductClickMutation(Output, graphene.Mutation):
             )
             # increase the rank of the creator store by 0.5
             if item.product_creator:
-                store = Store.objects.filter(
-                    store_nickname=item.product_creator.store_nickname
-                ).first()
+                store = Store.objects.filter(id=item.product_creator.id).first()
                 if not store is None:
                     store.store_rank += 0.5
                     store.save()
@@ -305,7 +303,7 @@ class CreateOrderMutation(Output, graphene.Mutation):
         shipping = ShippingInputType(required=True)
         stores_infos = graphene.List(StoreInfoInputType, required=True)
 
-        store_notes = graphene.JSONString()
+        store_notes = graphene.List(StoreNoteInputType)
         delivery_person_note = graphene.String()
         extra_delivery_fee = graphene.Decimal()
 
@@ -333,13 +331,14 @@ class CreateOrderMutation(Output, graphene.Mutation):
         service_fee = service_fee.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
 
         shipping = json.dumps(shipping)
+        store_notes = json.dumps(store_notes)
 
         # get all the items slugs and check if they exist
-        linked_items = []
+        linked_items: list[Item] = []
         for store_info in stores_infos:
             store_items: list[StoreItemInputType] = store_info.items
             for item in store_items:
-                item_slug = item.slug
+                item_slug = item.product_slug
                 item = (
                     Item.objects.filter(product_slug=item_slug, product_status="active")
                     .exclude(product_status="deleted")
@@ -361,7 +360,7 @@ class CreateOrderMutation(Output, graphene.Mutation):
         for store_info in stores_infos:
             storeId = store_info.storeId
             store = Store.objects.filter(
-                store_nickname=storeId, is_approved=True, status="online"
+                id=storeId, is_approved=True, status="online"
             ).first()
             if store is None:
                 raise GraphQLError(
@@ -373,14 +372,18 @@ class CreateOrderMutation(Output, graphene.Mutation):
         if len(linked_stores) == 0:
             raise GraphQLError("Order contains no stores")
 
+        print(linked_stores)
+
         # create status for each linked store
         stores_status = []
         for store in linked_stores:
             store_status = {
-                "storeId": store.store_nickname,
+                "storeId": store.id,
                 "status": "pending",
             }
             stores_status.append(store_status)
+
+        print(stores_status)
 
         new_order = Order.objects.create(
             user=current_user_profile,
@@ -388,12 +391,13 @@ class CreateOrderMutation(Output, graphene.Mutation):
             delivery_fee=delivery_fee,
             service_fee=service_fee,
             shipping=shipping,
-            stores_infos=json.dumps(stores_infos),
+            stores_infos=stores_infos,
             store_notes=store_notes,
-            stores_status=json.dumps(stores_status),
+            stores_status=stores_status,
             delivery_person_note=delivery_person_note,
             extra_delivery_fee=extra_delivery_fee,
         )
+        print(new_order)
         new_order.linked_stores.set(linked_stores)
         new_order.linked_items.set(linked_items)
         new_order.save()

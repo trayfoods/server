@@ -257,12 +257,12 @@ class Order(models.Model):
         default="not-started",
         db_index=True,
     )
-    stores_status = models.JSONField(default=dict, blank=True)
+    stores_status = models.JSONField(default=list, blank=True)
     # the stores_status json format is as follows
-    # {
+    # [{
     #     "storeId": store.id,
     #     "status": "processing",
-    # }
+    # }]
 
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
@@ -279,9 +279,9 @@ class Order(models.Model):
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
     shipping = models.JSONField(default=dict)
-    stores_infos = models.JSONField(default=dict)
+    stores_infos = models.JSONField(default=list)
     store_notes = models.JSONField(
-        default=dict,
+        default=list,
         blank=True,
     )
     # the delivery people json format is as follows
@@ -326,6 +326,7 @@ class Order(models.Model):
         ordering = ["-created_at", "-updated_at"]
 
     def save(self, *args, **kwargs):
+        print("save", "order")
         if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
             order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
@@ -333,33 +334,38 @@ class Order(models.Model):
                 order_track_id = "order_" + str(uuid.uuid4().hex)[:17]
             self.order_track_id = order_track_id
 
-        # validate the stores_status format is correct
-        if not self.validate_stores_status():
-            raise ValueError("Invalid stores_status format")
-
-        # validate the delivery people format is correct
-        if not self.validate_delivery_people():
-            raise ValueError("Invalid delivery people format")
-
         # check if all the delivery people are linked to the order, if not, then clear the linked_delivery_people and add the delivery people
-        delivery_people = self.delivery_people
-        if self.id and delivery_people:
-            if len(delivery_people) > 0:
-                # check if all the delivery people are linked to the order
-                for delivery_person in delivery_people:
-                    if not self.linked_delivery_people.filter(
-                        id=delivery_person.get("id")
-                    ).exists():
-                        self.linked_delivery_people.clear()
-                        break
-                # add the delivery people to the order
-                for delivery_person in delivery_people:
-                    if not self.linked_delivery_people.filter(
-                        id=delivery_person.get("id")
-                    ).exists():
-                        self.linked_delivery_people.add(delivery_person.get("id"))
-            else:
-                self.linked_delivery_people.clear()
+        if self.id:
+            # validate the stores_status format is correct
+            if not self.validate_stores_status():
+                raise ValueError("Invalid stores_status format")
+
+            # validate the delivery people format is correct
+            if not self.validate_delivery_people():
+                raise ValueError("Invalid delivery people format")
+
+            # validate the activities_log format is correct
+            if not self.validate_activities_log():
+                raise ValueError("Invalid activities log format")
+
+            delivery_people = self.delivery_people
+            if delivery_people:
+                if len(delivery_people) > 0:
+                    # check if all the delivery people are linked to the order
+                    for delivery_person in delivery_people:
+                        if not self.linked_delivery_people.filter(
+                            id=delivery_person.get("id")
+                        ).exists():
+                            self.linked_delivery_people.clear()
+                            break
+                    # add the delivery people to the order
+                    for delivery_person in delivery_people:
+                        if not self.linked_delivery_people.filter(
+                            id=delivery_person.get("id")
+                        ).exists():
+                            self.linked_delivery_people.add(delivery_person.get("id"))
+                else:
+                    self.linked_delivery_people.clear()
 
         super().save(*args, **kwargs)
 
@@ -368,6 +374,7 @@ class Order(models.Model):
 
     # validate the order store status format is correct
     def validate_stores_status(self):
+        print("validate_stores_status")
         stores_status = self.stores_status
         if not isinstance(stores_status, list):
             return False
@@ -381,20 +388,20 @@ class Order(models.Model):
                 return False
             if store_status.get("status") not in ALLOWED_STORES_STATUS:
                 return False
+            print("validate_stores_status", store_status.get("storeId"))
             # check if the stores_status are linked to the order
-            if not self.linked_stores.filter(
-                store_nickname=store_status.get("storeId")
-            ).exists():
+            if not self.linked_stores.filter(id=store_status.get("storeId")).exists():
                 return False
         # check of there is any duplicate store_status ["storeId"]
         stores_status_ids = [store_status["storeId"] for store_status in stores_status]
         if len(stores_status_ids) != len(set(stores_status_ids)):
             return False
-
+        print("validate_stores_status", stores_status_ids)
         return True
 
     # validate the order delivery people format is correct
     def validate_delivery_people(self):
+        print("validate_delivery_people")
         delivery_people = self.delivery_people
         if not isinstance(delivery_people, list):
             return False
@@ -410,7 +417,7 @@ class Order(models.Model):
                 return False
             # check if the delivery people are linked to the order
             if not self.linked_delivery_people.filter(
-                store_nickname=delivery_person.get("id")
+                id=delivery_person.get("id")
             ).exists():
                 return False
         # check of there is any duplicate delivery person ["id"]
@@ -419,7 +426,7 @@ class Order(models.Model):
         ]
         if len(delivery_people_ids) != len(set(delivery_people_ids)):
             return False
-
+        print("validate_delivery_people", delivery_people_ids)
         return True
 
     # validate the activities_log format is correct
