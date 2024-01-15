@@ -507,6 +507,9 @@ class Order(models.Model):
 
         if current_user_profile == self.user and not is_vendor:
             return []
+        
+        if current_user_profile == self.user and is_vendor:
+            return ["USER", "VENDOR"]
 
         if is_vendor:
             return ["VENDOR"]
