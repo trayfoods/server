@@ -737,6 +737,7 @@ class Wallet(models.Model):
             transaction.save()
         return transaction
 
+
 class StoreOpenHours(models.Model):
     store = models.ForeignKey("Store", on_delete=models.CASCADE)
     day = models.CharField(max_length=10)
@@ -746,6 +747,7 @@ class StoreOpenHours(models.Model):
     def __str__(self) -> str:
         return f"{self.store.store_name} - {self.day}"
 
+
 class Store(models.Model):
     vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)
 
@@ -753,9 +755,7 @@ class Store(models.Model):
     store_name = models.CharField(max_length=100)
     store_nickname = models.CharField(max_length=50)
     store_type = models.CharField(max_length=20)
-    store_categories = models.JSONField(
-        default=list, blank=True, editable=False
-    )
+    store_categories = models.JSONField(default=list, blank=True, editable=False)
     store_rank = models.FloatField(default=0, editable=False)
     store_menu = models.JSONField(default=list, blank=True)
     has_physical_store = models.BooleanField(default=False)
@@ -843,7 +843,7 @@ class Store(models.Model):
     @property
     def store_products(self):
         return Item.get_items_by_store(store=self)
-    
+
     # get store's open hours
     @property
     def store_open_hours(self):

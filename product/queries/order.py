@@ -3,14 +3,14 @@ from graphql import GraphQLError
 from product.models import Order
 from trayapp.permissions import IsAuthenticated, permission_checker
 from graphene_django.filter import DjangoFilterConnectionField
-from ..types import OrderNode, OrderType, DiscoverDeliveryType
+from ..types import OrderNode, StoreOrderNode, OrderType, DiscoverDeliveryType
 
 from trayapp.utils import chunked_queryset
 import django.db
 
 class OrderQueries(graphene.ObjectType):
     orders = DjangoFilterConnectionField(OrderNode)
-    store_orders = DjangoFilterConnectionField(OrderNode)
+    store_orders = DjangoFilterConnectionField(StoreOrderNode)
 
     deliveries = DjangoFilterConnectionField(OrderNode)
     discover_deliveries = graphene.List(DiscoverDeliveryType)

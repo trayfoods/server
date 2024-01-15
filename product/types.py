@@ -5,9 +5,7 @@ from graphene_django.types import DjangoObjectType
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
 from users.types import StoreType, School
-from .filters import ItemFilter, OrderFilter
-
-from trayapp.custom_model import JSONField
+from .filters import ItemFilter, OrderFilter, StoreOrderFilter
 
 
 class ItemImageType(DjangoObjectType):
@@ -511,3 +509,10 @@ class OrderNode(OrderType, DjangoObjectType):
         model = Order
         interfaces = (graphene.relay.Node,)
         filterset_class = OrderFilter
+
+
+class StoreOrderNode(OrderType, DjangoObjectType):
+    class Meta:
+        model = Order
+        interfaces = (graphene.relay.Node,)
+        filterset_class = StoreOrderFilter

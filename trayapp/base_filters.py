@@ -1,12 +1,15 @@
 from django.utils import timezone
 from django_filters import CharFilter
 
-DATE_FILTER_TYPES = ["today", "7days", "30days"]
+DATE_FILTER_TYPES = ["Alldays", "today", "7days", "30days"]
 STORE_ORDER_FILTER_TYPES = ["New Orders", ""]
 
 
 class DateTypeFilter(CharFilter):
     def filter(self, qs, value):
+        # check if the value is null or empty
+        if not value:
+            return qs
         # check if the value is not in the list of filter types
         if value not in DATE_FILTER_TYPES:
             raise ValueError("Invalid Date Type")

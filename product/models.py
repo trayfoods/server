@@ -476,9 +476,7 @@ class Order(models.Model):
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_store(cls, store):
-        return cls.objects.filter(linked_stores=store).exclude(
-            order_status="not-started"
-        )
+        return cls.objects.filter(linked_stores=store)
 
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
@@ -529,7 +527,7 @@ class Order(models.Model):
                 order_status = delivery_person["status"]
         if "VENDOR" in view_as:
             order_status = self.get_store_status(current_user_profile.store.id)
-        return order_status.upper()
+        return order_status.upper() if order_status else "NO-STATUS"
 
     # get delivery_person from the delivery_people json
     def get_delivery_person(self, delivery_person_id):
