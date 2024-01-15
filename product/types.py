@@ -191,6 +191,8 @@ class ShippingInputType(graphene.InputObjectType):
 
     def resolve_sch(self, info):
         sch = self.sch
+        if sch == None:
+            return None
         print(sch)
         sch = sch.lower().strip()
         if sch == "":
