@@ -411,7 +411,7 @@ class OrderType(DjangoObjectType):
         return images_urls
 
     def resolve_shipping(self, info):
-        shipping = json.loads(self.shipping)
+        shipping = self.shipping
         sch = None
         if shipping["sch"]:
             sch = shipping["sch"]
@@ -434,7 +434,7 @@ class OrderType(DjangoObjectType):
                 stores_infos = [
                     store_info
                     for store_info in stores_infos
-                    if store_info["storeId"] == delivery_person["storeId"]
+                    if str(store_info["storeId"]) == str(delivery_person["storeId"])
                 ]
             for store_info in stores_infos:
                 store_info["total"]["price"] = 0
@@ -450,7 +450,7 @@ class OrderType(DjangoObjectType):
             stores_infos = [
                 store_info
                 for store_info in stores_infos
-                if store_info["storeId"] == current_user_profile.store.id
+                if str(store_info["storeId"]) == str(current_user_profile.store.id)
             ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos

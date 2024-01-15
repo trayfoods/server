@@ -525,7 +525,6 @@ class Order(models.Model):
     
     # get store_status from the stores_status json
     def get_store_status(self, store_id):
-        print("store_id", store_id)
         stores_status = self.stores_status
         for store_status in stores_status:
             if store_status["storeId"] == store_id:
