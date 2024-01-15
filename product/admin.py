@@ -88,7 +88,7 @@ class OrderAdmin(admin.ModelAdmin):
         "delivery_fee",
         "order_payment_url",
     )
-    search_fields = ["user__username", "order_track_id", "order_status", "stores_infos"]
+    search_fields = ["user__username", "order_track_id", "order_status", "stores_infos", "stores_status"]
 
 
 admin.site.register(Item, ItemAdmin)
