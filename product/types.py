@@ -418,7 +418,7 @@ class OrderType(DjangoObjectType):
         return ShippingType(sch=sch, address=shipping["address"])
 
     def resolve_stores_infos(self, info):
-        # stores_infos = json.loads(self.stores_infos)
+        stores_infos = self.stores_infos
 
         current_user = info.context.user
         current_user_profile = current_user.profile
@@ -488,7 +488,7 @@ class OrderType(DjangoObjectType):
     def resolve_confirm_pin(self, info):
         return self.get_confirm_pin()
 
-    def resolve_order_status(self, info):
+    def resolve_order_status(self: Order, info):
         order_status = self.order_status
         current_user_profile = info.context.user.profile
         view_as = self.view_as(current_user_profile)
@@ -498,6 +498,8 @@ class OrderType(DjangoObjectType):
             )
             if delivery_person:
                 order_status = delivery_person["status"]
+        if "VENDOR" in view_as:
+            order_status = self.get_store_status(current_user_profile.store.id)
         return order_status.upper()
 
 

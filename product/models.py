@@ -522,6 +522,15 @@ class Order(models.Model):
             if delivery_person["id"] == delivery_person_id:
                 return delivery_person
         return None
+    
+    # get store_status from the stores_status json
+    def get_store_status(self, store_id):
+        print("store_id", store_id)
+        stores_status = self.stores_status
+        for store_status in stores_status:
+            if store_status["storeId"] == store_id:
+                return store_status.get("status")
+        return None
 
     # create a payment link for the order
     def create_payment_link(self):
