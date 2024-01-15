@@ -517,6 +517,19 @@ class Order(models.Model):
             return ["DELIVERY_PERSON"]
         else:
             return []
+        
+    def get_order_status(self, current_user_profile):
+        order_status = self.order_status
+        view_as = self.view_as(current_user_profile)
+        if "DELIVERY_PERSON" in view_as:
+            delivery_person = self.get_delivery_person(
+                current_user_profile.delivery_person.id
+            )
+            if delivery_person:
+                order_status = delivery_person["status"]
+        if "VENDOR" in view_as:
+            order_status = self.get_store_status(current_user_profile.store.id)
+        return order_status.upper()
 
     # get delivery_person from the delivery_people json
     def get_delivery_person(self, delivery_person_id):

@@ -363,14 +363,16 @@ class OrderType(DjangoObjectType):
     def resolve_id(self, info):
         return self.order_track_id
 
-    def resolve_user(self, info):
+    def resolve_user(self: Order, info):
         current_user = info.context.user
-        if self.order_status == "delivered" or self.order_status == "cancelled":
+        order_status = self.get_order_status(current_user.profile)
+        view_as = self.view_as(current_user.profile)
+        if order_status == "DELIVERED" or order_status == "CANCELLED":
             return None
-        delivery_people = self.delivery_people
-        if self.user == current_user.profile and len(delivery_people) > 0:
-            return None
-        if self.user != current_user.profile:
+        # delivery_people = self.delivery_people
+        # if self.user == current_user.profile and len(delivery_people) > 0:
+        #     return None
+        if len(view_as) > 0:
             return self.user
 
     def resolve_delivery_people(self, info):
@@ -489,18 +491,8 @@ class OrderType(DjangoObjectType):
         return self.get_confirm_pin()
 
     def resolve_order_status(self: Order, info):
-        order_status = self.order_status
         current_user_profile = info.context.user.profile
-        view_as = self.view_as(current_user_profile)
-        if "DELIVERY_PERSON" in view_as:
-            delivery_person = self.get_delivery_person(
-                current_user_profile.delivery_person.id
-            )
-            if delivery_person:
-                order_status = delivery_person["status"]
-        if "VENDOR" in view_as:
-            order_status = self.get_store_status(current_user_profile.store.id)
-        return order_status.upper()
+        return self.get_order_status(current_user_profile)
 
 
 class DiscoverDeliveryType(OrderType, DjangoObjectType):
