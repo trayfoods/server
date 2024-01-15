@@ -193,19 +193,17 @@ class ShippingInputType(graphene.InputObjectType):
         sch = self.sch
         if sch == None:
             return None
-        print(sch)
         sch = sch.lower().strip()
         if sch == "":
             sch = None
         if sch:
-            print(sch)
             sch = School.objects.filter(slug=sch).first().name
         return sch
 
 
 class TotalOrder:
     price = graphene.Int()
-    platePrice = graphene.Int()
+    plate_price = graphene.Int()
 
 
 class CountOrder:
@@ -420,7 +418,7 @@ class OrderType(DjangoObjectType):
         return ShippingType(sch=sch, address=shipping["address"])
 
     def resolve_stores_infos(self, info):
-        stores_infos = json.loads(self.stores_infos)
+        # stores_infos = json.loads(self.stores_infos)
 
         current_user = info.context.user
         current_user_profile = current_user.profile

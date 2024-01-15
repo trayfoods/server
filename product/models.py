@@ -326,7 +326,6 @@ class Order(models.Model):
         ordering = ["-created_at", "-updated_at"]
 
     def save(self, *args, **kwargs):
-        print("save", "order")
         if not self.order_track_id:
             # Generate a custom ID if it doesn't exist
             order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
@@ -374,7 +373,6 @@ class Order(models.Model):
 
     # validate the order store status format is correct
     def validate_stores_status(self):
-        print("validate_stores_status")
         stores_status = self.stores_status
         if not isinstance(stores_status, list):
             return False
@@ -388,7 +386,6 @@ class Order(models.Model):
                 return False
             if store_status.get("status") not in ALLOWED_STORES_STATUS:
                 return False
-            print("validate_stores_status", store_status.get("storeId"))
             # check if the stores_status are linked to the order
             if not self.linked_stores.filter(id=store_status.get("storeId")).exists():
                 return False
@@ -396,12 +393,10 @@ class Order(models.Model):
         stores_status_ids = [store_status["storeId"] for store_status in stores_status]
         if len(stores_status_ids) != len(set(stores_status_ids)):
             return False
-        print("validate_stores_status", stores_status_ids)
         return True
 
     # validate the order delivery people format is correct
     def validate_delivery_people(self):
-        print("validate_delivery_people")
         delivery_people = self.delivery_people
         if not isinstance(delivery_people, list):
             return False
@@ -426,7 +421,6 @@ class Order(models.Model):
         ]
         if len(delivery_people_ids) != len(set(delivery_people_ids)):
             return False
-        print("validate_delivery_people", delivery_people_ids)
         return True
 
     # validate the activities_log format is correct
