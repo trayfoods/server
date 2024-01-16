@@ -365,7 +365,7 @@ class OrderType(DjangoObjectType):
         current_user = info.context.user
         order_status = self.get_order_status(current_user.profile)
         view_as = self.view_as(current_user.profile)
-        if order_status == "DELIVERED" or order_status == "CANCELLED":
+        if order_status == "DELIVERED" or order_status == "CANCELLED" or "PENDING":
             return None
         # delivery_people = self.delivery_people
         # if self.user == current_user.profile and len(delivery_people) > 0:

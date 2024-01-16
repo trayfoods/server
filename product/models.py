@@ -253,6 +253,8 @@ class Order(models.Model):
             ("ready-for-pickup", "ready-for-pickup"),
             ("delivered", "delivered"),
             ("cancelled", "cancelled"),
+            ("failed", "failed"),
+            ("refunded", "refunded"),
         ),
         default="not-started",
         db_index=True,
@@ -505,7 +507,7 @@ class Order(models.Model):
 
         if current_user_profile == self.user and not is_vendor:
             return []
-        
+
         if current_user_profile == self.user and is_vendor:
             return ["USER", "VENDOR"]
 
@@ -515,7 +517,7 @@ class Order(models.Model):
             return ["DELIVERY_PERSON"]
         else:
             return []
-        
+
     def get_order_status(self, current_user_profile):
         order_status = self.order_status
         view_as = self.view_as(current_user_profile)
@@ -536,7 +538,7 @@ class Order(models.Model):
             if delivery_person["id"] == delivery_person_id:
                 return delivery_person
         return None
-    
+
     # get store_status from the stores_status json
     def get_store_status(self, store_id):
         stores_status = self.stores_status
