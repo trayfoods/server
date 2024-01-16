@@ -529,7 +529,8 @@ class Order(models.Model):
                 order_status = delivery_person["status"]
         if "VENDOR" in view_as:
             order_status = self.get_store_status(current_user_profile.store.id)
-        return order_status.upper() if order_status else "NO-STATUS"
+        return order_status.upper().replace("-", "_") \
+              if order_status else "NO_STATUS"
 
     # get delivery_person from the delivery_people json
     def get_delivery_person(self, delivery_person_id):
