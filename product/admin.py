@@ -22,9 +22,9 @@ class ItemAdmin(admin.ModelAdmin):
         "product_price",
     )
     prepopulated_fields = {
-        "product_slug": ("product_name", "id", "product_type")
+        "product_slug": ("product_name", "product_creator", "product_type")
     }
-    readonly_fields = ("product_images",)
+    readonly_fields = ("product_images", "product_slug")
 
 
 class ItemAttributeAdmin(admin.ModelAdmin):
@@ -88,7 +88,13 @@ class OrderAdmin(admin.ModelAdmin):
         "delivery_fee",
         "order_payment_url",
     )
-    search_fields = ["user__username", "order_track_id", "order_status", "stores_infos", "stores_status"]
+    search_fields = [
+        "user__username",
+        "order_track_id",
+        "order_status",
+        "stores_infos",
+        "stores_status",
+    ]
 
 
 admin.site.register(Item, ItemAdmin)
