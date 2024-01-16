@@ -59,6 +59,30 @@ class StoreOrderFilter(FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
+        if value == "ready":
+            # filter by ready for pickup or delivery
+            return queryset.filter(
+                id__in=[
+                    order.id
+                    for order in queryset
+                    if order.get_order_status(self.request.user.profile).upper()
+                    == "READY_FOR_PICKUP"
+                    or order.get_order_status(self.request.user.profile).upper()
+                    == "READY_FOR_DELIVERY"
+                ]
+            )
+        elif value == "completed":
+            # filter by completed
+            return queryset.filter(
+                id__in=[
+                    order.id
+                    for order in queryset
+                    if order.get_order_status(self.request.user.profile).upper()
+                    == "DELIVERED"
+                    or order.get_order_status(self.request.user.profile).upper()
+                    == "PICKED_UP"
+                ]
+            )
         return queryset.filter(
             id__in=[
                 order.id

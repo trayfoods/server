@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, Profile
+from users.models import UserActivity, Store, Profile, DeliveryPerson
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
@@ -17,7 +17,6 @@ from .types import (
 
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-import json
 
 PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
@@ -380,20 +379,21 @@ class CreateOrderMutation(Output, graphene.Mutation):
 
         new_stores_infos = []
         for store_info in stores_infos:
-            new_stores_infos.append({
-                "id": store_info.id,
-                "storeId": store_info.storeId,
-                "items": store_info.items,
-                "total": {
-                    "price": store_info.total.price,
-                    "plate_price": store_info.total.plate_price,
-                },
-                "count": {
-                    "items": store_info.count.items,
-                    "plate": store_info.count.plate,
-                },
-            })
-
+            new_stores_infos.append(
+                {
+                    "id": store_info.id,
+                    "storeId": store_info.storeId,
+                    "items": store_info.items,
+                    "total": {
+                        "price": store_info.total.price,
+                        "plate_price": store_info.total.plate_price,
+                    },
+                    "count": {
+                        "items": store_info.count.items,
+                        "plate": store_info.count.plate,
+                    },
+                }
+            )
 
         new_order = Order.objects.create(
             user=info.context.user.profile,
@@ -421,7 +421,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
         action = graphene.String(required=True)
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, order_id, action):
+    def mutate(self, info, order_id, action: str):
         user = info.context.user
 
         order = Order.objects.filter(order_track_id=order_id)
@@ -431,26 +431,121 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         order = order.first()
         order.user: Profile = order.user
+        shipping = order.shipping
 
-        action = action.lower().replace("_", "-")
-        allowed_actions = ["delivered", "ready-for-pickup", "accepted"]
-
-        if not action in allowed_actions:
-            return MarkOrderAsMutation(error="Invalid action")
-        if action == "delivered" and order.order_status != "out-for-delivery":
-            return MarkOrderAsMutation(
-                error="Order is not out for delivery, cannot be marked as delivered"
-            )
-        elif action == "ready-for-pickup" and order.order_status != "processing":
-            return MarkOrderAsMutation(
-                error="Order has not been processed, cannot be ready for pickup"
-            )
+        # check if the user has the right to interact with the order
         view_as = order.view_as(user.profile)
-
         if not "DELIVERY_PERSON" in view_as and not "VENDOR" in view_as:
             return MarkOrderAsMutation(
                 error="You are not authorized to interact with this order"
             )
+
+        # convert action and order_status to lowercase and replace underscore with dash
+        action = action.lower().replace("_", "-")
+        order_status = order.get_order_status(user.profile).lower().replace("_", "-")
+
+        # check if the action is allowed
+        allowed_actions = settings.ALLOWED_ORDER_STATUS
+        if not action in allowed_actions:
+            return MarkOrderAsMutation(error="Invalid action")
+
+        # handle vendor actions
+        if "VENDOR" in view_as:
+            # TODO: check if the user is the vendor of the store
+
+            # get the store id
+            store_id = user.profile.store.id if user.profile.store else None
+            if store_id is None:
+                return MarkOrderAsMutation(error="You are not a vendor")
+
+            # check if the order has been accepted or rejected
+            if order_status == "pending" and not action in ["accepted", "rejected"]:
+                return MarkOrderAsMutation(
+                    error="Order has not been accepted, cannot be marked as {}".format(
+                        action.capitalize()
+                    )
+                )
+
+            # accept order if it is pending
+            if action == "accepted":
+                order.update_store_status(store_id, "accepted")
+                return MarkOrderAsMutation(success=True)
+
+            # reject order if it is pending
+            if action == "rejected":
+                order.update_store_status(store_id, "rejected")
+                return MarkOrderAsMutation(success=True)
+
+            # handle order ready for delivery
+            if action == "ready-for-delivery":
+                if shipping and shipping["address"] == "pickup":
+                    return MarkOrderAsMutation(
+                        error="Order address is pickup, cannot be marked as ready for delivery"
+                    )
+                # check if the order has not been accepted
+                if order_status != "accepted":
+                    return MarkOrderAsMutation(
+                        error="Order has not been accepted, cannot be marked as ready for delivery"
+                    )
+
+                # handle order ready for delivery
+                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
+                    order
+                )
+                # check if any delivery person was found
+                if len(delivery_people) == 0:
+                    return MarkOrderAsMutation(
+                        error="No delivery person found for this order"
+                    )
+                order.send_order_sms_to_delivery_people(delivery_people)
+                order.update_store_status(store_id, "ready-for-delivery")
+                return MarkOrderAsMutation(success=True)
+
+            # handle order ready for pickup
+            if action == "ready-for-pickup":
+                if shipping and shipping["address"] != "pickup":
+                    return MarkOrderAsMutation(
+                        error="Order address is not pickup, cannot be marked as ready for pickup"
+                    )
+                # check if the order has not been accepted
+                if order_status != "accepted":
+                    return MarkOrderAsMutation(
+                        error="Order has not been accepted, cannot be marked as ready for pickup"
+                    )
+
+                # handle order ready for pickup
+                order.update_store_status(store_id, "ready-for-pickup")
+                return MarkOrderAsMutation(success=True)
+
+            # handle order picked up
+            if action == "picked-up":
+                if shipping and shipping["address"] != "pickup":
+                    return MarkOrderAsMutation(
+                        error="Order address is not pickup, cannot be marked as picked up"
+                    )
+                # check if the order has not been marked as ready for pickup
+                if order_status != "ready-for-pickup":
+                    return MarkOrderAsMutation(
+                        error="Order has not been marked as ready for pickup, cannot be marked as picked up"
+                    )
+
+                # handle order picked up
+                order.update_store_status(store_id, "picked-up")
+                return MarkOrderAsMutation(success=True)
+
+            # handle order cancelled
+            if action == "cancelled":
+                if order_status != "accepted":
+                    return MarkOrderAsMutation(
+                        error="You cannot cancel this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
+
+                # handle order cancelled
+                order.update_store_status(store_id, "cancelled")
+                return MarkOrderAsMutation(success=True)
+
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
             current_delivery_person_id = user.profile.delivery_person.id
             delivery_person = order.get_delivery_person(current_delivery_person_id)
@@ -494,21 +589,21 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 return MarkOrderAsMutation(success=True)
 
-        elif "VENDOR" in view_as:
-            order.order_status = "ready-for-pickup"
-            order.save()
-            order_disp_id = order.order_track_id.replace("order_", "")
-            order.user.send_push_notification(
-                title="Order Ready",
-                msg="Order #{} is ready for pickup".format(order_disp_id),
-            )
+        # elif "VENDOR" in view_as:
+        #     order.order_status = "ready-for-pickup"
+        #     order.save()
+        #     order_disp_id = order.order_track_id.replace("order_", "")
+        #     order.user.send_push_notification(
+        #         title="Order Ready",
+        #         msg="Order #{} is ready for pickup".format(order_disp_id),
+        #     )
 
-            return MarkOrderAsMutation(success=True)
+        #     return MarkOrderAsMutation(success=True)
 
-        else:
-            return MarkOrderAsMutation(
-                error="You are not allowed to interact with this order"
-            )
+        # else:
+        #     return MarkOrderAsMutation(
+        #         error="You are not allowed to interact with this order"
+        #     )
 
 
 class RateItemMutation(graphene.Mutation):
