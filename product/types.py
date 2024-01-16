@@ -2,6 +2,8 @@ import json
 
 import graphene
 from graphene_django.types import DjangoObjectType
+
+from trayapp.permissions import permission_checker, IsAuthenticated
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
 from users.types import StoreType, School
@@ -512,7 +514,22 @@ class OrderNode(OrderType, DjangoObjectType):
 
 
 class StoreOrderNode(OrderType, DjangoObjectType):
+    items = graphene.List(StoreItemType)
+
     class Meta:
         model = Order
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreOrderFilter
+
+    @permission_checker([IsAuthenticated])
+    def resolve_items(self, info):
+        items = []
+        # get the current user
+        user = info.context.user
+        current_user_store_id = user.profile.store.id
+        # loop through the stores_infos to get the current store then get the items
+        for store_info in self.stores_infos:
+            if str(store_info["storeId"]) == str(current_user_store_id):
+                items = store_info["items"]
+                break
+        return items
