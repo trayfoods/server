@@ -179,24 +179,22 @@ class ItemNode(ItemType, DjangoObjectType):
 
 
 class ShippingType(graphene.ObjectType):
-    sch = graphene.String()
+    sch = graphene.String(default_value=None)
     address = graphene.String()
+
+    # def resolve_sch(self, info):
+    #     sch = self.sch
+    #     print(sch)
+    #     if sch == None or sch == "":
+    #         return None
+    #     sch = sch.lower().strip()
+    #     sch_name = School.objects.filter(slug=sch).first().name
+    #     return sch_name
 
 
 class ShippingInputType(graphene.InputObjectType):
     sch = graphene.String(default_value=None)
     address = graphene.String()
-
-    def resolve_sch(self, info):
-        sch = self.sch
-        if sch == None:
-            return None
-        sch = sch.lower().strip()
-        if sch == "":
-            sch = None
-        if sch:
-            sch = School.objects.filter(slug=sch).first().name
-        return sch
 
 
 class TotalOrder:
@@ -412,10 +410,12 @@ class OrderType(DjangoObjectType):
 
     def resolve_shipping(self, info):
         shipping = self.shipping
-        sch = None
-        if shipping["sch"]:
-            sch = shipping["sch"]
-        return ShippingType(sch=sch, address=shipping["address"])
+        if shipping:
+            shipping = {
+                "sch": shipping["sch"],
+                "address": shipping["address"],
+            }
+            return ShippingType(**shipping)
 
     def resolve_stores_infos(self, info):
         stores_infos = self.stores_infos
