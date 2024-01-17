@@ -43,8 +43,8 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
         ]
         food_categories.sort()
         item_types = [
-            "Dish",
-            "Not Dish",
+            "Food",
+            "Drink",
             "Combo",
             "Package",
         ]
