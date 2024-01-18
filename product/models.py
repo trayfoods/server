@@ -491,7 +491,6 @@ class Order(models.Model):
         return cls.objects.filter(linked_delivery_people=delivery_person).count()
 
     # re-generate a order_track_id for the order and update the order_track_id of the order
-    @property
     def regenerate_order_track_id(self):
         self.order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
         self.save()
@@ -564,7 +563,7 @@ class Order(models.Model):
 
         # check if order has been initialized before
         if self.order_payment_status == "pending":
-            order_track_id = self.regenerate_order_track_id
+            order_track_id = self.regenerate_order_track_id()
         else:
             order_track_id = self.order_track_id
         amount = (

@@ -747,7 +747,7 @@ class Wallet(models.Model):
 
 class StoreOpenHours(models.Model):
     store = models.ForeignKey("Store", on_delete=models.CASCADE)
-    day = models.CharField(max_length=10)
+    day = models.CharField(max_length=10, choices=settings.DAYS_OF_WEEK)
     open_time = models.TimeField()
     close_time = models.TimeField()
 
@@ -816,6 +816,20 @@ class Store(models.Model):
             self.save()
 
         return f"{self.store_nickname}"
+    
+    # check if store is open
+    def is_open(self):
+        from datetime import datetime
+
+        today = datetime.now().strftime("%A").lower()
+        open_hours = StoreOpenHours.objects.filter(store=self, day=today).first()
+        if open_hours:
+            open_time = open_hours.open_time
+            close_time = open_hours.close_time
+            now = datetime.now().time()
+            if now >= open_time and now <= close_time:
+                return True
+        return False
 
     class Meta:
         ordering = ["-store_rank"]

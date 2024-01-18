@@ -408,6 +408,15 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 
 # Global settings
+DAYS_OF_WEEK = (
+    ("Mon", "Mon"),
+    ("Tue", "Tue"),
+    ("Wed", "Wed"),
+    ("Thu", "Thu"),
+    ("Fri", "Fri"),
+    ("Sat", "Sat"),
+    ("Sun", "Sun"),
+)
 ALLOWED_ORDER_STATUS = [
     "pending",
     "accepted",
