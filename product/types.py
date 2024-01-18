@@ -184,14 +184,13 @@ class ShippingType(graphene.ObjectType):
     sch = graphene.String(default_value=None)
     address = graphene.String()
 
-    # def resolve_sch(self, info):
-    #     sch = self.sch
-    #     print(sch)
-    #     if sch == None or sch == "":
-    #         return None
-    #     sch = sch.lower().strip()
-    #     sch_name = School.objects.filter(slug=sch).first().name
-    #     return sch_name
+    def resolve_sch(self, info):
+        sch = self.sch
+        if sch == None or sch == "":
+            return None
+        sch = sch.lower().strip()
+        sch_name = School.objects.filter(slug=sch).first().name
+        return sch_name
 
 
 class ShippingInputType(graphene.InputObjectType):

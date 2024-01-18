@@ -197,7 +197,8 @@ class HostelField(models.Model):
     field_type = models.CharField(max_length=10)
     placeholder = models.CharField(max_length=100, blank=True)
     options = models.JSONField(default=list, null=True, blank=True)
-    loop_prefix = models.CharField(max_length=10, blank=True)
+    loop_prefix = models.CharField(max_length=10, blank=True, help_text="e.g Room")
+    value_prefix = models.CharField(max_length=10, blank=True, null=True, help_text="Not required if loop_prefix is set")
     is_loop = models.BooleanField(default=False)
     loop_range = models.IntegerField(blank=True, null=True)
     loop_suffix = models.CharField(
@@ -208,6 +209,12 @@ class HostelField(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}".upper()
+    
+    # value_prefix and loop_prefix cannot be set at the same time
+    def save(self, *args, **kwargs):
+        if self.value_prefix and self.loop_prefix:
+            raise Exception("Value Prefix and Loop Prefix cannot be set at the same time")
+        super().save(*args, **kwargs)
 
     class Meta:
         # set singular and plural names
@@ -886,7 +893,7 @@ class Student(models.Model):
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     hostel = models.ForeignKey(Hostel, on_delete=models.SET_NULL, null=True, blank=True)
-    hostel_fields = models.JSONField(default=list, null=True, blank=True)
+    hostel_fields = models.JSONField(default=list, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     """
     hostel_fields = [

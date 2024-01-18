@@ -152,11 +152,16 @@ class StudentType(DjangoObjectType):
         hostel_fields = self.hostel_fields
         hostel_address = ""
         for field in hostel_fields:
-            print(field)
-            hostel_address += field["value"] + " - "
+            hostel_fields_qs = HostelField.objects.filter(id=field["field_id"])
+            if hostel_fields_qs.count() > 0:
+                value_prefix = hostel_fields_qs.first().value_prefix
+                hostel_address += f"{value_prefix if value_prefix else "" } {field["value"]} - "
+            else:
+                hostel_address += f"{field["value"]} - "
+            hostel_address = hostel_address.strip()
             # remove - if it is the last character
-        if hostel_address[-1] == "- ":
-            hostel_address = hostel_address[:-2]
+            if hostel_address[-1] == "-":
+                hostel_address = hostel_address[:-1]
         return hostel_address
 
 
