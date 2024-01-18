@@ -981,7 +981,15 @@ class Student(models.Model):
 class DeliveryPerson(models.Model):
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
     is_verified = models.BooleanField(default=False)
-    is_available = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=20,
+        choices=(
+            ("offline", "offline"),
+            ("online", "online"),
+            ("suspended", "suspended"),
+        ),
+        default="online",
+    )
     is_on_delivery = models.BooleanField(default=False)
     not_allowed_bash = models.JSONField(default=list, null=True, blank=True)
     not_allowed_locations = models.JSONField(default=list, null=True, blank=True)
@@ -994,7 +1002,7 @@ class DeliveryPerson(models.Model):
         return Wallet.objects.filter(user=self.profile).first()
 
     class Meta:
-        ordering = ["-is_available"]
+        ordering = ["-is_verified", "-status"]
         verbose_name_plural = "Delivery People"
 
     # credit delivery person wallet
@@ -1086,7 +1094,7 @@ class DeliveryPerson(models.Model):
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
         delivery_people = DeliveryPerson.objects.filter(
-            is_available=True, is_on_delivery=False
+            status="online", is_on_delivery=False
         )
         delivery_people_that_can_deliver = []
         for delivery_person in delivery_people:

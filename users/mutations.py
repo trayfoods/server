@@ -86,6 +86,50 @@ class LoginMutation(
         return super(graphql_jwt.JSONWebTokenMutation, cls).Field(*args, **kwargs)
 
 
+class UpdateOnlineStatusMutation(Output, graphene.Mutation):
+    class Arguments:
+        role = graphene.String(required=True)
+        is_online = graphene.Boolean(required=True)
+
+    @staticmethod
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, is_online: bool, role: str):
+        user = info.context.user
+        roles = user.roles
+        allowed_roles = ["DELIVERY_PERSON", "VENDOR"]
+        if not role in allowed_roles:
+            return UpdateOnlineStatusMutation(error="Invalid role")
+
+        if "DELIVERY_PERSON" == role:
+            # check if the user is a delivery person
+            if not "DELIVERY_PERSON" in roles:
+                return UpdateOnlineStatusMutation(error="You are not a delivery person")
+            delivery_person: DeliveryPerson = user.profile.delivery_person
+            if delivery_person.status == "suspended":
+                delivery_person.status = "offline"
+                delivery_person.save()
+                return UpdateOnlineStatusMutation(
+                    error="Your Delivery Account has been suspended, please contact support"
+                )
+            delivery_person.status = "online" if is_online else "offline"
+            delivery_person.save()
+
+        elif "VENDOR" == role:
+            # check if the user is a vendor
+            if not "VENDOR" in roles:
+                return UpdateOnlineStatusMutation(error="You are not a vendor")
+            store: Store = user.profile.store
+            if store.status == "suspended":
+                store.status = "offline"
+                store.save()
+                return UpdateOnlineStatusMutation(
+                    error="Your Store has been suspended, please contact support"
+                )
+            store.status = "online" if is_online else "offline"
+            store.save()
+        return UpdateOnlineStatusMutation(success=True)
+
+
 class CreateUpdateStoreMutation(Output, graphene.Mutation):
     class Arguments:
         event_type = graphene.String(required=True)

@@ -21,6 +21,7 @@ from .mutations import (
     AcceptDeliveryMutation,
     UpdateStoreMenuMutation,
     UpdateSchoolInfoMutation,
+    UpdateOnlineStatusMutation
 )
 from .models import Student
 from .types import (
@@ -105,6 +106,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
 
     create_update_store = CreateUpdateStoreMutation.Field()
     update_store_menu = UpdateStoreMenuMutation.Field()
+    update_online_status = UpdateOnlineStatusMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
