@@ -104,7 +104,7 @@ class WalletAdmin(admin.ModelAdmin):
         "user",
         "balance",
         "currency",
-        "uncleared_balance",
+        "unsettled_balance",
         "created_at",
         "updated_at",
     )

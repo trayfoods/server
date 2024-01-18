@@ -521,6 +521,8 @@ class Transaction(models.Model):
             ("failed", "failed"),
             ("pending", "pending"),
             ("reversed", "reversed"),
+            ("unsettled", "unsettled"),
+            ("settled", "settled"),
         ),
         default="pending",
     )
@@ -542,6 +544,11 @@ class Transaction(models.Model):
     def get_by_wallet(self, wallet):
         return Transaction.objects.filter(wallet=wallet).first()
 
+    def settle(self):
+        if self.status == "unsettled":
+            self.status = "settled"
+            self.save()
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
@@ -554,7 +561,7 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
-    uncleared_balance = models.DecimalField(
+    unsettled_balance = models.DecimalField(
         max_digits=100,
         null=True,
         default=00.00,
@@ -642,30 +649,23 @@ class Wallet(models.Model):
         title = kwargs.get("title", None)
         desc = kwargs.get("desc", None)
         order = kwargs.get("order", None)
-        unclear = kwargs.get("unclear", False)
         transaction = None
         amount = Decimal(amount)
 
-        if unclear:
-            self.uncleared_balance += amount
-            self.save()
-        else:
-            # convert the amount to decimal
-            self.balance += amount
-            self.save()
-            # create a transaction
-            transaction = Transaction.objects.create(
-                wallet=self,
-                title="Wallet Credited" if not title else title,
-                status="success",
-                desc=f"{amount} {self.currency} was added to wallet"
-                if not desc
-                else desc,
-                amount=amount,
-                order=order,
-                _type="credit",
-            )
-            transaction.save()
+        # convert the amount to decimal
+        self.balance += amount
+        self.save()
+        # create a transaction
+        transaction = Transaction.objects.create(
+            wallet=self,
+            title="Wallet Credited" if not title else title,
+            status="success",
+            desc=f"{amount} {self.currency} was added to wallet" if not desc else desc,
+            amount=amount,
+            order=order,
+            _type="credit",
+        )
+        transaction.save()
         return transaction
 
     def deduct_balance(self, **kwargs):
@@ -678,7 +678,6 @@ class Wallet(models.Model):
         transaction_id = kwargs.get("transaction_id", None)
         order = kwargs.get("order", None)
         status = kwargs.get("status", "pending")
-        unclear = kwargs.get("unclear", False)
         transaction = None
         amount = Decimal(amount)
         transaction_fee = Decimal(transaction_fee)
@@ -691,25 +690,21 @@ class Wallet(models.Model):
         if self.balance < amount:
             raise Exception("Insufficient funds")
 
-        if unclear:
-            self.uncleared_balance -= amount + transaction_fee
-            self.save()
-        else:
-            # debit the wallet
-            self.balance -= amount + transaction_fee
-            self.save()
+        # debit the wallet
+        self.balance -= amount + transaction_fee
+        self.save()
 
-            # check if transaction exists
-            transaction = Transaction.objects.filter(
-                wallet=self, transaction_id=transaction_id, _type="debit"
-            ).first()
+        # check if transaction exists
+        transaction = Transaction.objects.get(
+            wallet=self, transaction_id=transaction_id, _type="debit"
+        )
 
-            transaction.title = title
-            transaction.order = order
-            transaction.desc = desc
-            transaction.status = status
+        transaction.title = title
+        transaction.order = order
+        transaction.desc = desc
+        transaction.status = status
 
-            transaction.save()
+        transaction.save()
         return transaction
 
     def reverse_transaction(self, **kwargs):
@@ -729,26 +724,23 @@ class Wallet(models.Model):
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
 
         amount = Decimal(amount)
-        if unclear:
-            self.uncleared_balance += amount
-            self.save()
-        else:
-            self.balance += amount
-            self.save()
 
-            if transaction is None:
-                # create a transaction
-                transaction = Transaction.objects.create(
-                    wallet=self,
-                    title=title,
-                    status="reversed",
-                    amount=amount,
-                    order=order,
-                    _type="debit",
-                )
-            transaction.title = title
-            transaction.desc = desc
-            transaction.save()
+        self.balance += amount
+        self.save()
+
+        if transaction is None:
+            # create a transaction
+            transaction = Transaction.objects.create(
+                wallet=self,
+                title=title,
+                status="reversed",
+                amount=amount,
+                order=order,
+                _type="debit",
+            )
+        transaction.title = title
+        transaction.desc = desc
+        transaction.save()
         return transaction
 
 
