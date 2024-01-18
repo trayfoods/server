@@ -1,1 +1,3 @@
-celery -A trayapp worker -l info & python manage.py migrate && gunicorn trayapp.wsgi --bind 0.0.0.0:$PORT
+export LANG=C.UTF-8
+
+gunicorn — bind=0.0.0.0 — timeout 600 config.wsgi & celery -A trayapp worker -l INFO -B
