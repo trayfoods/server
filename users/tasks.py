@@ -1,10 +1,14 @@
 from celery import shared_task
 from django.conf import settings
 from trayapp.utils import get_twilio_client
-from .models import UserDevice, UserAccount
-from firebase_admin import messaging
+from django.core.management import call_command
 
 TWILIO_CLIENT = get_twilio_client()
+
+
+@shared_task
+def settle_transactions():
+    call_command("settle_transactions")
 
 
 @shared_task
@@ -27,4 +31,3 @@ def send_async_sms(phone_number, message):
         )
     except Exception as e:
         print(e)
-

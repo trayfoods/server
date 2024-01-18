@@ -1,1 +1,0 @@
-web: celery -A trayapp worker -l info & python manage.py migrate && gunicorn trayapp.wsgi  --bind 0.0.0.0:$PORT
