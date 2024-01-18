@@ -198,7 +198,12 @@ class HostelField(models.Model):
     placeholder = models.CharField(max_length=100, blank=True)
     options = models.JSONField(default=list, null=True, blank=True)
     loop_prefix = models.CharField(max_length=10, blank=True, help_text="e.g Room")
-    value_prefix = models.CharField(max_length=10, blank=True, null=True, help_text="Not required if loop_prefix is set")
+    value_prefix = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        help_text="Not required if loop_prefix is set",
+    )
     is_loop = models.BooleanField(default=False)
     loop_range = models.IntegerField(blank=True, null=True)
     loop_suffix = models.CharField(
@@ -209,11 +214,13 @@ class HostelField(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}".upper()
-    
+
     # value_prefix and loop_prefix cannot be set at the same time
     def save(self, *args, **kwargs):
         if self.value_prefix and self.loop_prefix:
-            raise Exception("Value Prefix and Loop Prefix cannot be set at the same time")
+            raise Exception(
+                "Value Prefix and Loop Prefix cannot be set at the same time"
+            )
         super().save(*args, **kwargs)
 
     class Meta:
@@ -816,7 +823,7 @@ class Store(models.Model):
             self.save()
 
         return f"{self.store_nickname}"
-    
+
     # check if store is open
     def is_open(self):
         from datetime import datetime
@@ -980,7 +987,6 @@ class Student(models.Model):
 
 class DeliveryPerson(models.Model):
     profile = models.OneToOneField(Profile, on_delete=models.CASCADE, unique=True)
-    is_verified = models.BooleanField(default=False)
     status = models.CharField(
         max_length=20,
         choices=(
@@ -991,8 +997,7 @@ class DeliveryPerson(models.Model):
         default="online",
     )
     is_on_delivery = models.BooleanField(default=False)
-    not_allowed_bash = models.JSONField(default=list, null=True, blank=True)
-    not_allowed_locations = models.JSONField(default=list, null=True, blank=True)
+    is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.profile.user.username
@@ -1002,7 +1007,7 @@ class DeliveryPerson(models.Model):
         return Wallet.objects.filter(user=self.profile).first()
 
     class Meta:
-        ordering = ["-is_verified", "-status"]
+        ordering = ["-is_approved", "-status"]
         verbose_name_plural = "Delivery People"
 
     # credit delivery person wallet
@@ -1018,8 +1023,6 @@ class DeliveryPerson(models.Model):
 
     # function to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
-        import json
-
         order_user = order.user
 
         # check if the order user is same as the delivery person
@@ -1072,29 +1075,13 @@ class DeliveryPerson(models.Model):
             if self.profile.city != order_user.city:
                 return False
 
-        shipping = json.loads(order.shipping)
-        sch = shipping.get("sch")
-        address = shipping.get("address")
-        bash = shipping.get("bash")
-
-        # check if the delivery person is not allowed to deliver to the order bash
-        if bash in self.not_allowed_bash:
-            return False
-
-        # check if the delivery person is not allowed to deliver to the order location
-        if address in self.not_allowed_locations:
-            return False
-
-        if sch in self.not_allowed_locations:
-            return False
-
         return True
 
     # function to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
         delivery_people = DeliveryPerson.objects.filter(
-            status="online", is_on_delivery=False
+            status="online", is_on_delivery=False, is_approved=True
         )
         delivery_people_that_can_deliver = []
         for delivery_person in delivery_people:

@@ -168,7 +168,8 @@ class TransactionAdmin(admin.ModelAdmin):
 
 
 class DeliveryPersonAdmin(admin.ModelAdmin):
-    list_display = ("__str__", "is_on_delivery", "is_verified", "status")
+    list_display = ("__str__", "is_on_delivery", "is_approved", "status")
+    readonly_fields = ("profile",)
 
 
 class StudentAdmin(admin.ModelAdmin):
