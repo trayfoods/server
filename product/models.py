@@ -82,7 +82,7 @@ class Item(models.Model):
     )
     store_menu_name = models.CharField(
         max_length=30,
-        default="Others",
+        default="OTHERS",
         blank=True,
     )
 
