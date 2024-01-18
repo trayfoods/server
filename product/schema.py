@@ -47,6 +47,7 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
             "Smoothie",
             "Fruit",
             "Vegetable",
+            "Energy Drink",
         ]
         food_categories.sort()
         item_types = [
