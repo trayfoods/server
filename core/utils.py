@@ -80,7 +80,6 @@ class ProcessPayment:
 
         # get all the needed data to verify the payment
         stores = order.stores_infos
-        stores = json.loads(stores)
 
         delivery_fee = Decimal(order.delivery_fee)
 
@@ -123,14 +122,6 @@ class ProcessPayment:
                     id=storeId.strip()
                 ).first()
                 if store_qs:
-                    kwargs = {
-                        "amount": Decimal(store["credit"]),
-                        "description": f"Order Payment From {order.user.user.first_name} {order.user.user.last_name} with order id {order.order_track_id} was successful",
-                        "unclear": False,
-                        "order": order,
-                    }
-                    store_qs.credit_wallet(**kwargs)
-                    store_qs.save()
                     store_qs.vendor.send_sms(
                         f"New Order of {order.order_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/"
                     )
@@ -151,14 +142,7 @@ class ProcessPayment:
             shipping_address = json.loads(order.shipping)
             shipping_address = shipping_address.get("address", "pickup")
 
-            if shipping_address != "pickup":
-                # send the order to the delivery_person
-                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
-                    order
-                )
-                print("delivery_people", delivery_people)
-                order.send_order_sms_to_delivery_people(delivery_people)
-            else:
+            if shipping_address == "pickup":
                 # send sms to user to pick up order
                 order.user.send_push_notification(
                     "Updates on your order",
