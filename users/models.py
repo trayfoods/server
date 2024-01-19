@@ -753,6 +753,10 @@ class StoreOpenHours(models.Model):
     def __str__(self) -> str:
         return f"{self.store.store_name} - {self.day}"
 
+    # get store's open hours
+    def get_store_open_hours(store_id):
+        return StoreOpenHours.objects.filter(store__id=store_id)
+
 
 class Store(models.Model):
     vendor = models.ForeignKey(Profile, on_delete=models.CASCADE)

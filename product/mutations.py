@@ -260,8 +260,6 @@ class AddProductClickMutation(Output, graphene.Mutation):
     class Arguments:
         slug = graphene.String(required=True)
 
-    item = graphene.Field(ItemType)
-
     def mutate(self, info, slug):
         item = (
             Item.get_items().filter(product_slug=slug, product_status="active").first()
@@ -269,9 +267,13 @@ class AddProductClickMutation(Output, graphene.Mutation):
         if not item:
             return AddProductClickMutation(error="Item does not exist")
 
-        product_creator:Store = item.product_creator
+        product_creator: Store = item.product_creator
+        if not product_creator:
+            return AddProductClickMutation(error="Item does not have a creator")
+
         if not product_creator.is_open():
             return AddProductClickMutation(error="Item Store has closed")
+
         if info.context.user.is_authenticated:
             # Add the user activity
             new_activity = UserActivity.objects.create(
@@ -281,11 +283,10 @@ class AddProductClickMutation(Output, graphene.Mutation):
                 timestamp=timezone.now(),
             )
             # increase the rank of the creator store by 0.5
-            if item.product_creator:
-                store = Store.objects.filter(id=item.product_creator.id).first()
-                if not store is None:
-                    store.store_rank += 0.5
-                    store.save()
+            store = Store.objects.filter(id=item.product_creator.id).first()
+            if not store is None:
+                store.store_rank += 0.5
+                store.save()
             # increase the product clicks by 1
             item.product_clicks += 1
 
@@ -293,7 +294,7 @@ class AddProductClickMutation(Output, graphene.Mutation):
             item.save()
             new_activity.save()
 
-            return AddProductClickMutation(item=item, success=True)
+            return AddProductClickMutation(success=True)
         else:
             return AddProductClickMutation(success=True)
 
