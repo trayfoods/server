@@ -21,15 +21,14 @@ class ItemAdmin(admin.ModelAdmin):
         "product_type",
         "product_price",
     )
-    prepopulated_fields = {
-        "product_slug": (
-            "product_name",
-            "product_qty_unit",
-            "product_type",
-            "product_price",
-        )
-    }
-    readonly_fields = ("product_images", "product_slug")
+    readonly_fields = (
+        "product_images",
+        "product_slug",
+        "product_price",
+        "product_type",
+        "product_clicks",
+        "product_views",
+    )
 
 
 class ItemAttributeAdmin(admin.ModelAdmin):

@@ -269,6 +269,9 @@ class AddProductClickMutation(Output, graphene.Mutation):
         if not item:
             return AddProductClickMutation(error="Item does not exist")
 
+        product_creator:Store = item.product_creator
+        if not product_creator.is_open():
+            return AddProductClickMutation(error="Item Store has closed")
         if info.context.user.is_authenticated:
             # Add the user activity
             new_activity = UserActivity.objects.create(
