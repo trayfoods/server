@@ -461,11 +461,10 @@ class Order(models.Model):
             shipping and shipping["address"] and shipping["address"].lower() == "pickup"
         )
 
-    def send_order_sms_to_delivery_people(self, delivery_people):
+    def notify_delivery_people(self, delivery_people):
         shipping = json.loads(self.shipping)
-        order_address = "{} / {}".format(
-            shipping.get("address"), shipping.get("bash", "")
-        )
+        print(shipping, "shipping for sms")
+        order_address = f"{shipping.get("address")} {shipping.get("sch", "")}"
         for delivery_person in delivery_people:
             delivery_person.profile.send_sms(
                 "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(

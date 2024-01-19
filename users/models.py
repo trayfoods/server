@@ -1019,7 +1019,7 @@ class DeliveryPerson(models.Model):
 
     # function to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
-        order_user = order.user
+        order_user: Profile = order.user
 
         # check if the order user is same as the delivery person
         if order_user == self.profile:
@@ -1045,8 +1045,8 @@ class DeliveryPerson(models.Model):
 
         # check if the delivery person is a student and the order user is a student
         if self.profile.is_student and order_user.is_student:
-            order_user_gender = order_user.gender.name
-            delivery_person_gender = self.profile.gender.name
+            order_user_gender = order_user.gender.id
+            delivery_person_gender = self.profile.gender.id
 
             # check if the delivery person is not in the same school as the order user
             if self.profile.student.school != order_user.student.school:

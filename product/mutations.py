@@ -508,7 +508,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="No delivery person found for this order"
                     )
-                order.send_order_sms_to_delivery_people(delivery_people)
+                order.notify_delivery_people(delivery_people)
                 order.update_store_status(store_id, "ready-for-delivery")
                 return MarkOrderAsMutation(success=True)
 
