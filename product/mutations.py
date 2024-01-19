@@ -360,12 +360,19 @@ class CreateOrderMutation(Output, graphene.Mutation):
         for store_info in stores_infos:
             storeId = store_info.storeId
             store = Store.objects.filter(
-                id=storeId, is_approved=True, status="online"
+                id=storeId,
             ).first()
             if store is None:
                 raise GraphQLError(
                     f"Store with nickname '{storeId}' does not exist or is not approved"
                 )
+            if store.is_open() == False:
+                raise GraphQLError(f"{store.store_name} has closed")
+            if store.is_approved == False:
+                raise GraphQLError(f"{store.store_name} has not been approved")
+            if store.status != "online":
+                raise GraphQLError(f"{store.store_name} is no longer taking orders")
+
             avaliable_stores.append(store)
 
         # check if there are linked stores
