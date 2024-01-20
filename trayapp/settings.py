@@ -393,7 +393,7 @@ CORS_ALLOW_HEADERS = (
 
 
 # CELERY SETTINGS
-
+SERVICE_BUS_CONNECTION_STR= os.environ.get("SERVICE_BUS_CONNECTION_STR")
 CELERY_BROKER_URL = os.environ.get("AZURE_SERVICE_BUS_URL", "redis://127.0.0.1:6379")
 accept_content = ["application/json"]
 result_serializer = "json"
