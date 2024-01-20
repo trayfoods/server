@@ -456,17 +456,17 @@ class OrderType(DjangoObjectType):
 
         return stores_infos
 
-    def resolve_customer_note(self, info):
-        store_notes = self.store_notes
+    def resolve_customer_note(self: Order, info):
         current_user = info.context.user
         current_user_profile = current_user.profile
         view_as = self.view_as(current_user_profile)
 
+        store_notes = self.store_notes
         customer_note = self.delivery_person_note
 
         # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
-        if "VENDOR" in view_as:
+        if "VENDOR" in view_as and not "USER" in view_as:
             store_note = [
                 store_note
                 for store_note in store_notes
