@@ -1190,11 +1190,12 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
             # send sms to user
             try:
-                order_disp_id = order.order_track_id.replace("order_", "")
+                order_disp_id = order.get_order_display_id()
                 order.user.send_push_notification(
-                    "Your order #{} is on its way and will be delivered soon".format(
+                    title="Order {} is on its way".format(order_disp_id),
+                    msg="Your order {} is on its way and will be delivered to you soon".format(
                         order_disp_id
-                    )
+                    ),
                 )
             except Exception as e:
                 print(e)
