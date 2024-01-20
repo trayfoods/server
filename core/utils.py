@@ -103,10 +103,14 @@ class ProcessPayment:
             shipping_address = shipping_address.get("address", None)
 
             if shipping_address == "pickup":
-                # send sms to user to pick up order
-                order.user.send_push_notification(
-                    "Updates on your order",
-                    f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order",
+                # send notification to the store
+                # order.user.send_push_notification(
+                #     "Updates on your order",
+                #     f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order",
+                # )
+                # send sms to the user
+                order.user.send_sms(
+                    f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order"
                 )
 
         return HttpResponse("Payment successful", status=200)
