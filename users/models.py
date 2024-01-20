@@ -378,6 +378,9 @@ class Profile(models.Model):
     @property
     def store(self):
         return Store.objects.filter(vendor=self).first()
+    
+    def get_wallet(self):
+        return Wallet.objects.filter(user=self).first()
 
     @property
     def delivery_person(self):

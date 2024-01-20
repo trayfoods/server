@@ -166,14 +166,14 @@ else:
 
 AUTH_USER_MODEL = "users.UserAccount"
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
-        },
-    },
-}
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
+#         },
+#     },
+# }
 
 GRAPH_MODELS = {
     "all_applications": True,
@@ -394,7 +394,7 @@ CORS_ALLOW_HEADERS = (
 
 # CELERY SETTINGS
 
-CELERY_BROKER_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
+CELERY_BROKER_URL = os.environ.get("AZURE_SERVICE_BUS_URL", "redis://127.0.0.1:6379")
 accept_content = ["application/json"]
 result_serializer = "json"
 task_serializer = "json"

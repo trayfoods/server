@@ -114,11 +114,6 @@ class UserNodeType(UserNode, graphene.ObjectType):
         return self
 
 
-class WalletInfoNode(graphene.ObjectType):
-    balance = graphene.String()
-    success = graphene.Boolean()
-
-
 class GenderType(DjangoObjectType):
     class Meta:
         model = Gender
@@ -279,3 +274,9 @@ class DeliveryPersonType(DjangoObjectType):
     class Meta:
         model = DeliveryPerson
         fields = "__all__"
+
+class WalletNode(graphene.ObjectType):
+    balance = graphene.String()
+    unsettled_balance = graphene.String()
+    error = graphene.String(default_value=None)
+    success = graphene.Boolean(default_value=False)
