@@ -464,6 +464,7 @@ class Order(models.Model):
         )
 
     def notify_delivery_people(self, delivery_people):
+        print("notify_delivery_people", delivery_people)
         shipping = self.shipping
         order_address = f"{shipping["address"]} {shipping["sch"]}"
         for delivery_person in delivery_people:

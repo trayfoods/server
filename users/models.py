@@ -566,14 +566,6 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
-    # unsettled_balance = models.DecimalField(
-    #     max_digits=100,
-    #     null=True,
-    #     default=00.00,
-    #     decimal_places=2,
-    #     blank=True,
-    #     editable=False,
-    # )
     passcode = models.CharField(
         _("passcode"), max_length=128, editable=False, null=True, blank=True
     )
@@ -593,6 +585,8 @@ class Wallet(models.Model):
         super().save(*args, **kwargs)
 
     def get_unsettled_balance(self):
+        # e.g if the user has 2 unsettled transactions of 100 and 200 respectively
+        # the unsettled balance will be 300
         current_unsettled_balance = Decimal(0.00)
         all_unsettled_transactions = Transaction.objects.filter(
             wallet=self, status="unsettled"

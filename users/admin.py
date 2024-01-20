@@ -81,6 +81,7 @@ class UserInline(admin.TabularInline):
 
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [StoreInline]
+    list_display = ("__str__", "phone_number",)
     list_filter = (RolesFilter,)
     readonly_fields = ("user",)
 
