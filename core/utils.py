@@ -63,95 +63,53 @@ class ProcessPayment:
             order_payment_method = "unknown"
 
         order_price = self.event_data["amount"]
+        # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
         # get the order from the database
-        order = Order.objects.filter(order_track_id=order_id).first()
+        order_qs = Order.objects.filter(order_track_id=order_id).exclude(
+            order_payment_status="success"
+        )
 
         # check if the order exists
-        if not order:
+        if not order_qs.exists():
             return HttpResponse("Order does not exist", status=404)
 
-        # check if the order is already successful
-        if order.order_payment_status == "success":
-            return HttpResponse("Payment already successful", status=200)
-
+        order = order_qs.first()
         order.order_payment_method = order_payment_method
-
-        # get all the needed data to verify the payment
-        stores = order.stores_infos
-
         delivery_fee = Decimal(order.delivery_fee)
-
-        # get the overall price of the order
         overall_price = Decimal(order.overall_price)
+
         order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
-        # calculate the total price of the stores
-        # and compare it with the overall price
-        stores_total_price = 0
-        stores__ids__with_credits = []
-        for store in stores:
-            store_id = store["storeId"]
-            price = store["total"]["price"]
-            plate_price = store["total"]["platePrice"]
-            total_price = price + plate_price
-            stores__ids__with_credits.append({"id": store_id, "credit": total_price})
-            stores_total_price += total_price
-
-        # if the stores_total_price is greater than the overall_price or
-        # if the order_price is not equal to the overall_price
-        # then the order is not valid
-        if stores_total_price > overall_price or order_price != overall_price:
-            order.order_payment_status = "failed"
-            order.order_status = "cancelled"
-            order.order_message = (
-                "This Order Was Not Valid, Please Contact The Support Team"
-            )
+        if overall_price > order_price:
+            order.order_payment_status = "refunded"
+            order.order_status = "failed"
             order.save()
             return HttpResponse("Payment failed, Processing Refund", status=400)
 
         if "success" in order_payment_status:
-            stores_with_issues = []
-            # update the balance of the stores
-            for store in stores__ids__with_credits:
-                storeId = store["id"]
-                # get the store from the database
-                # and update its credit
-                store_qs = Store.objects.filter(
-                    id=storeId.strip()
-                ).first()
-                if store_qs:
-                    store_qs.vendor.send_sms(
-                        f"New Order of {order.order_currency} {store['credit']} was made, please check click on the link to view the order {settings.FRONTEND_URL}/checkout/{order.order_track_id}/"
-                    )
-                else:
-                    stores_with_issues.append(store_id)
-            print("stores_with_issues: ", stores_with_issues)
-            # remove 25% of the delivery fee from the delivery person
-            new_delivery_fee = delivery_fee * Decimal(0.25)
-            new_delivery_fee = delivery_fee - new_delivery_fee
+            # get 25% of the delivery fee
+            delivery_fee_percentage = delivery_fee * Decimal(0.25)
+            new_delivery_fee = delivery_fee - delivery_fee_percentage
             # update the order payment status
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
             order.delivery_fee = new_delivery_fee
             order.order_status = "processing"
-            order.order_message = "Your Order Payment Was Successful"
             order.save()
 
-            shipping_address = json.loads(order.shipping)
-            shipping_address = shipping_address.get("address", "pickup")
+            shipping_address = order.shipping
+            shipping_address = shipping_address.get("address", None)
 
             if shipping_address == "pickup":
                 # send sms to user to pick up order
                 order.user.send_push_notification(
                     "Updates on your order",
-                    f"Order #{order.order_track_id} has been sent to the store, we will notify you when it is ready for pickup",
+                    f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order",
                 )
 
         return HttpResponse("Payment successful", status=200)
-        # except Order.DoesNotExist:
-        #     return HttpResponse("Order does not exist", status=404)
 
     def transfer_success(self):
         amount = self.event_data["amount"]
@@ -187,7 +145,7 @@ class ProcessPayment:
             kwargs = {
                 "amount": amount,
                 "transaction_id": transaction_id,
-                "transaction_fee": transaction.transaction_fee,
+                "transfer_fee": transaction.transfer_fee,
                 "desc": "TRF to " + account_name,
                 "status": "success",
             }

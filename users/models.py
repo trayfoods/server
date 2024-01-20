@@ -487,6 +487,7 @@ class Transaction(models.Model):
     TYPE_OF_TRANSACTION = (
         ("credit", "credit"),
         ("debit", "debit"),
+        ("transfer", "transfer"),
     )
 
     transaction_id = models.UUIDField(
@@ -508,7 +509,7 @@ class Transaction(models.Model):
         decimal_places=2,
         editable=False,
     )
-    transaction_fee = models.DecimalField(
+    transfer_fee = models.DecimalField(
         max_digits=7,
         default=0,
         decimal_places=2,
@@ -549,6 +550,10 @@ class Transaction(models.Model):
             self.status = "settled"
             self.save()
 
+            # update wallet balance
+            self.wallet.balance += self.amount
+            self.wallet.save()
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
@@ -561,14 +566,14 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
-    unsettled_balance = models.DecimalField(
-        max_digits=100,
-        null=True,
-        default=00.00,
-        decimal_places=2,
-        blank=True,
-        editable=False,
-    )
+    # unsettled_balance = models.DecimalField(
+    #     max_digits=100,
+    #     null=True,
+    #     default=00.00,
+    #     decimal_places=2,
+    #     blank=True,
+    #     editable=False,
+    # )
     passcode = models.CharField(
         _("passcode"), max_length=128, editable=False, null=True, blank=True
     )
@@ -586,6 +591,17 @@ class Wallet(models.Model):
             balance_updated.send(sender=self.__class__, balance=self.balance)
 
         super().save(*args, **kwargs)
+
+    def get_unsettled_balance(self):
+        current_unsettled_balance = Decimal(0.00)
+        all_unsettled_transactions = Transaction.objects.filter(
+            wallet=self, status="unsettled"
+        )
+        # loop through all unsettled transactions and add all amounts of each unsettled transaction
+        for unsettled_transaction in all_unsettled_transactions:
+            current_unsettled_balance += unsettled_transaction.amount
+
+        return current_unsettled_balance
 
     # set passcode for wallet
     def set_passcode(self, passcode):
@@ -644,33 +660,44 @@ class Wallet(models.Model):
         return Transaction.objects.filter(user=self)
 
     # add balance to user's wallet
-    def add_balance(self, **kwargs):
-        amount = kwargs.get("amount")
-        title = kwargs.get("title", None)
-        desc = kwargs.get("desc", None)
-        order = kwargs.get("order", None)
-        transaction = None
+    def add_balance(
+        self, amount: Decimal, title=None, desc=None, order: Order | None = None
+    ):
         amount = Decimal(amount)
+        title = "Wallet Credited" if not title else title
+        desc = f"{amount} {self.currency} was added to wallet" if not desc else desc
 
-        # convert the amount to decimal
-        self.balance += amount
-        self.save()
-        # create a transaction
+        if not order:
+            # convert the amount to decimal
+            self.balance += amount
+            self.save()
+            # create a transaction
         transaction = Transaction.objects.create(
             wallet=self,
-            title="Wallet Credited" if not title else title,
-            status="success",
-            desc=f"{amount} {self.currency} was added to wallet" if not desc else desc,
+            title=title,
+            status="success" if not order else "unsettled",
+            desc=desc,
             amount=amount,
             order=order,
             _type="credit",
         )
         transaction.save()
-        return transaction
+        # else:
+        #     # create an unsettled transaction
+        #     new_unsettled_transacion = Transaction.objects.create(
+        #         wallet=self,
+        #         title=title,
+        #         status=,
+        #         desc=desc,
+        #         amount=amount,
+        #         order=order,
+        #         _type="credit",
+        #     )
+        #     new_unsettled_transacion.save()
 
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
-        transaction_fee = kwargs.get("transaction_fee", 0.00)
+        transfer_fee = kwargs.get("transfer_fee", 0.00)
         title = kwargs.get("title", "Wallet Debited")
         desc = kwargs.get(
             "desc", f"{self.currency} {amount} was deducted from your wallet"
@@ -680,7 +707,7 @@ class Wallet(models.Model):
         status = kwargs.get("status", "pending")
         transaction = None
         amount = Decimal(amount)
-        transaction_fee = Decimal(transaction_fee)
+        transfer_fee = Decimal(transfer_fee)
 
         if not transaction_id:
             raise Exception("Transaction ID is required")
@@ -691,7 +718,7 @@ class Wallet(models.Model):
             raise Exception("Insufficient funds")
 
         # debit the wallet
-        self.balance -= amount + transaction_fee
+        self.balance -= amount + transfer_fee
         self.save()
 
         # check if transaction exists
@@ -822,17 +849,18 @@ class Store(models.Model):
 
     # check if store is open
     def is_open(self):
-        from datetime import datetime
+        # from datetime import datetime
 
-        today = datetime.now().strftime("%A").lower()
-        open_hours = StoreOpenHours.objects.filter(store=self, day=today).first()
-        if open_hours:
-            open_time = open_hours.open_time
-            close_time = open_hours.close_time
-            now = datetime.now().time()
-            if now >= open_time and now <= close_time:
-                return True
-        return False
+        # today = datetime.now().strftime("%A").lower()
+        # open_hours = StoreOpenHours.objects.filter(store=self, day=today).first()
+        # if open_hours:
+        #     open_time = open_hours.open_time
+        #     close_time = open_hours.close_time
+        #     now = datetime.now().time()
+        #     if now >= open_time and now <= close_time:
+        #         return True
+        # return False
+        return True
 
     class Meta:
         ordering = ["-store_rank"]
@@ -1020,9 +1048,21 @@ class DeliveryPerson(models.Model):
     # function to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
         order_user: Profile = order.user
+        stores_status = order.stores_status
+        # check if atleast one of the store has accepted the order
+        has_accepted = False
+        for store_status in stores_status:
+            if store_status.get("status") == "accepted":
+                has_accepted = True
+                break
+
+        if not has_accepted:
+            return False
+
+        delivery_person_profile = self.profile
 
         # check if the order user is same as the delivery person
-        if order_user == self.profile:
+        if order_user == delivery_person_profile:
             return False
 
         if self.is_on_delivery:
@@ -1030,45 +1070,51 @@ class DeliveryPerson(models.Model):
 
         # check if the delivery person is a vendor and is linked to the order
         if (
-            self.profile.is_vendor
-            and order.linked_stores.filter(vendor=self.profile).exists()
+            delivery_person_profile.is_vendor
+            and order.linked_stores.filter(vendor=delivery_person_profile).exists()
         ):
             return False
 
-        # check if the delivery person is a student and the order user is not a student
-        if self.profile.is_student and not order_user.is_student:
-            return False
-
-        # check if the delivery person is not a student and the order user is a student
-        if not self.profile.is_student and order_user.is_student:
-            return False
-
-        # check if the delivery person is a student and the order user is a student
-        if self.profile.is_student and order_user.is_student:
-            order_user_gender = order_user.gender.id
-            delivery_person_gender = self.profile.gender.id
-
-            # check if the delivery person is not in the same school as the order user
-            if self.profile.student.school != order_user.student.school:
+        # handle if the delivery person is a student
+        if delivery_person_profile.is_student:
+            # has_passed_valid_vendor_check = False
+            # handle if the order user is a vendor
+            if order_user.is_vendor and (
+                # check if the order user store is in the delivery person's school and campus
+                (order_user.store.school != delivery_person_profile.student.school)
+                and (order_user.store.campus != delivery_person_profile.student.campus)
+            ):
                 return False
 
-            if order_user_gender != delivery_person_gender:
-                return False
+            # handle if the order user is a student
+            if order_user.is_student:
+                order_user_gender = order_user.gender
+                delivery_person_gender = delivery_person_profile.gender
 
-            # check if the delivery person is not in the same campus as the order user
-            if self.profile.student.campus != order_user.student.campus:
-                return False
+                if order_user_gender != delivery_person_gender:
+                    return False
+
+                # check if the delivery person is not in the same school and campus as the order user
+                if (
+                    delivery_person_profile.student.school != order_user.student.school
+                    and delivery_person_profile.student.campus
+                    != order_user.student.campus
+                ):
+                    return False
         else:
             # check if the delivery person is not in the same country as the order user
-            if self.profile.country != order_user.country:
+            if delivery_person_profile.country != order_user.country:
+                print("check 9")
                 return False
 
             # check if the delivery person is not in the same state as the order user
-            if self.profile.state != order_user.state:
+            if delivery_person_profile.state != order_user.state:
+                print("check 10")
                 return False
 
             # check if the delivery person is not in the same city as the order user
-            if self.profile.city != order_user.city:
+            if delivery_person_profile.city != order_user.city:
+                print("check 11")
                 return False
 
         return True

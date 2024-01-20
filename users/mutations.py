@@ -812,10 +812,10 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             raise GraphQLError("Wrong Pin")
 
         # check if the amount is greater than the balance
-        transaction_fee = calculate_tranfer_fee(amount)
-        if transaction_fee is None:
+        transfer_fee = calculate_tranfer_fee(amount)
+        if transfer_fee is None:
             raise GraphQLError("Invalid Amount")
-        amount_with_charges = float(transaction_fee) + float(amount)
+        amount_with_charges = float(transfer_fee) + float(amount)
 
         if amount_with_charges > wallet.balance:
             raise GraphQLError("Insufficient Balance")
@@ -826,9 +826,9 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             user_wallet_balance = wallet.balance
             amount_able_to_tranfer = 0
             if user_wallet_balance > paystack_balance:
-                amount_able_to_tranfer = paystack_balance - transaction_fee - 100
+                amount_able_to_tranfer = paystack_balance - transfer_fee - 100
             else:
-                amount_able_to_tranfer = user_wallet_balance - transaction_fee - 100
+                amount_able_to_tranfer = user_wallet_balance - transfer_fee - 100
 
             if amount_able_to_tranfer < 0:
                 amount_able_to_tranfer = 0
@@ -857,7 +857,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         transaction = Transaction.objects.create(
             wallet=wallet,
             transaction_id=reference,
-            transaction_fee=transaction_fee,
+            transfer_fee=transfer_fee,
             title="Wallet Debited",
             status="pending",
             desc="TRF to " + account_name,
@@ -1118,7 +1118,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order is None:
             return AcceptDeliveryMutation(error="This order Does not exists")
 
-        if order.is_pickup:
+        if order.is_pickup():
             return AcceptDeliveryMutation(error="This order can not be delivered")
 
         if order.order_status == "cancelled" or order.order_payment_status == "failed":

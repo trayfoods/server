@@ -29,10 +29,10 @@ def calculate_total_amount(item_price, currency="NGN"):
         fixed_fee = 100  # N100
 
         # Calculate the transaction fee
-        transaction_fee = item_price * transaction_fee_percentage + fixed_fee
+        transfer_fee = item_price * transaction_fee_percentage + fixed_fee
 
         # Calculate the total amount
-        total_amount = item_price + transaction_fee
+        total_amount = item_price + transfer_fee
 
         return total_amount
     else:
@@ -153,7 +153,7 @@ def get_banks_list(data):
     """
     if "currency" not in data:
         raise Exception("Currency is required")
-    
+
     if data["use_cursor"]:
         reqUrl = "https://api.paystack.co/bank?perPage={}&page={}&currency={}".format(
             data["perPage"], data["page"], data["currency"]
@@ -186,7 +186,7 @@ def get_bank_account_details(data):
         raise Exception("Account number is required")
     if "bank_code" not in data:
         raise Exception("Bank code is required")
-    
+
     reqUrl = (
         "https://api.paystack.co/bank/resolve?account_number={}&bank_code={}".format(
             data["account_number"], data["bank_code"]
@@ -212,6 +212,8 @@ def get_dataframe_from_qs(queryset):
 
 
 import datetime
+
+
 def convert_time_to_ago(time: datetime.datetime):
     """
     Convert time to ago
@@ -260,13 +262,15 @@ def convert_time_to_ago(time: datetime.datetime):
     else:
         return str(int(time_difference_in_years)) + " years ago"
 
+
 def paginate_queryset(queryset, page_size, page):
     from django.core.paginator import Paginator
-    
+
     # Paginate the queryset
     paginator = Paginator(queryset, page_size)
     paginated_queryset = paginator.get_page(page)
     return paginated_queryset
+
 
 def get_twilio_client():
     from twilio.rest import Client
@@ -274,6 +278,7 @@ def get_twilio_client():
     # Your Account Sid and Auth Token from twilio.com/console
     # and set the environment variables. See http://twil.io/secure
     return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
 
 def chunked_queryset(queryset, chunk_size=10000):
     """

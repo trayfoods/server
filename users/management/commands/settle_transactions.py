@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         # Calculate the time for 24 hours ago
-        time_threshold = timezone.now() - timedelta(hours=24)
+        time_threshold = timezone.now() - timedelta(minutes=5)
 
         # Find all unsettled transactions older than 24 hours
         unsettled_transactions = Transaction.objects.filter(

@@ -257,7 +257,6 @@ class Order(models.Model):
             ("delivered", "delivered"),
             ("cancelled", "cancelled"),
             ("failed", "failed"),
-            ("refunded", "refunded"),
         ),
         default="not-started",
         db_index=True,
@@ -311,11 +310,10 @@ class Order(models.Model):
         editable=False,
         blank=True,
         null=True,
-        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending")),
+        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending"), ("refunded", "refunded")),
     )
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
-    order_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
@@ -375,6 +373,12 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
+    
+    # get order display id
+    def get_order_display_id(self):
+        order_track_id = self.order_track_id
+        formatteed_order_track_id = order_track_id.replace("order_", "")
+        return f"#{formatteed_order_track_id}".upper()
 
     # validate the order store status format is correct
     def validate_stores_status(self):
@@ -452,19 +456,16 @@ class Order(models.Model):
             self.save()
         return self.order_confirm_pin
 
-    @property
-    def is_pickup(self):
-        import json
 
-        shipping = json.loads(self.shipping)
+    def is_pickup(self):
+        shipping = self.shipping
         return (
             shipping and shipping["address"] and shipping["address"].lower() == "pickup"
         )
 
     def notify_delivery_people(self, delivery_people):
-        shipping = json.loads(self.shipping)
-        print(shipping, "shipping for sms")
-        order_address = f"{shipping.get("address")} {shipping.get("sch", "")}"
+        shipping = self.shipping
+        order_address = f"{shipping["address"]} {shipping["sch"]}"
         for delivery_person in delivery_people:
             delivery_person.profile.send_sms(
                 "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
