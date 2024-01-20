@@ -474,9 +474,9 @@ class Order(models.Model):
                     f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
                 )
             )
-            delivery_person.profile.send_push_notification(
-                title="You have a new order to deliver",
-            )
+            # delivery_person.profile.send_push_notification(
+            #    title="You have a new order to deliver",
+            # )
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
