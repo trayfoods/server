@@ -41,7 +41,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = "True" in os.environ.get("DEBUG", "True")
 
 if not DEBUG:
     sentry_sdk.init(
@@ -137,8 +137,8 @@ INSTALLED_APPS = [
     "anymail",
     "theme",
     "django_countries",
-    # "django_celery_results",
-    # "django_celery_beat",
+    "django_celery_results",
+    "django_celery_beat",
 ]
 
 USE_MAILERSEND = "True" in os.environ.get("USE_MAILERSEND", "False")
@@ -391,20 +391,20 @@ CORS_ALLOW_HEADERS = (
     "x-requested-with",
 )
 
-SERVICE_BUS_CONNECTION_STR = os.environ.get("SERVICE_BUS_CONNECTION_STR")
 
 # CELERY SETTINGS
-# CELERY_BROKER_URL = os.environ.get("AZURE_SERVICE_BUS_URL", "redis://127.0.0.1:6379")
-# accept_content = ["application/json"]
-# result_serializer = "json"
-# task_serializer = "json"
-# timezone = "Africa/Lagos"
-# result_backend = "django-db"
+SERVICE_BUS_CONNECTION_STR = os.environ.get("SERVICE_BUS_CONNECTION_STR")
+CELERY_BROKER_URL = os.environ.get("AZURE_SERVICE_BUS_URL", "redis://127.0.0.1:6379")
+accept_content = ["application/json"]
+result_serializer = "json"
+task_serializer = "json"
+timezone = "Africa/Lagos"
+result_backend = "django-db"
 # EMAIL_ASYNC_TASK = True
-# imports = ("users.tasks",)
+imports = ("users.tasks",)
 
 # CELERY_BEAT
-# CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
 
 # Global settings
