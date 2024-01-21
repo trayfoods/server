@@ -144,4 +144,6 @@ settings/
 # javascript
 node_modules/
 
-requirements_.txt
+requirements_.
+
+startup.sh
