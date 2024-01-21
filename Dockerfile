@@ -33,8 +33,5 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 # Expose port (optional)
 EXPOSE 8000
 
-# Collect static files (optional)
-RUN python manage.py collectstatic --no-input
-
 # Startup command
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "trayapp.wsgi"]
