@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y gcc
 # Upgrade pip
 RUN pip install --upgrade pip
 
+RUN pip install gunicorn
+
 RUN pip install psycopg2-binary
 
 # Install dependencies with increased timeout
