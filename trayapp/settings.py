@@ -41,7 +41,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "True" in os.environ.get("DEBUG", "True")
+DEBUG = True
 
 if not DEBUG:
     sentry_sdk.init(
