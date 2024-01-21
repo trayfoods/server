@@ -7,6 +7,8 @@ WORKDIR /app
 # Copy requirements
 COPY requirements.txt requirements.txt
 
+RUN apt-get update && apt-get install -y gcc
+
 # Upgrade pip
 RUN pip install --upgrade pip
 
