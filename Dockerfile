@@ -14,7 +14,6 @@ RUN pip install --upgrade pip
 
 RUN pip install psycopg2-binary
 
-
 # Install dependencies with increased timeout
 RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
@@ -30,7 +29,6 @@ COPY . .
 # Copy dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
-# Expose port (optional)
 EXPOSE 8000
 
 # Startup command
