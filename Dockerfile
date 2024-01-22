@@ -32,4 +32,4 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 EXPOSE 8000
 
 # Startup command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "trayapp.wsgi"]
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
