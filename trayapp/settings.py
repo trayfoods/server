@@ -342,8 +342,8 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
 CORS_LOG_SHOW_URLS = True
+
 if DEBUG == False:
     CSRF_TRUSTED_ORIGINS = [
         "https://www.trayfoods.com",
@@ -353,14 +353,12 @@ if DEBUG == False:
     ]
 
 
-# CORS_ORIGIN_WHITELIST = (
-#     "http://localhost:3000",
-#     "http://127.0.0.1:3000",
-#     "http://localhost:8000",
-#     "https://www.trayfoods.com",
-# )
-
-CORS_ORIGIN_ALLOW_ALL = True
+CORS_ORIGIN_WHITELIST = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    {FRONTEND_URL},
+)
 
 CORS_ALLOW_METHODS = (
     "GET",
