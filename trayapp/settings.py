@@ -343,6 +343,7 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+CORS_LOG_SHOW_URLS = True
 if DEBUG == False:
     CSRF_TRUSTED_ORIGINS = [
         "https://www.trayfoods.com",
