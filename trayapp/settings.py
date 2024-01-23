@@ -41,7 +41,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", str(get_random_secret_key()))
 APP_VERSION = os.getenv("APP_VERSION")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = "True" in os.environ.get("DEBUG", "True")
+DEBUG = "True" == os.environ.get("DEBUG", "True")
 
 if not DEBUG:
     sentry_sdk.init(
@@ -55,8 +55,8 @@ if not DEBUG:
         profiles_sample_rate=1.0,
     )
 
-USE_S3 = "True" in os.environ.get("USE_S3", "False")
-USE_DB = "True" in os.environ.get("USE_DB", "False")
+USE_S3 = "True" == os.environ.get("USE_S3", "False")
+USE_DB = "True" == os.environ.get("USE_DB", "False")
 
 PAYSTACK_SECRET_KEY = os.environ.get(
     "PAYSTACK_SECRET_KEY", "sk_test_a6bda9447b792ea9cdd71c8c656b879e7ae2f407"
@@ -89,7 +89,7 @@ VALID_DELIVERY_TYPES = [
 
 FRONTEND_URL = os.environ.get("REACT_SITE_DOMAIN", "localhost:3000")
 
-if "localhost" in FRONTEND_URL:
+if "localhost:3000" == FRONTEND_URL:
     FRONTEND_URL = "http://%s" % FRONTEND_URL
 else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
@@ -141,7 +141,7 @@ INSTALLED_APPS = [
     "django_celery_beat",
 ]
 
-USE_MAILERSEND = "True" in os.environ.get("USE_MAILERSEND", "False")
+USE_MAILERSEND = "True" == os.environ.get("USE_MAILERSEND", "False")
 
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
@@ -165,15 +165,6 @@ else:
     EMAIL_PORT = 587
 
 AUTH_USER_MODEL = "users.UserAccount"
-
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")],
-#         },
-#     },
-# }
 
 GRAPH_MODELS = {
     "all_applications": True,
@@ -220,7 +211,7 @@ GRAPHQL_AUTH = {
     "EMAIL_TEMPLATE_VARIABLES": {"frontend_domain": FRONTEND_URL},
     "SEND_ACTIVATION_EMAIL": DEBUG == False,
     "ACTIVATION_PATH_ON_EMAIL": "auth/email-activate",
-    "SEND_PASSWORD_RESET_EMAIL": True,
+    "SEND_PASSWORD_RESET_EMAIL": DEBUG == False,
     "PASSWORD_RESET_PATH_ON_EMAIL": "auth/password/reset",
     "PASSWORD_SET_PATH_ON_EMAIL": "auth/password/set",
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
@@ -352,23 +343,21 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if not DEBUG:
+if DEBUG == False:
     CSRF_TRUSTED_ORIGINS = [
-        "https://*.trayfoods.com",
+        "https://www.trayfoods.com",
+        "https://trayfoods.com",
         "http://127.0.0.1:8000",
         "http://localhost:8000",
     ]
 
-if DEBUG == True:
-    CORS_ORIGIN_ALLOW_ALL = True
-else:
-    CORS_ORIGIN_WHITELIST = (
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8000",
-        "https://trayfoods.com",
-        f"{FRONTEND_URL}",
-    )
+
+CORS_ORIGIN_WHITELIST = (
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "https://www.trayfoods.com",
+)
 
 CORS_ALLOW_METHODS = (
     "GET",
