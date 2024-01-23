@@ -1,6 +1,7 @@
 from decimal import Decimal
 import os
 import uuid
+from django.utils import timezone
 
 from django.db import models
 from django_countries.fields import CountryField
@@ -574,12 +575,16 @@ class Transaction(models.Model):
 
     def settle(self):
         if self.status == "unsettled":
-            self.status = "settled"
-            self.save()
+            # check if the transaction has been unsettled for more than 24 hours
+            now = timezone.now()
+            if now > self.created_at + timezone.timedelta(hours=24):
+                # settle the transaction
+                self.status = "settled"
+                self.save()
 
-            # update wallet balance
-            self.wallet.balance += self.amount
-            self.wallet.save()
+                # update wallet balance
+                self.wallet.balance += self.amount
+                self.wallet.save()
 
 
 class Wallet(models.Model):
