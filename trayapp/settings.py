@@ -357,7 +357,7 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
-    {FRONTEND_URL},
+    "https://www.trayfoods.com",
 )
 
 CORS_ALLOW_METHODS = (
