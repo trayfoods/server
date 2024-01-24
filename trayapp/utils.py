@@ -13,16 +13,19 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
 
 
-def calculate_payment_gateway_fee(amount, currency="NGN") -> Decimal:
+def calculate_payment_gateway_fee(amount: Decimal, currency: str = "NGN") -> Decimal:
     if currency == "NGN":
         # Define the transaction fee percentage and fixed fee
         transaction_fee_percentage = 1.5 / 100  # 1.5%
         fixed_fee = 100  # N100
 
         # Calculate the transaction fee
-        gateway_fee = amount * Decimal(transaction_fee_percentage + fixed_fee)
+        gateway_fee = Decimal(amount) * Decimal(transaction_fee_percentage) + Decimal(fixed_fee)
 
-        return Decimal(gateway_fee)
+        return gateway_fee
+
+    else:
+        raise Exception("Currency not supported")
 
 
 def calculate_total_amount(item_price: Decimal, currency="NGN"):

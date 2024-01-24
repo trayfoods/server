@@ -511,11 +511,16 @@ class Order(models.Model):
         url = "https://api.paystack.co/refund"
 
         # remove paystack transaction fee from the overall_price
-        overall_price = Decimal(self.overall_price) - calculate_payment_gateway_fee(self.overall_price)
-        print("refund_user", overall_price)
+        print(calculate_payment_gateway_fee(self.overall_price))
+        overall_price: Decimal = self.overall_price 
+        new_overall_price = overall_price - calculate_payment_gateway_fee(self.overall_price)
+        print("overrall_price", overall_price)
+        print("new_overall_price", new_overall_price)
+        # convert the overall_price to kobo
+        new_overall_price = new_overall_price * Decimal(100)
         data = {
             "transaction": self.order_track_id,
-            "amount": Decimal(overall_price) * 100,
+            "amount": float(new_overall_price),
         }
 
         print(data)
