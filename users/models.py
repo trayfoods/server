@@ -536,30 +536,6 @@ class Transaction(models.Model):
     class Meta:
         ordering = ["-created_at", "-updated_on"]
 
-    # send all unsettled transactions to the azure bus
-    def save(self, *args, **kwargs):
-        if self.status == "unsettled":
-            from azure.servicebus import ServiceBusClient, ServiceBusMessage
-            from datetime import datetime, timedelta
-
-            service_bus_connection_str = settings.SERVICE_BUS_CONNECTION_STR
-            queue_name = "transaction-settlement"
-            service_bus_client = ServiceBusClient.from_connection_string(
-                conn_str=service_bus_connection_str
-            )
-
-            with service_bus_client:
-                sender = service_bus_client.get_queue_sender(queue_name=queue_name)
-                with sender:
-                    scheduled_enqueue_time = datetime.utcnow() + timedelta(hours=24)
-                    message = ServiceBusMessage(
-                        "Your message data here",
-                        scheduled_enqueue_time=scheduled_enqueue_time,
-                    )
-                    sender.send_messages(message)
-
-        super().save(*args, **kwargs)
-
     # check if the transaction is for a order
     @property
     def is_order(self):
