@@ -23,4 +23,5 @@ jobs:
       - name: Build and push image
         run: |
           docker-compose build
-          docker-compose push
+          docker-compose push web
+          docker-compose push worker
