@@ -505,17 +505,13 @@ class Order(models.Model):
         return True
     
     def refund_user(self):
-        print("refund_user")
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
         url = "https://api.paystack.co/refund"
 
         # remove paystack transaction fee from the overall_price
-        print(calculate_payment_gateway_fee(self.overall_price))
         overall_price: Decimal = self.overall_price 
         new_overall_price = overall_price - calculate_payment_gateway_fee(self.overall_price)
-        print("overrall_price", overall_price)
-        print("new_overall_price", new_overall_price)
         # convert the overall_price to kobo
         new_overall_price = new_overall_price * Decimal(100)
         data = {
