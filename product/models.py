@@ -505,23 +505,27 @@ class Order(models.Model):
         return True
     
     def refund_user(self):
+        print("refund_user")
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
-        url = "https://api.paystack.co/transaction/refund"
+        url = "https://api.paystack.co/refund"
 
         # remove paystack transaction fee from the overall_price
         overall_price = Decimal(self.overall_price) - calculate_payment_gateway_fee(self.overall_price)
-
+        print("refund_user", overall_price)
         data = {
             "transaction": self.order_track_id,
             "amount": Decimal(overall_price) * 100,
         }
+
+        print(data)
 
         headers = {
             "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         }
 
         response = requests.post(url, data=data, headers=headers)
+        print("refund_user", response)
         response = response.json()
 
         if response["status"] == True:
