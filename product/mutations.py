@@ -530,7 +530,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that all stores has accepted the order
                     has_notified_user = order.notify_user(
                         title="Order Accepted",
-                        message=f"Order #{order.get_order_display_id()} has been accepted",
+                        message=f"Order {order.get_order_display_id()} has been accepted",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -546,7 +546,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that some stores has accepted the order
                     has_notified_user = order.notify_user(
                         title="Order Partially Accepted",
-                        message=f"Order #{order.get_order_display_id()} has been partially accepted",
+                        message=f"Order {order.get_order_display_id()} has been partially accepted",
                     )
 
                 return MarkOrderAsMutation(
@@ -576,12 +576,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that all stores has rejected the order
                     has_notified_user = order.notify_user(
                         title="Order Rejected",
-                        message=f"Order #{order.get_order_display_id()} has been rejected",
+                        message=f"Order {order.get_order_display_id()} has been rejected",
                     )
 
 
                 # check if some stores has rejected the order
-                if any(status == "rejected" for status in store_statuses):
+                elif any(status == "rejected" for status in store_statuses):
                     # update the order status to partially rejected
                     order.order_status = "partially-rejected"
                     order.save()
@@ -589,7 +589,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that some stores has rejected the order
                     order.notify_user(
                         title="Order Partially Rejected",
-                        message=f"Order #{order.get_order_display_id()} has been partially rejected",
+                        message=f"Order {order.get_order_display_id()} has been partially rejected",
                     )
 
                 return MarkOrderAsMutation(
@@ -654,7 +654,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that all stores has marked the order as ready for pickup
                     has_notified_user = order.notify_user(
                         title="Order Ready for Pickup",
-                        message=f"Order #{order.get_order_display_id()} is ready for pickup",
+                        message=f"Order {order.get_order_display_id()} is ready for pickup",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -662,7 +662,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
 
                 # check if some stores has marked the order as ready for pickup
-                if any(status == "ready-for-pickup" for status in store_statuses):
+                elif any(status == "ready-for-pickup" for status in store_statuses):
                     # update the order status to partially ready for pickup
                     order.order_status = "partially-ready-for-pickup"
                     order.save()
@@ -670,7 +670,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that some stores has marked the order as ready for pickup
                     has_notified_user = order.notify_user(
                         title="Order Partially Ready for Pickup",
-                        message=f"Order #{order.get_order_display_id()} is partially ready for pickup",
+                        message=f"Order {order.get_order_display_id()} is partially ready for pickup",
                     )
                 return MarkOrderAsMutation(
                     success=True,
@@ -691,7 +691,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 # handle order picked up
                 order.user.send_sms(
-                    message=f"Your order #{order.get_order_display_id()} has been picked up"
+                    message=f"Your order {order.get_order_display_id()} has been picked up"
                 )
                 order.update_store_status(store_id, "picked-up")
                 return MarkOrderAsMutation(
@@ -723,7 +723,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that all stores has cancelled the order
                     has_notified_user = order.notify_user(
                         title="Order Cancelled",
-                        message=f"Order #{order.get_order_display_id()} has been cancelled",
+                        message=f"Order {order.get_order_display_id()} has been cancelled",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -732,7 +732,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
 
                 # check if some stores has cancelled the order
-                if any(status == "cancelled" for status in store_statuses):
+                elif any(status == "cancelled" for status in store_statuses):
                     # update the order status to partially cancelled
                     order.order_status = "partially-cancelled"
                     order.save()
@@ -740,7 +740,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # notify the user that some stores has cancelled the order
                     order.notify_user(
                         title="Order Partially Cancelled",
-                        message=f"Order #{order.get_order_display_id()} has been partially cancelled",
+                        message=f"Order {order.get_order_display_id()} has been partially cancelled",
                     )
                 return MarkOrderAsMutation(success=True)
 
@@ -790,7 +790,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.save()
 
                 # check if some delivery people has delivered the order
-                if any(status == "delivered" for status in delivery_people_statuses):
+                elif any(status == "delivered" for status in delivery_people_statuses):
                     # update the order status to partially delivered
                     order.order_status = "partially-delivered"
                     order.save()
