@@ -480,11 +480,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         action.capitalize()
                     )
                 )
-            
-            # append all store status and check if all stores has accepted the order or if some stores has accepted the order
-            store_statuses = []
-            for store_status in order.stores_status:
-                store_statuses.append(store_status["status"])
 
             # accept order if it is pending
             if action == "accepted":
@@ -521,6 +516,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
 
                 order.update_store_status(store_id, "accepted")
+
+                store_statuses = []
+                for store_status in order.stores_status:
+                    store_statuses.append(store_status["status"])
 
                 # check if all stores has accepted the order
                 if all(status == "accepted" for status in store_statuses):
@@ -559,6 +558,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             if action == "rejected":
                 order.update_store_status(store_id, "rejected")
 
+                store_statuses = []
+                for store_status in order.stores_status:
+                    store_statuses.append(store_status["status"])
+
+                print(store_statuses)
+
                 # check if all stores has rejected the order
                 if all(status == "rejected" for status in store_statuses):
                     # update the order status to rejected
@@ -570,7 +575,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         title="Order Rejected",
                         msg=f"Order #{order.get_order_display_id()} has been rejected",
                     )
-                    
+
                     # refund the user
                     order.refund_user()
 
@@ -636,7 +641,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="Order has not been accepted, cannot be marked as ready for pickup"
                     )
-                
+
                 order.update_store_status(store_id, "ready-for-pickup")
 
                 # check if all stores has marked the order as ready for pickup
@@ -654,7 +659,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         return MarkOrderAsMutation(
                             error="An error occured while notifying customer, please try again later"
                         )
-                
+
                 # check if some stores has marked the order as ready for pickup
                 if any(status == "ready-for-pickup" for status in store_statuses):
                     # update the order status to partially ready for pickup
@@ -741,13 +746,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             current_delivery_person_id = user.profile.delivery_person.id
             delivery_person = order.get_delivery_person(current_delivery_person_id)
 
-
             if delivery_person is not None:
                 # get all delivery people status and check if all delivery people has delivered the order or if some delivery people has delivered the order
                 delivery_people_statuses = []
                 for delivery_person in order.delivery_people:
                     delivery_people_statuses.append(delivery_person["status"])
-                    
+
                 order_delivery_people = order.delivery_people
 
                 new_order_delivery_people_state = []
