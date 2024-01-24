@@ -788,26 +788,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # update the order status to partially delivered
                     order.order_status = "partially-delivered"
                     order.save()
-                    
-
 
                 return MarkOrderAsMutation(success=True)
-
-        # elif "VENDOR" in view_as:
-        #     order.order_status = "ready-for-pickup"
-        #     order.save()
-        #     order_disp_id = order.order_track_id.replace("order_", "")
-        #     order.user.send_push_notification(
-        #         title="Order Ready",
-        #         msg="Order #{} is ready for pickup".format(order_disp_id),
-        #     )
-
-        #     return MarkOrderAsMutation(success=True)
-
-        # else:
-        #     return MarkOrderAsMutation(
-        #         error="You are not allowed to interact with this order"
-        #     )
 
 
 class RateItemMutation(graphene.Mutation):
