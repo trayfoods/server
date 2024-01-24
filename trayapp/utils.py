@@ -16,7 +16,7 @@ load_dotenv(BASE_DIR / ".env")
 def calculate_payment_gateway_fee(amount: Decimal, currency: str = "NGN") -> Decimal:
     if currency == "NGN":
         # Define the transaction fee percentage and fixed fee
-        transaction_fee_percentage = 1.5 / 100  # 1.5%
+        transaction_fee_percentage = 0.015  # 1.5%
         fixed_fee = 100  # N100
 
         # Calculate the transaction fee
