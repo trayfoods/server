@@ -22,5 +22,6 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t trayfoodsapi.azurecr.io/trayfoods-api:latest .
-          docker push trayfoodsapi.azurecr.io/trayfoods-api:latest
+          docker-compose build
+          docker tag trayfoodsapi.azurecr.io/trayfoods-api:latest trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }}
+          docker push trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }}
