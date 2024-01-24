@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y gcc
 # Upgrade pip
 RUN pip install --upgrade pip
 
-RUN pip install gunicorn psycopg2-binary whitenoise
+RUN pip install gunicorn psycopg2-binary whitenoise celery redis django-celery-beat django-celery-results
 
 # Install dependencies with increased timeout
 RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
