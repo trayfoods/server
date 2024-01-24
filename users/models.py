@@ -435,13 +435,15 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
+        print(self.has_calling_code and self.phone_number_verified)
         if self.has_calling_code and self.phone_number_verified:
             phone_number = f"{self.calling_code}{self.phone_number}"
             from .tasks import send_async_sms
 
             logger.info(f"Sending SMS to user {self.user.username}")
-            send_async_sms.delay(phone_number, message)
-        
+            TWILIO_CLIENT.messages.create(
+                body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
+            )
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user

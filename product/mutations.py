@@ -470,6 +470,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             store_id = user.profile.store.id if user.profile.is_vendor else None
             if store_id is None:
                 return MarkOrderAsMutation(error="You are not a vendor")
+            
+            store: Store = user.profile.store
 
             # check if the order has been accepted or rejected
             if order_status == "pending" and not action in ["accepted", "rejected"]:
@@ -506,7 +508,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
 
                 # add the store total price to the store balance
-                store: Store = user.profile.store
                 store.wallet.add_balance(
                     amount=overrall_store_price,
                     title="New Order Payment",
@@ -564,6 +565,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
 
                 # handle order ready for pickup
+                order.user.send_sms(
+                    message=f"{store.store_name} has marked your order #{order.get_order_display_id()} as ready for pickup"
+                )
                 order.update_store_status(store_id, "ready-for-pickup")
                 return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as ready for pickup")
 
@@ -581,7 +585,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 # handle order picked up
                 order.user.send_sms(
-                    msg=f"Your order #{order.get_order_display_id()} has been picked up"
+                    message=f"Your order #{order.get_order_display_id()} has been picked up"
                 )
                 order.update_store_status(store_id, "picked-up")
                 return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as picked up")

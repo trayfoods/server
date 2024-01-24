@@ -22,12 +22,16 @@ def graphql_auth_async_email(func, *args):
 
 @shared_task
 def send_async_sms(phone_number, message):
+    print("send_async_sms", phone_number, message)
     """
     Task to send an SMS
     """
-    try:
-        TWILIO_CLIENT.messages.create(
-            body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
-        )
-    except Exception as e:
-        print(e)
+    # try:
+
+    tw = TWILIO_CLIENT.messages.create(
+        body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
+    )
+
+    print(tw)
+    # print out the message sid
+    print(message.sid)
