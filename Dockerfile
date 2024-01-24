@@ -31,5 +31,8 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 
 EXPOSE 8000
 
-# Startup command
-CMD ["sh", "-c", "celery -A trayapp worker & gunicorn trayapp.wsgi:application --bind 0.0.0.0:8000"]
+# Startup command for the application
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Startup command for celery
+# CMD ["celery", "-A", "config", "worker", "-l", "info"]2
