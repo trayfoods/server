@@ -384,6 +384,11 @@ CORS_ALLOW_HEADERS = (
 
 # CELERY SETTINGS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379")
+import ssl
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'ssl': True,
+    'ssl_cert_reqs': ssl.CERT_NONE,
+}
 accept_content = ["application/json"]
 result_serializer = "json"
 task_serializer = "json"

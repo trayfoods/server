@@ -580,6 +580,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
 
                 # handle order picked up
+                order.user.send_sms(
+                    msg=f"Your order #{order.get_order_display_id()} has been picked up"
+                )
                 order.update_store_status(store_id, "picked-up")
                 return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as picked up")
 
