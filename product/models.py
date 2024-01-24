@@ -493,9 +493,9 @@ class Order(models.Model):
                     self.update_store_status(store_id, "no-delivery-person")
         return True
     
-    def notify_user(self, message):
+    def notify_user(self, message: str, title: str = "Order Status"):
         has_sent_push_notification = self.user.send_push_notification(
-            title="Order Status",
+            title=title,
             msg=message,
         )
         if not has_sent_push_notification:
