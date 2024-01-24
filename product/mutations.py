@@ -741,23 +741,22 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             current_delivery_person_id = user.profile.delivery_person.id
             delivery_person = order.get_delivery_person(current_delivery_person_id)
 
+
             if delivery_person is not None:
+                # get all delivery people status and check if all delivery people has delivered the order or if some delivery people has delivered the order
+                delivery_people_statuses = []
+                for delivery_person in order.delivery_people:
+                    delivery_people_statuses.append(delivery_person["status"])
+                    
                 order_delivery_people = order.delivery_people
 
                 new_order_delivery_people_state = []
-                all_delivered = True
                 # update the current delivery person status
                 for delivery_person in order_delivery_people:
                     if delivery_person["id"] == current_delivery_person_id:
                         delivery_person["status"] = action
-                    # check if all delivery people have been delivered
-                    if delivery_person["status"] != "delivered":
-                        all_delivered = False
 
                     new_order_delivery_people_state.append(delivery_person)
-
-                if all_delivered:
-                    order.order_status = "delivered"
 
                 order.delivery_people = new_order_delivery_people_state
 
@@ -777,6 +776,20 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 delivery_person.wallet.add_balance(**credit_kwargs)
 
                 order.save()
+
+                # check if all delivery people has delivered the order
+                if all(status == "delivered" for status in delivery_people_statuses):
+                    # update the order status to delivered
+                    order.order_status = "delivered"
+                    order.save()
+
+                # check if some delivery people has delivered the order
+                if any(status == "delivered" for status in delivery_people_statuses):
+                    # update the order status to partially delivered
+                    order.order_status = "partially-delivered"
+                    order.save()
+                    
+
 
                 return MarkOrderAsMutation(success=True)
 
