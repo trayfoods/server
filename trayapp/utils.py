@@ -13,7 +13,19 @@ PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
 load_dotenv(BASE_DIR / ".env")
 
 
-def calculate_total_amount(item_price, currency="NGN"):
+def calculate_payment_gateway_fee(amount, currency="NGN") -> Decimal:
+    if currency == "NGN":
+        # Define the transaction fee percentage and fixed fee
+        transaction_fee_percentage = 1.5 / 100  # 1.5%
+        fixed_fee = 100  # N100
+
+        # Calculate the transaction fee
+        gateway_fee = amount * Decimal(transaction_fee_percentage + fixed_fee)
+
+        return Decimal(gateway_fee)
+
+
+def calculate_total_amount(item_price: Decimal, currency="NGN"):
     """
     Calculate the total amount to be paid by the customer
     ```python
@@ -24,15 +36,10 @@ def calculate_total_amount(item_price, currency="NGN"):
     ```
     """
     if currency == "NGN":
-        # Define the transaction fee percentage and fixed fee
-        transaction_fee_percentage = 1.5 / 100  # 1.5%
-        fixed_fee = 100  # N100
-
-        # Calculate the transaction fee
-        transfer_fee = item_price * transaction_fee_percentage + fixed_fee
+        gateway_fee = calculate_payment_gateway_fee(item_price, currency)
 
         # Calculate the total amount
-        total_amount = item_price + transfer_fee
+        total_amount = item_price + gateway_fee
 
         return total_amount
     else:

@@ -435,7 +435,6 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        print(self.has_calling_code and self.phone_number_verified)
         if self.has_calling_code and self.phone_number_verified:
             phone_number = f"{self.calling_code}{self.phone_number}"
             from .tasks import send_async_sms
@@ -444,32 +443,33 @@ class Profile(models.Model):
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )
+            return True
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
-        if user.has_token_device:
-            from .threads import FCMThread
+        if not user.has_token_device:
+            return None
 
-            user_devices = UserDevice.objects.filter(
-                user=user, is_active=True
-            ).values_list("device_token", flat=True)
-            device_tokens = list(user_devices)
+        from .threads import FCMThread
 
-            FCMThread(
-                title=title,
-                msg=msg,
-                tokens=device_tokens,
-                data=data
-                if data
-                else {
-                    "priority": "high",
-                    "sound": "default",
-                },
-            ).start()
-        else:
-            logger.info(f"User {user.username} has no token device, so sending SMS")
-            # send sms
-            self.send_sms(msg)
+        user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
+            "device_token", flat=True
+        )
+        device_tokens = list(user_devices)
+
+        FCMThread(
+            title=title,
+            msg=msg,
+            tokens=device_tokens,
+            data=data
+            if data
+            else {
+                "priority": "high",
+                "sound": "default",
+            },
+        ).start()
+
+        return True
 
     @property
     def is_delivery_person(self):
@@ -748,7 +748,6 @@ class Wallet(models.Model):
 
         order = kwargs.get("order", None)
         transaction_id = kwargs.get("transaction_id", None)
-        unclear = kwargs.get("unclear", False)
 
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
 
@@ -762,6 +761,7 @@ class Wallet(models.Model):
             transaction = Transaction.objects.create(
                 wallet=self,
                 title=title,
+                desc=desc,
                 status="reversed",
                 amount=amount,
                 order=order,

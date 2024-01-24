@@ -30,26 +30,14 @@ class ProcessPayment:
             return self.transfer_failed()
         elif self.event_type == "transfer.reversed":
             return self.transfer_reversed()
-        elif self.event_type == "invoice.create":
-            return self.invoice_create()
-        elif self.event_type == "invoice.update":
-            return self.invoice_update()
-        elif self.event_type == "invoice.payment_failed":
-            return self.invoice_payment_failed()
-        elif self.event_type == "invoice.payment_success":
-            return self.invoice_payment_success()
-        elif self.event_type == "subscription.create":
-            return self.subscription_create()
-        elif self.event_type == "subscription.disable":
-            return self.subscription_disable()
-        elif self.event_type == "subscription.enable":
-            return self.subscription_enable()
-        elif self.event_type == "subscription.failed":
-            return self.subscription_failed()
-        elif self.event_type == "subscription.success":
-            return self.subscription_success()
-        elif self.event_type == "subscription.update":
-            return self.subscription_update()
+        elif self.event_type == "refund.pending":
+            return self.refund_pending()
+        elif self.event_type == "refund.processing":
+            return self.refund_processing()
+        elif self.event_type == "refund.failed":
+            return self.refund_failed()
+        elif self.event_type == "refund.processed":
+            return self.refund_processed()
         else:
             return HttpResponse("Invalid event type", status=400)
 
@@ -85,10 +73,11 @@ class ProcessPayment:
         if overall_price > order_price:
             order.order_payment_status = "refunded"
             order.order_status = "failed"
+            order.refund_user()
             order.save()
             return HttpResponse("Payment failed, Processing Refund", status=400)
 
-        if "success" in order_payment_status:
+        if "success" == order_payment_status:
             # get 25% of the delivery fee
             delivery_fee_percentage = delivery_fee * Decimal(0.25)
             new_delivery_fee = delivery_fee - delivery_fee_percentage
@@ -103,13 +92,8 @@ class ProcessPayment:
             shipping_address = shipping_address.get("address", None)
 
             if shipping_address == "pickup":
-                # send notification to the store
-                # order.user.send_push_notification(
-                #     "Updates on your order",
-                #     f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order",
-                # )
-                # send sms to the user
-                order.user.send_sms(
+                # notify the user
+                order.notify_user(
                     message="Order {} has been sent to the store, we will notify you when the store accept the order".format(
                         order.get_order_display_id()
                     )
@@ -145,7 +129,7 @@ class ProcessPayment:
         if transaction.status == "success":
             return HttpResponse("Transfer already successful", status=200)
 
-        if "success" in transfer_status:
+        if "success" == transfer_status:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
             kwargs = {
@@ -187,7 +171,7 @@ class ProcessPayment:
         if transaction.status == "failed":
             return HttpResponse("Transfer already failed", status=200)
 
-        if "failed" in transfer_status:
+        if "failed" == transfer_status:
             # update the transaction status
             transaction.status = "failed"
             transaction.gateway_transfer_id = gateway_transfer_id
@@ -217,7 +201,7 @@ class ProcessPayment:
         if transaction.status == "reversed":
             return HttpResponse("Transfer already Reversed", status=200)
 
-        if "reversed" in transfer_status:
+        if "reversed" == transfer_status:
             # reverse the transaction
             kwargs = {
                 "amount": amount,
@@ -233,34 +217,16 @@ class ProcessPayment:
 
         return HttpResponse("Transfer Process Failed", status=400)
 
-    def invoice_create(self):
+    def refund_pending(self):
         pass
 
-    def invoice_update(self):
+    def refund_processing(self):
         pass
 
-    def invoice_payment_failed(self):
+    def refund_failed(self):
         pass
 
-    def invoice_payment_success(self):
-        pass
-
-    def subscription_create(self):
-        pass
-
-    def subscription_disable(self):
-        pass
-
-    def subscription_enable(self):
-        pass
-
-    def subscription_failed(self):
-        pass
-
-    def subscription_success(self):
-        pass
-
-    def subscription_update(self):
+    def refund_processed(self):
         pass
 
 

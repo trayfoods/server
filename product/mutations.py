@@ -480,6 +480,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         action.capitalize()
                     )
                 )
+            
+            # append all store status and check if all stores has accepted the order or if some stores has accepted the order
+            store_statuses = []
+            for store_status in order.stores_status:
+                store_statuses.append(store_status["status"])
 
             # accept order if it is pending
             if action == "accepted":
@@ -515,14 +520,36 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order=order,
                 )
 
-                # check if the order is pickup
-                if shipping and shipping["address"] == "pickup":
-                    # send sms to user, telling them that their order has been accepted and we will notify them when it is ready for pickup
-                    order.user.send_sms(
-                        message=f"{store.store_name} has accepted your order {order.get_order_display_id()}"
+                order.update_store_status(store_id, "accepted")
+
+                # check if all stores has accepted the order
+                if all(status == "accepted" for status in store_statuses):
+                    # update the order status to accepted
+                    order.order_status = "accepted"
+                    order.save()
+
+                    # notify the user that all stores has accepted the order
+                    has_notified_user = order.notify_user(
+                        title="Order Accepted",
+                        msg=f"Order #{order.get_order_display_id()} has been accepted",
+                    )
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+
+                # check if some stores has accepted the order
+                if any(status == "accepted" for status in store_statuses):
+                    # update the order status to partially accepted
+                    order.order_status = "partially-accepted"
+                    order.save()
+
+                    # notify the user that some stores has accepted the order
+                    has_notified_user = order.notify_user(
+                        title="Order Partially Accepted",
+                        msg=f"Order #{order.get_order_display_id()} has been partially accepted",
                     )
 
-                order.update_store_status(store_id, "accepted")
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been accepted",
@@ -531,6 +558,38 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # reject order if it is pending
             if action == "rejected":
                 order.update_store_status(store_id, "rejected")
+
+                # check if all stores has rejected the order
+                if all(status == "rejected" for status in store_statuses):
+                    # update the order status to rejected
+                    order.order_status = "rejected"
+                    order.save()
+
+                    # notify the user that all stores has rejected the order
+                    has_notified_user = order.notify_user(
+                        title="Order Rejected",
+                        msg=f"Order #{order.get_order_display_id()} has been rejected",
+                    )
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+                    
+                    # refund the user
+                    order.refund_user()
+
+                # check if some stores has rejected the order
+                if any(status == "rejected" for status in store_statuses):
+                    # update the order status to partially rejected
+                    order.order_status = "partially-rejected"
+                    order.save()
+
+                    # notify the user that some stores has rejected the order
+                    has_notified_user = order.notify_user(
+                        title="Order Partially Rejected",
+                        msg=f"Order #{order.get_order_display_id()} has been partially rejected",
+                    )
+
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been rejected",
@@ -557,7 +616,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="No delivery person found for this order"
                     )
-                has_sent_notifications = order.notify_delivery_people(delivery_people)
+                has_sent_notifications = order.notify_delivery_people(
+                    delivery_people, store_id
+                )
                 if not has_sent_notifications:
                     return MarkOrderAsMutation(
                         error="An error occured while notifying delivery people, please try again later"

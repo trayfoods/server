@@ -5,9 +5,9 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from trayapp.utils import calculate_payment_gateway_fee
 
 import requests
-import json
 
 User = settings.AUTH_USER_MODEL
 FRONTEND_URL = settings.FRONTEND_URL
@@ -249,12 +249,21 @@ class Order(models.Model):
         editable=False,
     )
     order_status = models.CharField(
-        max_length=20,
+        max_length=26,
         choices=(
             ("not-started", "not-started"),
             ("processing", "processing"),
+            ("partially-accepted", "partially-accepted"),
+            ("accepted", "accepted"),
+            ("partially-rejected", "partially-rejected"),
+            ("rejected", "rejected"),
+            ("partially-ready-for-pickup", "partially-ready-for-pickup"),
             ("ready-for-pickup", "ready-for-pickup"),
+            ("partially-out-for-delivery", "partially-out-for-delivery"),
+            ("out-for-delivery", "out-for-delivery"),
+            ("partially-delivered", "partially-delivered"),
             ("delivered", "delivered"),
+            ("partially-cancelled", "partially-cancelled"),
             ("cancelled", "cancelled"),
             ("failed", "failed"),
         ),
@@ -310,7 +319,7 @@ class Order(models.Model):
         editable=False,
         blank=True,
         null=True,
-        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending"), ("refunded", "refunded")),
+        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending"), ("pending-refund", "pending-refund"), ("refunded", "refunded")),
     )
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
@@ -463,23 +472,62 @@ class Order(models.Model):
             shipping and shipping["address"] and shipping["address"].lower() == "pickup"
         )
 
-    def notify_delivery_people(self, delivery_people):
+    def notify_delivery_people(self, delivery_people, store_id):
         print("notify_delivery_people", delivery_people)
         shipping = self.shipping
         order_address = f"{shipping["address"]} {shipping["sch"]}"
         for delivery_person in delivery_people:
-            delivery_person.profile.send_sms(
-                "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
-                    self.order_track_id,
-                    order_address,
-                    f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
-                )
-            )
-            delivery_person.profile.send_push_notification(
+            has_sent_push_notification = delivery_person.profile.send_push_notification(
                title="New Order",
                msg="You have a new order to deliver, check your account page for more details.",
             )
+            if not has_sent_push_notification:
+                has_sent_sms = delivery_person.profile.send_sms(
+                    "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
+                        self.get_order_display_id(),
+                        order_address,
+                        f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
+                    )
+                )
+                if not has_sent_sms:
+                    self.update_store_status(store_id, "no-delivery-person")
         return True
+    
+    def notify_user(self, message):
+        has_sent_push_notification = self.user.send_push_notification(
+            title="Order Status",
+            msg=message,
+        )
+        if not has_sent_push_notification:
+            has_sent_sms = self.user.send_sms(message)
+            if not has_sent_sms:
+                return False
+        return True
+    
+    def refund_user(self):
+        PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
+
+        url = "https://api.paystack.co/transaction/refund"
+
+        # remove paystack transaction fee from the overall_price
+        overall_price = Decimal(self.overall_price) - calculate_payment_gateway_fee(self.overall_price)
+
+        data = {
+            "transaction": self.order_track_id,
+            "amount": Decimal(overall_price) * 100,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        }
+
+        response = requests.post(url, data=data, headers=headers)
+        response = response.json()
+
+        if response["status"] == True:
+            self.order_payment_status = "pending-refund"
+            self.save()
+        return response
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod
