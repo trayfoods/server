@@ -91,6 +91,7 @@ class OrderAdmin(admin.ModelAdmin):
         "order_payment_status",
         "delivery_fee",
         "order_payment_url",
+        "stores_status",
     )
     search_fields = [
         "user__username",

@@ -319,7 +319,14 @@ class Order(models.Model):
         editable=False,
         blank=True,
         null=True,
-        choices=(("failed", "failed"), ("success", "success"), ("pending", "pending"), ("pending-refund", "pending-refund"), ("refunded", "refunded")),
+        choices=(
+            ("failed", "failed"), 
+            ("success", "success"),
+              ("pending", "pending"),
+                ("pending-refund", "pending-refund"), 
+                 ("partially-refunded", "partially-refunded"),
+                 ("refunded", "refunded")
+            ),
     )
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
@@ -504,19 +511,16 @@ class Order(models.Model):
                 return False
         return True
     
-    def refund_user(self):
+    def store_refund_customer(self, amount: Decimal, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
         url = "https://api.paystack.co/refund"
 
-        # remove paystack transaction fee from the overall_price
-        overall_price: Decimal = self.overall_price 
-        new_overall_price = overall_price - calculate_payment_gateway_fee(self.overall_price)
         # convert the overall_price to kobo
-        new_overall_price = new_overall_price * Decimal(100)
+        kobo_ammount = amount * Decimal(100)
         data = {
             "transaction": self.order_track_id,
-            "amount": float(new_overall_price),
+            "amount": float(kobo_ammount),
         }
 
         print(data)
@@ -531,7 +535,15 @@ class Order(models.Model):
 
         if response["status"] == True:
             self.order_payment_status = "pending-refund"
+            self.update_store_status(store_id, "pending-refund")
             self.save()
+
+            # notify the user that a refund has been initiated
+            self.notify_user(
+                message=f"Your refund of {self.order_currency}{amount} has been initiated. The refund will be processed within 24 hours.",
+                title="Refund Initiated",
+            )
+
         return response
 
     # check if a store is linked in any order, if yes, return the orders

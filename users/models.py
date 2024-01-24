@@ -501,7 +501,7 @@ class Transaction(models.Model):
         max_length=50, null=True, blank=True, editable=False, unique=True
     )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
-    order = models.OneToOneField(
+    order = models.ForeignKey(
         Order, on_delete=models.SET_NULL, null=True, blank=True, editable=False
     )
     currency = models.CharField(max_length=4, default="NGN", editable=False)
@@ -657,9 +657,8 @@ class Wallet(models.Model):
         return dirty_fields
 
     # get user's transactions
-    @property
-    def transactions(self):
-        return Transaction.objects.filter(user=self)
+    def get_transactions(self):
+        return Transaction.objects.filter(wallet=self)
 
     # add balance to user's wallet
     def add_balance(
@@ -673,7 +672,13 @@ class Wallet(models.Model):
             # convert the amount to decimal
             self.balance += amount
             self.save()
-            # create a transaction
+        else:
+            # check if the wallet has a transaction for the order
+            order_transaction = self.get_transactions().filter(order=order).first()
+            if order_transaction:
+                raise Exception("Order already has a transaction")
+            
+        # create a transaction
         transaction = Transaction.objects.create(
             wallet=self,
             title=title,
@@ -704,7 +709,7 @@ class Wallet(models.Model):
 
         if order:
             # handle order refund logic
-            order_transaction = Transaction.objects.get(order=order)
+            order_transaction = self.get_transactions().filter(order=order).first()
 
             if order_transaction.status in ["settled", "success"]:
                 # debit the wallet

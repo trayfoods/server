@@ -481,6 +481,15 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
                 )
 
+            def get_store_statuses(current_order: Order, store_id: int, new_status):
+                store_statuses = []
+                for store_status in current_order.stores_status:
+                    # remove the current store status and append the new status
+                    if store_status["storeId"] == store_id:
+                        store_status["status"] = new_status
+                    store_statuses.append(store_status["status"])
+                return store_statuses
+
             # accept order if it is pending
             if action == "accepted":
                 # calculate store balance
@@ -515,11 +524,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order=order,
                 )
 
-                order.update_store_status(store_id, "accepted")
-
-                store_statuses = []
-                for store_status in order.stores_status:
-                    store_statuses.append(store_status["status"])
+                store_statuses = get_store_statuses(order, store_id, "accepted")
 
                 # check if all stores has accepted the order
                 if all(status == "accepted" for status in store_statuses):
@@ -537,7 +542,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
 
                 # check if some stores has accepted the order
-                if any(status == "accepted" for status in store_statuses):
+                elif any(status == "accepted" for status in store_statuses):
                     # update the order status to partially accepted
                     order.order_status = "partially-accepted"
                     order.save()
@@ -547,6 +552,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         message=f"Order {order.get_order_display_id()} has been partially accepted",
                     )
 
+                order.update_store_status(store_id, "accepted")
+
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been accepted",
@@ -554,11 +561,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # reject order if it is pending
             if action == "rejected":
-                order.update_store_status(store_id, "rejected")
-
-                store_statuses = []
-                for store_status in order.stores_status:
-                    store_statuses.append(store_status["status"])
+                store_statuses = get_store_statuses(order, store_id, "rejected")
 
                 # check if all stores has rejected the order
                 if all(status == "rejected" for status in store_statuses):
@@ -566,14 +569,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "rejected"
                     order.save()
 
-                    # refund the user
-                    order.refund_user()
-
                     # notify the user that all stores has rejected the order
                     has_notified_user = order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been rejected",
                     )
-
 
                 # check if some stores has rejected the order
                 elif any(status == "rejected" for status in store_statuses):
@@ -585,6 +584,42 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been partially rejected",
                     )
+
+                order.update_store_status(store_id, "rejected")
+
+                # refund funds from each store that has rejected the order
+                for store_status in order.stores_status:
+                    if store_status["status"] == "rejected":
+                        # get the store id
+                        store_id = store_status["storeId"]
+
+                        # get the current store info
+                        current_store_info = None
+                        for store_info in order.stores_infos:
+                            if str(store_info["storeId"]) == str(store_id):
+                                current_store_info = store_info
+                                break
+
+                        # check if the current store info was found
+                        if current_store_info is None:
+                            return MarkOrderAsMutation(
+                                error="No store info found for this order, please contact support"
+                            )
+
+                        # get the store total normal price
+                        store_total_price = current_store_info["total"]["price"]
+                        # get the store plate price
+                        store_plate_price = current_store_info["total"]["plate_price"]
+
+                        overrall_store_price = Decimal(store_total_price) + Decimal(
+                            store_plate_price
+                        )
+
+                        # refund the customer
+                        order.store_refund_customer(
+                            amount=overrall_store_price,
+                            store_id=store_id,
+                        )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -637,7 +672,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="Order has not been accepted, cannot be marked as ready for pickup"
                     )
 
-                order.update_store_status(store_id, "ready-for-pickup")
+                store_statuses = get_store_statuses(order, store_id, "ready-for-pickup")
 
                 # check if all stores has marked the order as ready for pickup
                 if all(status == "ready-for-pickup" for status in store_statuses):
@@ -664,6 +699,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     has_notified_user = order.notify_user(
                         message=f"Order {order.get_order_display_id()} is partially ready for pickup",
                     )
+
+                order.update_store_status(store_id, "ready-for-pickup")
+
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been marked as ready for pickup",
@@ -701,7 +739,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
 
                 # handle order cancelled
-                order.update_store_status(store_id, "cancelled")
+
+                store_statuses = get_store_statuses(order, store_id, "cancelled")
 
                 # check if all stores has cancelled the order
                 if all(status == "cancelled" for status in store_statuses):
@@ -711,7 +750,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # refund the user
                     order.refund_user()
-                    
+
                     # notify the user that all stores has cancelled the order
                     has_notified_user = order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been cancelled",
@@ -720,7 +759,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         return MarkOrderAsMutation(
                             error="An error occured while notifying customer, please try again later"
                         )
-
 
                 # check if some stores has cancelled the order
                 elif any(status == "cancelled" for status in store_statuses):
@@ -732,7 +770,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been partially cancelled",
                     )
-                return MarkOrderAsMutation(success=True)
+
+                order.update_store_status(store_id, "cancelled")
+
+                return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
 
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
             current_delivery_person_id = user.profile.delivery_person.id
