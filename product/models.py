@@ -525,8 +525,8 @@ class Order(models.Model):
         }
 
         response = requests.post(url, data=data, headers=headers)
-        print("refund_user", response)
         response = response.json()
+        print("refund_user", response)
 
         if response["status"] == True:
             self.order_payment_status = "pending-refund"
