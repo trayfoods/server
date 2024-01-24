@@ -479,6 +479,7 @@ class Order(models.Model):
                title="New Order",
                msg="You have a new order to deliver, check your account page for more details.",
             )
+        return True
 
     # check if a store is linked in any order, if yes, return the orders
     @classmethod

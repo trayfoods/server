@@ -435,15 +435,13 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        try:
-            if self.has_calling_code and self.phone_number_verified:
-                phone_number = f"{self.calling_code}{self.phone_number}"
-                from .tasks import send_async_sms
+        if self.has_calling_code and self.phone_number_verified:
+            phone_number = f"{self.calling_code}{self.phone_number}"
+            from .tasks import send_async_sms
 
-                logger.info(f"Sending SMS to user {self.user.username}")
-                send_async_sms.delay(phone_number, message)
-        except Exception as e:
-            print(e)
+            logger.info(f"Sending SMS to user {self.user.username}")
+            send_async_sms.delay(phone_number, message)
+        
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
