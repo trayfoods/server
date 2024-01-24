@@ -638,7 +638,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
                 
                 order.update_store_status(store_id, "ready-for-pickup")
-                
+
                 # check if all stores has marked the order as ready for pickup
                 if all(status == "ready-for-pickup" for status in store_statuses):
                     # update the order status to ready for pickup
@@ -704,6 +704,37 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 # handle order cancelled
                 order.update_store_status(store_id, "cancelled")
+
+                # check if all stores has cancelled the order
+                if all(status == "cancelled" for status in store_statuses):
+                    # update the order status to cancelled
+                    order.order_status = "cancelled"
+                    order.save()
+
+                    # notify the user that all stores has cancelled the order
+                    has_notified_user = order.notify_user(
+                        title="Order Cancelled",
+                        msg=f"Order #{order.get_order_display_id()} has been cancelled",
+                    )
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+
+                    # refund the user
+                    order.refund_user()
+
+                # check if some stores has cancelled the order
+                if any(status == "cancelled" for status in store_statuses):
+                    # update the order status to partially cancelled
+                    order.order_status = "partially-cancelled"
+                    order.save()
+
+                    # notify the user that some stores has cancelled the order
+                    order.notify_user(
+                        title="Order Partially Cancelled",
+                        msg=f"Order #{order.get_order_display_id()} has been partially cancelled",
+                    )
                 return MarkOrderAsMutation(success=True)
 
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
