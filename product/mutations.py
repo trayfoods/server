@@ -570,10 +570,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         title="Order Rejected",
                         msg=f"Order #{order.get_order_display_id()} has been rejected",
                     )
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
                     
                     # refund the user
                     order.refund_user()
@@ -585,7 +581,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.save()
 
                     # notify the user that some stores has rejected the order
-                    has_notified_user = order.notify_user(
+                    order.notify_user(
                         title="Order Partially Rejected",
                         msg=f"Order #{order.get_order_display_id()} has been partially rejected",
                     )
@@ -640,12 +636,36 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="Order has not been accepted, cannot be marked as ready for pickup"
                     )
-
-                # handle order ready for pickup
-                order.user.send_sms(
-                    message=f"{store.store_name} has marked your order {order.get_order_display_id()} as ready for pickup"
-                )
+                
                 order.update_store_status(store_id, "ready-for-pickup")
+                
+                # check if all stores has marked the order as ready for pickup
+                if all(status == "ready-for-pickup" for status in store_statuses):
+                    # update the order status to ready for pickup
+                    order.order_status = "ready-for-pickup"
+                    order.save()
+
+                    # notify the user that all stores has marked the order as ready for pickup
+                    has_notified_user = order.notify_user(
+                        title="Order Ready for Pickup",
+                        msg=f"Order #{order.get_order_display_id()} is ready for pickup",
+                    )
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+                
+                # check if some stores has marked the order as ready for pickup
+                if any(status == "ready-for-pickup" for status in store_statuses):
+                    # update the order status to partially ready for pickup
+                    order.order_status = "partially-ready-for-pickup"
+                    order.save()
+
+                    # notify the user that some stores has marked the order as ready for pickup
+                    has_notified_user = order.notify_user(
+                        title="Order Partially Ready for Pickup",
+                        msg=f"Order #{order.get_order_display_id()} is partially ready for pickup",
+                    )
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been marked as ready for pickup",
