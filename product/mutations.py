@@ -430,7 +430,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
         order_id = graphene.String(required=True)
         action = graphene.String(required=True)
-    
+
     success_msg = graphene.String()
 
     @permission_checker([IsAuthenticated])
@@ -470,7 +470,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             store_id = user.profile.store.id if user.profile.is_vendor else None
             if store_id is None:
                 return MarkOrderAsMutation(error="You are not a vendor")
-            
+
             store: Store = user.profile.store
 
             # check if the order has been accepted or rejected
@@ -511,17 +511,30 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store.wallet.add_balance(
                     amount=overrall_store_price,
                     title="New Order Payment",
-                    desc=f"Payment for Order {order.get_order_display_id().upper()} was added to wallet",
+                    desc=f"Payment for Order {order.get_order_display_id()} was added to wallet",
                     order=order,
                 )
 
+                # check if the order is pickup
+                if shipping and shipping["address"] == "pickup":
+                    # send sms to user, telling them that their order has been accepted and we will notify them when it is ready for pickup
+                    order.user.send_sms(
+                        message=f"{store.store_name} has accepted your order {order.get_order_display_id()}"
+                    )
+
                 order.update_store_status(store_id, "accepted")
-                return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been accepted")
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been accepted",
+                )
 
             # reject order if it is pending
             if action == "rejected":
                 order.update_store_status(store_id, "rejected")
-                return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been rejected")
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been rejected",
+                )
 
             # handle order ready for delivery
             if action == "ready-for-delivery":
@@ -550,7 +563,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="An error occured while notifying delivery people, please try again later"
                     )
                 order.update_store_status(store_id, "ready-for-delivery")
-                return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as ready for delivery")
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been marked as ready for delivery",
+                )
 
             # handle order ready for pickup
             if action == "ready-for-pickup":
@@ -566,10 +582,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 # handle order ready for pickup
                 order.user.send_sms(
-                    message=f"{store.store_name} has marked your order #{order.get_order_display_id()} as ready for pickup"
+                    message=f"{store.store_name} has marked your order {order.get_order_display_id()} as ready for pickup"
                 )
                 order.update_store_status(store_id, "ready-for-pickup")
-                return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as ready for pickup")
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been marked as ready for pickup",
+                )
 
             # handle order picked up
             if action == "picked-up":
@@ -588,7 +607,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     message=f"Your order #{order.get_order_display_id()} has been picked up"
                 )
                 order.update_store_status(store_id, "picked-up")
-                return MarkOrderAsMutation(success=True, success_msg=f"Order #{order.get_order_display_id()} has been marked as picked up")
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been marked as picked up",
+                )
 
             # handle order cancelled
             if action == "cancelled":
@@ -635,8 +657,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # credit delivery person wallet
                 credit_kwargs = {
                     "amount": delivery_fee,
-                    "title": "Delivery Fee for Order #{}".format(
-                        order.order_track_id.replace("order_", "")
+                    "title": "Delivery Fee for Order {}".format(
+                        order.get_order_display_id()
                     ),
                     "order": order,
                 }

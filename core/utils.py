@@ -110,7 +110,9 @@ class ProcessPayment:
                 # )
                 # send sms to the user
                 order.user.send_sms(
-                    f"Order #{order.order_track_id.upper()} has been sent to the store, we will notify you when the store accept the order"
+                    message="Order {} has been sent to the store, we will notify you when the store accept the order".format(
+                        order.get_order_display_id()
+                    )
                 )
 
         return HttpResponse("Payment successful", status=200)
