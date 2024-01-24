@@ -32,7 +32,4 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 EXPOSE 8000
 
 # Startup command for the application
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000", "&", "celery", "-A", "trayapp", "worker", "-l", "info"]
-
-# Startup command for celery
-# CMD ["celery", "-A", "config", "worker", "-l", "info"]2
+CMD ["sh", "-c", "python manage.py runserver 0.0.0.0:8000 & celery -A trayapp worker -l info"]
