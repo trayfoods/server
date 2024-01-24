@@ -30,10 +30,6 @@ class ProcessPayment:
             return self.transfer_failed()
         elif self.event_type == "transfer.reversed":
             return self.transfer_reversed()
-        elif self.event_type == "refund.pending":
-            return self.refund_pending()
-        elif self.event_type == "refund.processing":
-            return self.refund_processing()
         elif self.event_type == "refund.failed":
             return self.refund_failed()
         elif self.event_type == "refund.processed":
@@ -217,16 +213,50 @@ class ProcessPayment:
 
         return HttpResponse("Transfer Process Failed", status=400)
 
-    def refund_pending(self):
-        pass
+    def refund_processed(self):
+        """
+        Refund has successfully been processed by the processor.
+        """
 
-    def refund_processing(self):
-        pass
+        # get the values from event_data
+        order_id = self.event_data["transaction_reference"]
+
+        order_price = self.event_data["amount"]
+        # convert the order_price to a decimal and divide it by 100
+        order_price = Decimal(order_price) / 100
+
+        # get the order from the database
+        order_qs = Order.objects.filter(
+            order_track_id=order_id, order_payment_status="pending-refund"
+        )
+
+        # check if the order exists
+        if not order_qs.exists():
+            return HttpResponse("Order does not exist", status=404)
+
+        order = order_qs.first()
+        # deduct the amount from all stores that are involved in the order
+        stores_infos = order.stores_infos
+        for store_info in stores_infos:
+            store = Store.objects.filter(id=int(store_info["store_id"])).first()
+            if store:
+                # get the store total normal price
+                store_total_price = store_info["total"]["price"]
+                # get the store plate price
+                store_plate_price = store_info["total"]["plate_price"]
+
+                overrall_store_price = Decimal(store_total_price) + Decimal(
+                    store_plate_price
+                )
+                store.wallet.deduct_balance(
+                    amount=overrall_store_price,
+                    desc="Refund for order {}".format(order.get_order_display_id()),
+                    order=order,
+                )
+        order.order_payment_status = "refunded"
+        order.save()
 
     def refund_failed(self):
-        pass
-
-    def refund_processed(self):
         pass
 
 

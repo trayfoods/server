@@ -501,7 +501,7 @@ class Transaction(models.Model):
         max_length=50, null=True, blank=True, editable=False, unique=True
     )
     wallet = models.ForeignKey("Wallet", on_delete=models.CASCADE, editable=False)
-    order = models.ForeignKey(
+    order = models.OneToOneField(
         Order, on_delete=models.SET_NULL, null=True, blank=True, editable=False
     )
     currency = models.CharField(max_length=4, default="NGN", editable=False)
@@ -684,22 +684,11 @@ class Wallet(models.Model):
             _type="credit",
         )
         transaction.save()
-        # else:
-        #     # create an unsettled transaction
-        #     new_unsettled_transacion = Transaction.objects.create(
-        #         wallet=self,
-        #         title=title,
-        #         status=,
-        #         desc=desc,
-        #         amount=amount,
-        #         order=order,
-        #         _type="credit",
-        #     )
-        #     new_unsettled_transacion.save()
 
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
         transfer_fee = kwargs.get("transfer_fee", 0.00)
+        transfer_fee = Decimal(transfer_fee)
         title = kwargs.get("title", "Wallet Debited")
         desc = kwargs.get(
             "desc", f"{self.currency} {amount} was deducted from your wallet"
@@ -711,22 +700,46 @@ class Wallet(models.Model):
         amount = Decimal(amount)
         transfer_fee = Decimal(transfer_fee)
 
-        if not transaction_id:
-            raise Exception("Transaction ID is required")
+        total_amount = amount + transfer_fee
+
+        if order:
+            # handle order refund logic
+            order_transaction = Transaction.objects.get(order=order)
+
+            if order_transaction.status in ["settled", "success"]:
+                # debit the wallet
+                self.balance -= total_amount
+                self.save()
+
+                # update the order transaction
+                order_transaction.status = "success"
+                order_transaction._type = "debit"
+                order_transaction.save()
+
+                return order_transaction
+
+            else:
+                order_transaction.delete()
+
+        if not transaction_id and not order:
+            raise Exception("Transaction ID is required, or Order is required")
+
+        if transaction_id and order:
+            raise Exception("Transaction ID and Order cannot be set at the same time")
 
         transaction_id = uuid.UUID(transaction_id)
 
         if self.balance < amount:
             raise Exception("Insufficient funds")
 
-        # debit the wallet
-        self.balance -= amount + transfer_fee
-        self.save()
-
         # check if transaction exists
         transaction = Transaction.objects.get(
             wallet=self, transaction_id=transaction_id, _type="debit"
         )
+
+        # debit the wallet
+        self.balance -= total_amount
+        self.save()
 
         transaction.title = title
         transaction.order = order
