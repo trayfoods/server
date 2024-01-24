@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y gcc
 # Upgrade pip
 RUN pip install --upgrade pip
 
-RUN pip install gunicorn django psycopg2-binary whitenoise
+RUN pip install gunicorn psycopg2-binary whitenoise
 
 # Install dependencies with increased timeout
 RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
@@ -32,4 +32,4 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 EXPOSE 8000
 
 # Startup command
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] & celery -A trayapp worker -l info -Q celery,celery_beat
+CMD ["sh", "-c", "celery -A trayapp worker & gunicorn trayapp.wsgi:application --bind 0.0.0.0:8000"]
