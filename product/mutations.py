@@ -570,14 +570,15 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "rejected"
                     order.save()
 
+                    # refund the user
+                    order.refund_user()
+
                     # notify the user that all stores has rejected the order
                     has_notified_user = order.notify_user(
                         title="Order Rejected",
                         msg=f"Order #{order.get_order_display_id()} has been rejected",
                     )
 
-                    # refund the user
-                    order.refund_user()
 
                 # check if some stores has rejected the order
                 if any(status == "rejected" for status in store_statuses):
@@ -716,6 +717,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "cancelled"
                     order.save()
 
+                    # refund the user
+                    order.refund_user()
+                    
                     # notify the user that all stores has cancelled the order
                     has_notified_user = order.notify_user(
                         title="Order Cancelled",
@@ -726,8 +730,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             error="An error occured while notifying customer, please try again later"
                         )
 
-                    # refund the user
-                    order.refund_user()
 
                 # check if some stores has cancelled the order
                 if any(status == "cancelled" for status in store_statuses):
