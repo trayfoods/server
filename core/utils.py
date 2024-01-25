@@ -36,6 +36,8 @@ class ProcessPayment:
             return self.refund_processed()
         elif self.event_type == "refund.pending":
             return HttpResponse("Refund pending", status=200)
+        elif self.event_type == "refund.processing":
+            return HttpResponse("Refund processing", status=200)
         else:
             return HttpResponse("Invalid event type", status=400)
 
@@ -71,8 +73,12 @@ class ProcessPayment:
         if overall_price > order_price:
             order.order_payment_status = "pending-refund"
             order.order_status = "failed"
-            order.refund_user()
             order.save()
+            order.notify_user(
+                message="Payment for Order {} has failed, kindly contact support for your refund".format(
+                    order.get_order_display_id()
+                )
+            )
             return HttpResponse("Payment failed, Processing Refund", status=400)
 
         if "success" == order_payment_status:
