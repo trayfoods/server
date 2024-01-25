@@ -223,7 +223,7 @@ class ProcessPayment:
 
         # get the values from event_data
         order_id = self.event_data.get("transaction_reference", None)
-        order_price = self.event_data.get("amount", None)
+        order_price = self.event_data.get("amount", 0.00)
 
         # check if the order_id and order_price is not None
         if not order_id or not order_price:
@@ -232,15 +232,20 @@ class ProcessPayment:
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
-        if not Order.objects.filter(
+        order_qs = Order.objects.filter(
             order_track_id=order_id, order_payment_status="pending-refund"
-        ).exists():
+        )
+
+        if not order_qs.exists():
+            print("order_qs", order_qs)
             return HttpResponse("Order does not exist", status=404)
 
         # get the order from the database
         order = Order.objects.get(
             order_track_id=order_id, order_payment_status="pending-refund"
         )
+
+        print("order", order)
 
         # deduct the amount from all stores that are involved in the order
         stores_infos = order.stores_infos
@@ -251,19 +256,18 @@ class ProcessPayment:
                 continue
 
             store_status = order.get_store_status(store_id)
-            if store_status == "pending-refund":
+            # get the store total normal price
+            store_total_price = store_info["total"]["price"]
+            # get the store plate price
+            store_plate_price = store_info["total"]["plate_price"]
+
+            overrall_store_price = Decimal(store_total_price) + Decimal(
+                store_plate_price
+            )
+            if store_status == "pending-refund" and overrall_store_price == order_price:
                 store = Store.objects.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
-                    # get the store total normal price
-                    store_total_price = store_info["total"]["price"]
-                    # get the store plate price
-                    store_plate_price = store_info["total"]["plate_price"]
-
-                    overrall_store_price = Decimal(store_total_price) + Decimal(
-                        store_plate_price
-                    )
-
                     affected_stores.append(str(store.id))
 
                     store.wallet.deduct_balance(
@@ -273,6 +277,8 @@ class ProcessPayment:
                     )
 
                     order.update_store_status(store_id=store.id, status="refunded")
+                    # break the loop when one store has been refunded
+                    break
 
         store_statuses = []
         # get all order store status
@@ -345,23 +351,33 @@ class ProcessPayment:
                 continue
 
             store_status = order.get_store_status(store_id)
-            if store_status == "pending-refund":
-                store = Store.objects.filter(id=int(store_id)).first()
-                # check if the store status is "pending-refund"
-                if store:
-                    affected_stores.append(str(store.id))
+            # get the store total normal price
+            store_total_price = store_info["total"]["price"]
+            # get the store plate price
+            store_plate_price = store_info["total"]["plate_price"]
 
-                    store.wallet.put_transaction_on_hold(
-                        order=order,
-                    )
+            overrall_store_price = Decimal(store_total_price) + Decimal(
+                store_plate_price
+            )
 
-                    order.update_store_status(store_id=store.id, status="refunded")
+            # check if the store status is "pending-refund"
+            if store_status == "pending-refund" and overrall_store_price == order_price:
+                print("store_id", store_id)
+                store = Store.objects.get(id=int(store_id))
+                print("store", store)
+                affected_stores.append(str(store.id))
+
+                store.wallet.put_transaction_on_hold(
+                    order=order,
+                )
+
+                order.update_store_status(store_id=store.id, status="refunded")
 
         store_statuses = []
         # get all order store status
         for status in order.stores_status:
             # replace affected stores status with failed-refund
-            if str(status["storeId"]) in affected_stores:
+            if status["storeId"] in affected_stores:
                 status["status"] = "failed-refund"
                 store_statuses.append(status)
             store_statuses.append(status["status"])

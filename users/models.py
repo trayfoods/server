@@ -453,7 +453,7 @@ class Profile(models.Model):
             print(self.calling_code, flush=True)
             print(message, flush=True)
             print("End of SMS is disabled", flush=True)
-            return True
+            return False
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
@@ -816,6 +816,8 @@ class Wallet(models.Model):
         # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
+        
+        transaction: Transaction = None
 
         if transaction_id:
             transaction = self.get_transactions().objects.get(
@@ -832,6 +834,7 @@ class Wallet(models.Model):
 
         # update the transaction
         transaction.status = "on-hold"
+        transaction.desc = "Transaction is on hold, please contact support"
         transaction.save()
 
         return transaction

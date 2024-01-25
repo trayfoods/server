@@ -558,7 +558,7 @@ class Order(models.Model):
 
             # notify the user that a refund has been initiated
             self.notify_user(
-                message=f"Your refund of {self.order_currency}{amount} has been initiated. The refund will be processed within 24 hours.",
+                message=f"Your refund of {self.order_currency} {amount} has been initiated. The refund will be processed within 7-12 working days.",
                 title="Refund Initiated",
             )
 
