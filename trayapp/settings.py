@@ -413,7 +413,7 @@ DAYS_OF_WEEK = (
     ("Sat", "Sat"),
     ("Sun", "Sun"),
 )
-ALLOWED_ORDER_STATUS = [
+ALLOWED_STORE_ORDER_STATUS = [
     "pending",
     "accepted",
     "rejected",
@@ -429,3 +429,5 @@ ALLOWED_ORDER_STATUS = [
     "refunded",
     "failed",
 ]
+
+ALLOWED_DELIVERY_PERSON_ORDER_STATUS = ["out-for-delivery", "picked-up", "delivered"]

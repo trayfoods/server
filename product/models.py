@@ -241,7 +241,8 @@ class ItemAttribute(models.Model):
         return super().save(*args, **kwargs)
 
 
-ALLOWED_STORES_STATUS = settings.ALLOWED_ORDER_STATUS
+ALLOWED_STORE_ORDER_STATUS = settings.ALLOWED_STORE_ORDER_STATUS
+ALLOWED_DELIVERY_PERSON_ORDER_STATUS = settings.ALLOWED_DELIVERY_PERSON_ORDER_STATUS
 
 
 class Order(models.Model):
@@ -413,7 +414,7 @@ class Order(models.Model):
                 return False
             if not store_status.get("status"):
                 return False
-            if store_status.get("status") not in ALLOWED_STORES_STATUS:
+            if store_status.get("status") not in ALLOWED_STORE_ORDER_STATUS:
                 return False
             # check if the stores_status are linked to the order
             if not self.linked_stores.filter(id=store_status.get("storeId")).exists():
@@ -438,6 +439,11 @@ class Order(models.Model):
             if not delivery_person.get("status"):
                 return False
             if not delivery_person.get("storeId"):
+                return False
+            if (
+                delivery_person.get("status")
+                not in ALLOWED_DELIVERY_PERSON_ORDER_STATUS
+            ):
                 return False
             # check if the delivery people are linked to the order
             if not self.linked_delivery_people.filter(
@@ -553,10 +559,7 @@ class Order(models.Model):
         # get the store plate price
         store_plate_price = current_store_info["total"]["plate_price"]
 
-        amount = Decimal(store_total_price) + Decimal(
-            store_plate_price
-        )
-
+        amount = Decimal(store_total_price) + Decimal(store_plate_price)
 
         # convert the overall_price to kobo
         kobo_amount = amount * Decimal(100)
@@ -626,7 +629,7 @@ class Order(models.Model):
             return ["DELIVERY_PERSON"]
         else:
             return []
-        
+
     def get_store_info(self, store_id):
         stores_infos = self.stores_infos
         for store_info in stores_infos:
@@ -656,13 +659,6 @@ class Order(models.Model):
         self.stores_status = stores_status
         self.save()
 
-    # get delivery_person from the delivery_people json
-    def get_delivery_person(self, delivery_person_id):
-        delivery_people = self.delivery_people
-        for delivery_person in delivery_people:
-            if delivery_person["id"] == delivery_person_id:
-                return delivery_person
-        return None
 
     # get store_status from the stores_status json
     def get_store_status(self, store_id):
@@ -671,6 +667,23 @@ class Order(models.Model):
             if str(store_status["storeId"]) == str(store_id):
                 return store_status.get("status")
         return None
+    
+    # get delivery_person from the delivery_people json
+    def get_delivery_person(self, delivery_person_id):
+        delivery_people = self.delivery_people
+        for delivery_person in delivery_people:
+            if str(delivery_person["id"]) == str(delivery_person_id):
+                return delivery_person
+        return None
+    
+    def update_delivery_person_status(self, delivery_person_id, status):
+        delivery_people = self.delivery_people
+        for delivery_person in delivery_people:
+            if str(delivery_person["id"]) == str(delivery_person_id):
+                delivery_person["status"] = status
+                break
+        self.delivery_people = delivery_people
+        self.save()
 
     # create a payment link for the order
     def create_payment_link(self):

@@ -458,7 +458,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
         order_status = order.get_order_status(user.profile).lower().replace("_", "-")
 
         # check if the action is allowed
-        allowed_actions = settings.ALLOWED_ORDER_STATUS
+        allowed_actions = settings.ALLOWED_STORE_ORDER_STATUS
         if not action in allowed_actions:
             return MarkOrderAsMutation(error="Invalid action")
 
@@ -605,7 +605,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been rejected",
                 )
-            
+
             # handle order cancelled
             if action == "cancelled":
                 if order_status != "accepted":
@@ -769,22 +769,19 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             delivery_person = order.get_delivery_person(current_delivery_person_id)
 
             if delivery_person is not None:
-                # get all delivery people status and check if all delivery people has delivered the order or if some delivery people has delivered the order
-                delivery_people_statuses = []
-                for delivery_person in order.delivery_people:
-                    delivery_people_statuses.append(delivery_person["status"])
-
+                delivery_person_store_id = delivery_person.get("storeId", None)
+                if delivery_person_store_id is None:
+                    return MarkOrderAsMutation(
+                        error="No store id found for this order, please contact support"
+                    )
                 order_delivery_people = order.delivery_people
 
-                new_order_delivery_people_state = []
-                # update the current delivery person status
-                for delivery_person in order_delivery_people:
-                    if delivery_person["id"] == current_delivery_person_id:
-                        delivery_person["status"] = action
+                order.update_delivery_person_status(
+                    current_delivery_person_id, "delivered"
+                )
 
-                    new_order_delivery_people_state.append(delivery_person)
-
-                order.delivery_people = new_order_delivery_people_state
+                # update store status that the delivery person has delivered the order
+                order.update_store_status(delivery_person_store_id, "delivered")
 
                 # get delivery_fee by dividing the delivery fee by the number of delivery people
                 delivery_fee = order.delivery_fee / len(order_delivery_people)
@@ -794,14 +791,17 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # credit delivery person wallet
                 credit_kwargs = {
                     "amount": delivery_fee,
-                    "title": "Delivery Fee for Order {}".format(
-                        order.get_order_display_id()
-                    ),
+                    "title": "Delivery Fee",
+                    "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
                     "order": order,
                 }
                 delivery_person.wallet.add_balance(**credit_kwargs)
 
                 order.save()
+
+                delivery_people_statuses = []
+                for delivery_person in order.delivery_people:
+                    delivery_people_statuses.append(delivery_person["status"])
 
                 # check if all delivery people has delivered the order
                 if all(status == "delivered" for status in delivery_people_statuses):
