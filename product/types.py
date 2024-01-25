@@ -269,7 +269,7 @@ class StoreInfoType(StoreInfo, graphene.ObjectType):
     store = graphene.Field(StoreType)
 
     def resolve_store(self, info):
-        return Store.objects.filter(id=self.get("storeId")).first()
+        return Store.objects.filter(id=int(self.get("storeId"))).first()
 
 
 class StoreInfoInputType(graphene.InputObjectType):

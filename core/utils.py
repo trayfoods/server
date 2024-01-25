@@ -237,24 +237,49 @@ class ProcessPayment:
         order = order_qs.first()
         # deduct the amount from all stores that are involved in the order
         stores_infos = order.stores_infos
+        store_statuses = []
         for store_info in stores_infos:
-            store = Store.objects.filter(id=int(store_info["store_id"])).first()
-            if store:
-                # get the store total normal price
-                store_total_price = store_info["total"]["price"]
-                # get the store plate price
-                store_plate_price = store_info["total"]["plate_price"]
+            store_status = order.get_store_status(store_info["storeId"])
+            if store_status == "pending-refund":
+                store = Store.objects.filter(id=int(store_info["storeId"])).first()
+                # check if the store status is "pending-refund"
+                if store:
+                    # get the store total normal price
+                    store_total_price = store_info["total"]["price"]
+                    # get the store plate price
+                    store_plate_price = store_info["total"]["plate_price"]
 
-                overrall_store_price = Decimal(store_total_price) + Decimal(
-                    store_plate_price
+                    overrall_store_price = Decimal(store_total_price) + Decimal(
+                        store_plate_price
+                    )
+
+                    store.wallet.deduct_balance(
+                        amount=overrall_store_price,
+                        desc="Refund for order {}".format(order.get_order_display_id()),
+                        order=order,
+                    )
+
+                    order.update_store_status(store_id=store.id, status="refunded")
+                    # update the store status in the store_statuses list
+                    store_statuses.append({"storeId": store.id, "status": "refunded"})
+
+        
+        # get all order store status
+        for status in order.stores_status:
+            store_statuses.append(status["status"])
+
+        # check if all the stores has refunded to the user
+        if all(status == "refunded" for status in store_statuses):
+            # update the order payment status
+            order.order_payment_status = "refunded"
+            order.order_status = "failed"
+            order.save()
+            # notify the user
+            order.notify_user(
+                message="Order {} has been refunded".format(
+                    order.get_order_display_id()
                 )
-                store.wallet.deduct_balance(
-                    amount=overrall_store_price,
-                    desc="Refund for order {}".format(order.get_order_display_id()),
-                    order=order,
-                )
-        order.order_payment_status = "refunded"
-        order.save()
+            )
 
     def refund_failed(self):
         pass

@@ -621,7 +621,7 @@ class Order(models.Model):
     def get_store_status(self, store_id):
         stores_status = self.stores_status
         for store_status in stores_status:
-            if store_status["storeId"] == store_id:
+            if str(store_status["storeId"]) == str(store_id):
                 return store_status.get("status")
         return None
 
