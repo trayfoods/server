@@ -1117,15 +1117,14 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
         if order.is_pickup():
             return AcceptDeliveryMutation(error="This order can not be delivered")
-        
-        
+
         delivery_person = user_profile.delivery_person
         order_delivery_people = order.delivery_people
 
         # check if the delivery person is already linked to the order
         order_delivery_person = order.get_delivery_person(delivery_person.id)
         if order_delivery_person is not None:
-            return AcceptDeliveryMutation(error="You already accepted this order")
+            return AcceptDeliveryMutation(success=True)
 
         # check if the order store count is same as the delivery people count, if it is then return error
         if len(order_delivery_people) == order.linked_stores.count():
