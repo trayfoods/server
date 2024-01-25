@@ -95,6 +95,33 @@ class ProcessPayment:
             shipping_address = order.shipping
             shipping_address = shipping_address.get("address", None)
 
+            # notify all stores that are involved in the order
+            stores_infos = order.stores_infos
+            for store_info in stores_infos:
+                store_id = store_info.get("storeId")
+                if not store_id:
+                    continue
+
+                store = Store.objects.filter(id=int(store_id)).first()
+                if store:
+                    # calculate the store total normal price
+                    store_total_price = store_info["total"]["price"]
+                    # calculate the store plate price
+                    store_plate_price = store_info["total"]["plate_price"]
+
+                    overrall_store_price = Decimal(store_total_price) + Decimal(
+                        store_plate_price
+                    )
+
+                    store.vendor.send_sms(
+                        message="New Order of {} {} was made, tap on this link to view the order → {}/checkout/{}".format(
+                            order.order_currency,
+                            overrall_store_price,
+                            settings.FRONTEND_URL,
+                            order.order_track_id,
+                        )
+                    )
+
             if shipping_address == "pickup":
                 # notify the user
                 order.notify_user(
