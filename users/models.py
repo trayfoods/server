@@ -453,7 +453,7 @@ class Profile(models.Model):
             print(self.calling_code, flush=True)
             print(message, flush=True)
             print("End of SMS is disabled", flush=True)
-            return False
+            return False if not settings.DEBUG else True
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
