@@ -95,7 +95,7 @@ else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
 
 ALLOWED_HOSTS = ["api.trayfoods.com", "localhost"]
-SMS_ENABLED = False
+SMS_ENABLED = True
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
