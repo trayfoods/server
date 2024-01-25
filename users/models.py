@@ -816,7 +816,7 @@ class Wallet(models.Model):
         # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
-        
+
         transaction: Transaction = None
 
         if transaction_id:
@@ -1113,7 +1113,7 @@ class DeliveryPerson(models.Model):
         # check if atleast one of the store has accepted the order
         has_accepted = False
         for store_status in stores_status:
-            if store_status.get("status") == "accepted":
+            if store_status.get("status") == "ready-for-delivery":
                 has_accepted = True
                 break
 
