@@ -642,7 +642,7 @@ class Order(models.Model):
         view_as = self.view_as(current_user_profile)
         if "DELIVERY_PERSON" in view_as:
             delivery_person = self.get_delivery_person(
-                current_user_profile.delivery_person.id
+                delivery_person_id=current_user_profile.delivery_person.id
             )
             if delivery_person:
                 order_status = delivery_person["status"]
@@ -672,10 +672,15 @@ class Order(models.Model):
         return None
 
     # get delivery_person from the delivery_people json
-    def get_delivery_person(self, delivery_person_id):
+    def get_delivery_person(self, delivery_person_id: str = None, store_id: int = None):
         delivery_people = self.delivery_people
         for delivery_person in delivery_people:
-            if str(delivery_person["id"]) == str(delivery_person_id):
+            if delivery_person_id and (
+                str(delivery_person["id"]) == str(delivery_person_id)
+            ):
+                return delivery_person
+
+            if store_id and (str(delivery_person["storeId"]) == str(store_id)):
                 return delivery_person
         return None
 

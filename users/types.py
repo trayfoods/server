@@ -67,10 +67,10 @@ class ProfileType(DjangoObjectType):
             return self.gender.name
 
     def resolve_required_fields(self, info, *args, **kwargs):
-        return self.required_fields
+        return self.get_required_fields()
 
     def resolve_has_required_fields(self, info, *args, **kwargs):
-        return self.required_fields is not None and len(self.required_fields) > 0
+        return self.get_required_fields() is not None and len(self.get_required_fields()) > 0
 
 
 class UserSettingsType(graphene.ObjectType):

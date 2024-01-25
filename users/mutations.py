@@ -1122,7 +1122,9 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         order_delivery_people = order.delivery_people
 
         # check if the delivery person is already linked to the order
-        order_delivery_person = order.get_delivery_person(delivery_person.id)
+        order_delivery_person = order.get_delivery_person(
+            delivery_person_id=delivery_person.id
+        )
         if order_delivery_person is not None:
             return AcceptDeliveryMutation(success=True)
 
@@ -1131,8 +1133,16 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             return AcceptDeliveryMutation(error="Order is already taken")
 
         if order.order_payment_status == "success" or settings.DEBUG:
+            stores_status = order.stores_status
+            # check if atleast one of the store has accepted the order
+            has_accepted = False
+            for store_status in stores_status:
+                if store_status.get("status") == "ready-for-delivery":
+                    has_accepted = True
+                    break
+
             # check if delivery person can deliver to the order
-            if not delivery_person.can_deliver(order):
+            if not has_accepted or not delivery_person.can_deliver(order):
                 return AcceptDeliveryMutation(
                     error="You did not meet the requirements to deliver this order"
                 )

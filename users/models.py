@@ -294,7 +294,6 @@ class Profile(models.Model):
 
         super().save(*args, **kwargs)
 
-    @property
     def has_calling_code(self):
         if not self.calling_code and self.country:
             # get the calling code from the country
@@ -308,9 +307,11 @@ class Profile(models.Model):
             self.calling_code = calling_code
             self.save()
         return True if self.calling_code else False
+    
+    def get_full_phone_number(self):
+        return f"{self.calling_code}{self.phone_number}"
 
-    @property
-    def required_fields(self):
+    def get_required_fields(self):
         """
         Checking if user has the required fields, which are:
         - if the user roles is equals to 'student' check if the user has:
@@ -436,7 +437,7 @@ class Profile(models.Model):
 
     def send_sms(self, message):
         if (
-            self.has_calling_code and self.phone_number_verified
+            self.has_calling_code() and self.phone_number_verified
         ) and settings.SMS_ENABLED:
             phone_number = f"{self.calling_code}{self.phone_number}"
             # from .tasks import send_async_sms
@@ -448,7 +449,7 @@ class Profile(models.Model):
             return True
         if not settings.SMS_ENABLED:
             print("SMS is disabled", flush=True)
-            print(self.has_calling_code and self.phone_number_verified, flush=True)
+            print(self.has_calling_code() and self.phone_number_verified, flush=True)
             print(self.phone_number, flush=True)
             print(self.calling_code, flush=True)
             print(message, flush=True)
@@ -1107,18 +1108,8 @@ class DeliveryPerson(models.Model):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
     # method to check if a order is able to be delivered by a delivery person
-    def can_deliver(self, order: Order):
+    def can_deliver(self, order: Order, flag=False):
         order_user: Profile = order.user
-        stores_status = order.stores_status
-        # check if atleast one of the store has accepted the order
-        has_accepted = False
-        for store_status in stores_status:
-            if store_status.get("status") == "ready-for-delivery":
-                has_accepted = True
-                break
-
-        if not has_accepted:
-            return False
 
         delivery_person_profile = self.profile
 

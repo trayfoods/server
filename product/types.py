@@ -428,7 +428,7 @@ class OrderType(DjangoObjectType):
         # set all price to 0 if the user is a delivery person
         if "DELIVERY_PERSON" in view_as:
             delivery_person = self.get_delivery_person(
-                current_user_profile.delivery_person.id
+                delivery_person_id=current_user_profile.delivery_person.id
             )
             if delivery_person:
                 # filter stores_infos to only the store that the delivery person is linked to

@@ -526,7 +526,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that all stores has accepted the order
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been accepted, we will notify you when it is out for delivery",
+                        message=f"Order {order.get_order_display_id()} has been accepted, we will notify you when it has been picked up by a delivery person",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -541,7 +541,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that some stores has accepted the order
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially accepted, we will notify you when some are out for delivery",
+                        message=f"Order {order.get_order_display_id()} has been partially accepted, we will notify you when some are picked up by delivery people",
                     )
 
                 # add the store total price to the store balance
@@ -773,7 +773,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that the order has been picked up
                     order.user.send_sms(
-                        message=f"Your order {order.get_order_display_id()} has been picked up"
+                        message=f"Your Order {order.get_order_display_id()} has been picked up"
                     )
                     did_update = order.update_store_status(store_id, "picked-up")
                     if not did_update:
@@ -792,12 +792,23 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             error="Order has not been marked as ready for delivery, cannot be marked as picked up"
                         )
 
-                    # check if the store has a delivery person
-                    order_delivery_people = order.delivery_people
-                    if len(order_delivery_people) == 0:
+                    # get the delivery person full name and phone number
+                    delivery_person = order.get_delivery_person(store_id=store_id)
+                    if not delivery_person:
                         return MarkOrderAsMutation(
                             error="No delivery person found for this order"
                         )
+                    
+                    delivery_person_qs = DeliveryPerson.objects.filter(
+                        id=delivery_person["id"]
+                    )
+
+                    if not delivery_person_qs.exists():
+                        return MarkOrderAsMutation(
+                            error="No delivery person found for this order"
+                        )
+                    
+                    delivery_person = delivery_person_qs.first()
 
                     # update the delivery person status to picked up
                     did_update = order.update_delivery_person_status(
@@ -810,14 +821,16 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
 
                     # notify the user that the order has been picked up
-                    order.user.send_sms(
-                        message=f"Your order {order.get_order_display_id()} has been picked up by a delivery person"
+                    order.notify_user(
+                        message="Your Order {} has been picked up by {}, {}".format(order.get_order_display_id(), delivery_person.profile.user.get_full_name(), delivery_person.profile.get_full_phone_number())
                     )
 
         # TODO: handle delivery person actions
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
             current_delivery_person_id = user.profile.delivery_person.id
-            delivery_person = order.get_delivery_person(current_delivery_person_id)
+            delivery_person = order.get_delivery_person(
+                delivery_person_id=current_delivery_person_id
+            )
 
             if delivery_person is not None:
                 delivery_person_store_id = delivery_person.get("storeId", None)

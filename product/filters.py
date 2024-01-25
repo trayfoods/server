@@ -88,6 +88,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
         model = Order
         fields = {"order_status": ["exact"]}
 
+
 class DeliveryPersonFilter(DateTypeFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
@@ -98,8 +99,10 @@ class DeliveryPersonFilter(DateTypeFilter, FilterSet):
                 id__in=[
                     order.id
                     for order in queryset
-                    if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
-                    == "READY_FOR_DELIVERY"
+                    if order.get_delivery_person(
+                        delivery_person_id=self.request.user.profile.delivery_person.id
+                    )["status"].upper()
+                    == "OUT-FOR-DELIVERY"
                 ]
             )
         elif value == "delivered":
@@ -108,7 +111,9 @@ class DeliveryPersonFilter(DateTypeFilter, FilterSet):
                 id__in=[
                     order.id
                     for order in queryset
-                    if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
+                    if order.get_delivery_person(
+                        delivery_person_id=self.request.user.profile.delivery_person.id
+                    )["status"].upper()
                     == "DELIVERED"
                 ]
             )
@@ -116,7 +121,9 @@ class DeliveryPersonFilter(DateTypeFilter, FilterSet):
             id__in=[
                 order.id
                 for order in queryset
-                if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
+                if order.get_delivery_person(
+                    delivery_person_id=self.request.user.profile.delivery_person.id
+                )["status"].upper()
                 == value.upper()
             ]
         )
