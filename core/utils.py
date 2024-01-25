@@ -34,6 +34,8 @@ class ProcessPayment:
             return self.refund_failed()
         elif self.event_type == "refund.processed":
             return self.refund_processed()
+        elif self.event_type == "refund.pending":
+            return HttpResponse("Refund pending", status=200)
         else:
             return HttpResponse("Invalid event type", status=400)
 
