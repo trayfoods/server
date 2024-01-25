@@ -12,6 +12,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 import sentry_sdk
+import ssl
 
 
 # FIREBASE SETTINGS
@@ -385,7 +386,6 @@ CORS_ALLOW_HEADERS = (
 
 # CELERY SETTINGS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379")
-import ssl
 
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     "ssl": True,
@@ -425,7 +425,7 @@ ALLOWED_ORDER_STATUS = [
     "no-delivery-person",
     "cancelled",
     "pending-refund",
-    "refunded",
     "failed-refund",
+    "refunded",
     "failed",
 ]

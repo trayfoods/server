@@ -69,7 +69,7 @@ class ProcessPayment:
         order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
         if overall_price > order_price:
-            order.order_payment_status = "refunded"
+            order.order_payment_status = "pending-refund"
             order.order_status = "failed"
             order.refund_user()
             order.save()
@@ -371,7 +371,9 @@ class ProcessPayment:
                     order=order,
                 )
 
-                order.update_store_status(store_id=store.id, status="refunded")
+                order.update_store_status(store_id=store.id, status="failed-refund")
+                # break the loop when one store has been marked as failed-refund
+                break
 
         store_statuses = []
         # get all order store status

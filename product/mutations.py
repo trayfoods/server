@@ -485,7 +485,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store_statuses = []
                 for store_status in current_order.stores_status:
                     # remove the current store status and append the new status
-                    if store_status["storeId"] == store_id:
+                    if str(store_status["storeId"]) == str(store_id):
                         store_status["status"] = new_status
                     store_statuses.append(store_status["status"])
                 return store_statuses
@@ -591,40 +591,74 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 for store_status in order.stores_status:
                     if store_status["status"] == "rejected":
                         # get the store id
-                        store_id = store_status["storeId"]
+                        store_id = store_status.get("storeId", None)
 
-                        # get the current store info
-                        current_store_info = None
-                        for store_info in order.stores_infos:
-                            if str(store_info["storeId"]) == str(store_id):
-                                current_store_info = store_info
-                                break
-
-                        # check if the current store info was found
-                        if current_store_info is None:
+                        if store_id is None:
                             return MarkOrderAsMutation(
-                                error="No store info found for this order, please contact support"
+                                error="No store id found for this order, please contact support"
                             )
 
-                        # get the store total normal price
-                        store_total_price = current_store_info["total"]["price"]
-                        # get the store plate price
-                        store_plate_price = current_store_info["total"]["plate_price"]
-
-                        overrall_store_price = Decimal(store_total_price) + Decimal(
-                            store_plate_price
-                        )
-
                         # refund the customer
-                        order.store_refund_customer(
-                            amount=overrall_store_price,
-                            store_id=store_id,
-                        )
+                        order.store_refund_customer(store_id)
 
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been rejected",
                 )
+            
+            # handle order cancelled
+            if action == "cancelled":
+                if order_status != "accepted":
+                    return MarkOrderAsMutation(
+                        error="You cannot cancel this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
+
+                store_statuses = get_store_statuses(order, store_id, "cancelled")
+                # check if all stores has cancelled the order
+                if all(status == "cancelled" for status in store_statuses):
+                    # update the order status to cancelled
+                    order.order_status = "cancelled"
+                    order.save()
+
+                    # notify the user that all stores has cancelled the order
+                    has_notified_user = order.notify_user(
+                        message=f"Order {order.get_order_display_id()} has been cancelled",
+                    )
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+
+                # check if some stores has cancelled the order
+                elif any(status == "cancelled" for status in store_statuses):
+                    # update the order status to partially cancelled
+                    order.order_status = "partially-cancelled"
+                    order.save()
+
+                    # notify the user that some stores has cancelled the order
+                    order.notify_user(
+                        message=f"Order {order.get_order_display_id()} has been partially cancelled",
+                    )
+
+                order.update_store_status(store_id, "cancelled")
+
+                # refund funds from each store that has cancelled the order
+                for store_status in order.stores_status:
+                    if store_status["status"] == "cancelled":
+                        # get the store id
+                        store_id = store_status.get("storeId", None)
+
+                        if store_id is None:
+                            return MarkOrderAsMutation(
+                                error="No store id found for this order, please contact support"
+                            )
+
+                        # refund the customer
+                        order.store_refund_customer(store_id)
+
+                return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
 
             # handle order ready for delivery
             if action == "ready-for-delivery":
@@ -729,49 +763,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     success_msg=f"Order {order.get_order_display_id()} has been marked as picked up",
                 )
 
-            # handle order cancelled
-            if action == "cancelled":
-                if order_status != "accepted":
-                    return MarkOrderAsMutation(
-                        error="You cannot cancel this order because it has been marked as {}".format(
-                            order_status.replace("-", " ").capitalize()
-                        )
-                    )
-
-                store_statuses = get_store_statuses(order, store_id, "cancelled")
-                # check if all stores has cancelled the order
-                if all(status == "cancelled" for status in store_statuses):
-                    # update the order status to cancelled
-                    order.order_status = "cancelled"
-                    order.save()
-
-                    # refund the user
-                    order.refund_user()
-
-                    # notify the user that all stores has cancelled the order
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been cancelled",
-                    )
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
-
-                # check if some stores has cancelled the order
-                elif any(status == "cancelled" for status in store_statuses):
-                    # update the order status to partially cancelled
-                    order.order_status = "partially-cancelled"
-                    order.save()
-
-                    # notify the user that some stores has cancelled the order
-                    order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially cancelled",
-                    )
-
-                order.update_store_status(store_id, "cancelled")
-
-                return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
-            
         # TODO: handle delivery person actions
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
             current_delivery_person_id = user.profile.delivery_person.id

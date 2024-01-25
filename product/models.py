@@ -532,16 +532,37 @@ class Order(models.Model):
                 return False
         return True
 
-    def store_refund_customer(self, amount: Decimal, store_id: int):
+    def store_refund_customer(self, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
         url = "https://api.paystack.co/refund"
 
+        # check if the store status is refunded
+
+        store_status = self.get_store_status(store_id)
+        if store_status in ["refunded", "pending-refund"]:
+            return {
+                "status": True,
+                "message": "The store has already refunded the customer",
+            }
+
+        # get store amount from the stores_infos json
+        current_store_info = self.get_store_info(store_id)
+        # get the store total normal price
+        store_total_price = current_store_info["total"]["price"]
+        # get the store plate price
+        store_plate_price = current_store_info["total"]["plate_price"]
+
+        amount = Decimal(store_total_price) + Decimal(
+            store_plate_price
+        )
+
+
         # convert the overall_price to kobo
-        kobo_ammount = amount * Decimal(100)
+        kobo_amount = amount * Decimal(100)
         data = {
             "transaction": self.order_track_id,
-            "amount": float(kobo_ammount),
+            "amount": float(kobo_amount),
         }
 
         headers = {
@@ -605,6 +626,13 @@ class Order(models.Model):
             return ["DELIVERY_PERSON"]
         else:
             return []
+        
+    def get_store_info(self, store_id):
+        stores_infos = self.stores_infos
+        for store_info in stores_infos:
+            if str(store_info["storeId"]) == str(store_id):
+                return store_info
+        raise ValueError("No store info found for this order, please contact support")
 
     def get_order_status(self, current_user_profile):
         order_status = self.order_status
