@@ -214,6 +214,7 @@ class ProcessPayment:
         return HttpResponse("Transfer Process Failed", status=400)
 
     def refund_processed(self):
+        print("refund_processed", self.event_data)
         """
         Refund has successfully been processed by the processor.
         """
@@ -307,6 +308,7 @@ class ProcessPayment:
         return HttpResponse("Refund successful", status=200)
 
     def refund_failed(self):
+        print("refund_failed", self.event_data)
         """
         Refund has failed to be processed by the processor.
         """
@@ -345,7 +347,6 @@ class ProcessPayment:
                 store = Store.objects.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
-
                     affected_stores.append(str(store.id))
 
                     store.wallet.put_transaction_on_hold(
