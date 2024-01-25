@@ -437,7 +437,7 @@ class Profile(models.Model):
     def send_sms(self, message):
         if self.has_calling_code and self.phone_number_verified:
             phone_number = f"{self.calling_code}{self.phone_number}"
-            from .tasks import send_async_sms
+            # from .tasks import send_async_sms
 
             logger.info(f"Sending SMS to user {self.user.username}")
             TWILIO_CLIENT.messages.create(

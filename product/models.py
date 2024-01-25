@@ -486,20 +486,20 @@ class Order(models.Model):
         shipping = self.shipping
         order_address = f"{shipping["address"]} {shipping["sch"]}"
         for delivery_person in delivery_people:
-            has_sent_push_notification = delivery_person.profile.send_push_notification(
-               title="New Order",
-               msg="You have a new order to deliver, check your account page for more details.",
-            )
-            if not has_sent_push_notification:
-                has_sent_sms = delivery_person.profile.send_sms(
-                    "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
-                        self.get_order_display_id(),
-                        order_address,
-                        f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
-                    )
+            # has_sent_push_notification = delivery_person.profile.send_push_notification(
+            #    title="New Order",
+            #    msg="You have a new order to deliver, check your account page for more details.",
+            # )
+            delivery_person.profile.send_sms(
+                "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
+                    self.get_order_display_id(),
+                    order_address,
+                    f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
                 )
-                if not has_sent_sms:
-                    self.update_store_status(store_id, "no-delivery-person")
+            )
+            # if not has_sent_push_notification:
+            #     if not has_sent_sms:
+            #         self.update_store_status(store_id, "no-delivery-person")
         return True
     
     def notify_user(self, message: str, title: str = "Order Status"):
