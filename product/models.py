@@ -650,15 +650,18 @@ class Order(models.Model):
             order_status = self.get_store_status(current_user_profile.store.id)
         return order_status.upper().replace("-", "_") if order_status else "NO_STATUS"
 
-    def update_store_status(self, store_id, status):
+    def update_store_status(self, store_id: int, status: str):
         stores_status = self.stores_status
+        has_updated = False
         for store_status in stores_status:
             if str(store_status["storeId"]) == str(store_id):
                 store_status["status"] = status
+                has_updated = True
                 break
         self.stores_status = stores_status
         self.save()
 
+        return has_updated
 
     # get store_status from the stores_status json
     def get_store_status(self, store_id):
@@ -667,7 +670,7 @@ class Order(models.Model):
             if str(store_status["storeId"]) == str(store_id):
                 return store_status.get("status")
         return None
-    
+
     # get delivery_person from the delivery_people json
     def get_delivery_person(self, delivery_person_id):
         delivery_people = self.delivery_people
@@ -675,15 +678,39 @@ class Order(models.Model):
             if str(delivery_person["id"]) == str(delivery_person_id):
                 return delivery_person
         return None
-    
-    def update_delivery_person_status(self, delivery_person_id, status):
+
+    def update_delivery_person_status(
+        self, status: str, store_id: int = None, delivery_person_id: str = None
+    ):
         delivery_people = self.delivery_people
+        has_updated = False
         for delivery_person in delivery_people:
-            if str(delivery_person["id"]) == str(delivery_person_id):
+            if (
+                delivery_person_id
+                and store_id
+                and (
+                    str(delivery_person["id"]) == str(delivery_person_id)
+                    and str(delivery_person["storeId"]) == str(store_id)
+                )
+            ):
                 delivery_person["status"] = status
+                has_updated = True
+                break
+
+            if store_id and (str(delivery_person["storeId"]) == str(store_id)):
+                delivery_person["status"] = status
+                has_updated = True
+                break
+            elif delivery_person_id and (
+                str(delivery_person["id"]) == str(delivery_person_id)
+            ):
+                delivery_person["status"] = status
+                has_updated = True
                 break
         self.delivery_people = delivery_people
         self.save()
+
+        return has_updated
 
     # create a payment link for the order
     def create_payment_link(self):

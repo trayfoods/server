@@ -29,7 +29,7 @@ class ItemFilter(FilterSet):
         }
 
 
-class OrderFilter(FilterSet):
+class DefaultOrderFilter(FilterSet):
     year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021
     month = NumberFilter(
         field_name="created_at", lookup_expr="month"
@@ -40,22 +40,14 @@ class OrderFilter(FilterSet):
 
     date_type = DateTypeFilter(field_name="created_at")
 
+
+class OrderFilter(DefaultOrderFilter, FilterSet):
     class Meta:
         model = Order
         fields = {"order_status": ["exact"]}
 
 
-class StoreOrderFilter(FilterSet):
-    year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021
-    month = NumberFilter(
-        field_name="created_at", lookup_expr="month"
-    )  # eg. 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
-    day = NumberFilter(
-        field_name="created_at", lookup_expr="day"
-    )  # eg. 1, 2, 3, 4, 5, 6, 7
-
-    date_type = DateTypeFilter(field_name="created_at")
-
+class StoreOrderFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
@@ -95,3 +87,36 @@ class StoreOrderFilter(FilterSet):
     class Meta:
         model = Order
         fields = {"order_status": ["exact"]}
+
+class DeliveryPersonFilter(DateTypeFilter, FilterSet):
+    order_status = CharFilter(method="filter_by_order_status")
+
+    def filter_by_order_status(self, queryset, name, value):
+        if value == "ongoing":
+            # filter by ready for pickup or delivery
+            return queryset.filter(
+                id__in=[
+                    order.id
+                    for order in queryset
+                    if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
+                    == "READY_FOR_DELIVERY"
+                ]
+            )
+        elif value == "delivered":
+            # filter by completed
+            return queryset.filter(
+                id__in=[
+                    order.id
+                    for order in queryset
+                    if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
+                    == "DELIVERED"
+                ]
+            )
+        return queryset.filter(
+            id__in=[
+                order.id
+                for order in queryset
+                if order.get_delivery_person(self.request.user.profile.delivery_person.id)["status"].upper()
+                == value.upper()
+            ]
+        )

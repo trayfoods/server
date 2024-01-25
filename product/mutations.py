@@ -552,7 +552,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order=order,
                 )
 
-                order.update_store_status(store_id, "accepted")
+                did_update = order.update_store_status(store_id, "accepted")
+
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -585,7 +590,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         message=f"Order {order.get_order_display_id()} has been partially rejected",
                     )
 
-                order.update_store_status(store_id, "rejected")
+                did_update = order.update_store_status(store_id, "rejected")
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
 
                 # refund funds from each store that has rejected the order
                 for store_status in order.stores_status:
@@ -642,7 +651,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         message=f"Order {order.get_order_display_id()} has been partially cancelled",
                     )
 
-                order.update_store_status(store_id, "cancelled")
+                did_update = order.update_store_status(store_id, "cancelled")
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
 
                 # refund funds from each store that has cancelled the order
                 for store_status in order.stores_status:
@@ -688,7 +701,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while notifying delivery people, please try again later"
                     )
-                order.update_store_status(store_id, "ready-for-delivery")
+                did_update = order.update_store_status(store_id, "ready-for-delivery")
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been marked as ready for delivery",
@@ -734,7 +751,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         message=f"Order {order.get_order_display_id()} is partially ready for pickup",
                     )
 
-                order.update_store_status(store_id, "ready-for-pickup")
+                did_update = order.update_store_status(store_id, "ready-for-pickup")
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -743,25 +764,55 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # handle order picked up
             if action == "picked-up":
-                if shipping and shipping["address"] != "pickup":
-                    return MarkOrderAsMutation(
-                        error="Order address is not pickup, cannot be marked as picked up"
+                if shipping and shipping["address"] == "pickup":
+                    # check if the order has not been marked as ready for pickup
+                    if order_status != "ready-for-pickup":
+                        return MarkOrderAsMutation(
+                            error="Order has not been marked as ready for pickup, cannot be marked as picked up"
+                        )
+
+                    # notify the user that the order has been picked up
+                    order.user.send_sms(
+                        message=f"Your order {order.get_order_display_id()} has been picked up"
                     )
-                # check if the order has not been marked as ready for pickup
-                if order_status != "ready-for-pickup":
+                    did_update = order.update_store_status(store_id, "picked-up")
+                    if not did_update:
+                        return MarkOrderAsMutation(
+                            error="An error occured while updating order status, please try again later"
+                        )
+
                     return MarkOrderAsMutation(
-                        error="Order has not been marked as ready for pickup, cannot be marked as picked up"
+                        success=True,
+                        success_msg=f"Order {order.get_order_display_id()} has been marked as picked up",
+                    )
+                else:
+                    # check if the order has not been marked as ready for delivery
+                    if order_status != "ready-for-delivery":
+                        return MarkOrderAsMutation(
+                            error="Order has not been marked as ready for delivery, cannot be marked as picked up"
+                        )
+
+                    # check if the store has a delivery person
+                    order_delivery_people = order.delivery_people
+                    if len(order_delivery_people) == 0:
+                        return MarkOrderAsMutation(
+                            error="No delivery person found for this order"
+                        )
+
+                    # update the delivery person status to picked up
+                    did_update = order.update_delivery_person_status(
+                        store_id=store_id, status="picked-up"
                     )
 
-                # handle order picked up
-                order.user.send_sms(
-                    message=f"Your order {order.get_order_display_id()} has been picked up"
-                )
-                order.update_store_status(store_id, "picked-up")
-                return MarkOrderAsMutation(
-                    success=True,
-                    success_msg=f"Order {order.get_order_display_id()} has been marked as picked up",
-                )
+                    if not did_update:
+                        return MarkOrderAsMutation(
+                            error="An error occured while updating delivery person status, please try again later"
+                        )
+
+                    # notify the user that the order has been picked up
+                    order.user.send_sms(
+                        message=f"Your order {order.get_order_display_id()} has been picked up by a delivery person"
+                    )
 
         # TODO: handle delivery person actions
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
@@ -776,12 +827,23 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
                 order_delivery_people = order.delivery_people
 
-                order.update_delivery_person_status(
-                    current_delivery_person_id, "delivered"
+                did_update = order.update_delivery_person_status(
+                    delivery_person_id=current_delivery_person_id, status="delivered"
                 )
 
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order delivery status, please try again later"
+                    )
+
                 # update store status that the delivery person has delivered the order
-                order.update_store_status(delivery_person_store_id, "delivered")
+                did_update = order.update_store_status(
+                    delivery_person_store_id, "delivered"
+                )
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
 
                 # get delivery_fee by dividing the delivery fee by the number of delivery people
                 delivery_fee = order.delivery_fee / len(order_delivery_people)
