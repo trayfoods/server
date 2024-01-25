@@ -798,7 +798,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         return MarkOrderAsMutation(
                             error="No delivery person found for this order"
                         )
-                    
+
                     delivery_person_qs = DeliveryPerson.objects.filter(
                         id=delivery_person["id"]
                     )
@@ -807,7 +807,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         return MarkOrderAsMutation(
                             error="No delivery person found for this order"
                         )
-                    
+
                     delivery_person = delivery_person_qs.first()
 
                     # update the delivery person status to picked up
@@ -822,12 +822,19 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that the order has been picked up
                     order.notify_user(
-                        message="Your Order {} has been picked up by {}, {}".format(order.get_order_display_id(), delivery_person.profile.user.get_full_name(), delivery_person.profile.get_full_phone_number())
+                        message="Your Order {} has been picked up by {}, {}".format(
+                            order.get_order_display_id(),
+                            delivery_person.profile.user.get_full_name(),
+                            delivery_person.profile.get_full_phone_number(),
+                        )
                     )
 
         # TODO: handle delivery person actions
-        if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
-            current_delivery_person_id = user.profile.delivery_person.id
+        if "DELIVERY_PERSON" in view_as:
+            current_delivery_person = user.profile.get_delivery_person()
+            if current_delivery_person is None:
+                return MarkOrderAsMutation(error="You are not a delivery person")
+            current_delivery_person_id = current_delivery_person.id
             delivery_person = order.get_delivery_person(
                 delivery_person_id=current_delivery_person_id
             )
@@ -861,7 +868,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # get delivery_fee by dividing the delivery fee by the number of delivery people
                 delivery_fee = order.delivery_fee / len(order_delivery_people)
 
-                delivery_person: DeliveryPerson = user.profile.delivery_person
+                delivery_person: DeliveryPerson = user.profile.get_delivery_person()
 
                 # credit delivery person wallet
                 credit_kwargs = {

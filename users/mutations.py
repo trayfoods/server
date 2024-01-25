@@ -104,7 +104,7 @@ class UpdateOnlineStatusMutation(Output, graphene.Mutation):
             # check if the user is a delivery person
             if not "DELIVERY_PERSON" in roles:
                 return UpdateOnlineStatusMutation(error="You are not a delivery person")
-            delivery_person: DeliveryPerson = user.profile.delivery_person
+            delivery_person: DeliveryPerson = user.profile.get_delivery_person()
             if delivery_person.status == "suspended":
                 delivery_person.status = "offline"
                 delivery_person.save()
@@ -1118,7 +1118,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order.is_pickup():
             return AcceptDeliveryMutation(error="This order can not be delivered")
 
-        delivery_person = user_profile.delivery_person
+        delivery_person = user_profile.get_delivery_person()
         order_delivery_people = order.delivery_people
 
         # check if the delivery person is already linked to the order

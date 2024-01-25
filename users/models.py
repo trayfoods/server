@@ -307,7 +307,7 @@ class Profile(models.Model):
             self.calling_code = calling_code
             self.save()
         return True if self.calling_code else False
-    
+
     def get_full_phone_number(self):
         return f"{self.calling_code}{self.phone_number}"
 
@@ -375,7 +375,7 @@ class Profile(models.Model):
 
     @property
     def is_vendor(self):
-        return Store.objects.filter(vendor=self).exists()
+        return self.store is not None
 
     @property
     def store(self):
@@ -384,8 +384,8 @@ class Profile(models.Model):
     def get_wallet(self):
         return Wallet.objects.filter(user=self).first()
 
-    @property
-    def delivery_person(self):
+
+    def get_delivery_person(self):
         return DeliveryPerson.objects.filter(profile=self).first()
 
     @property

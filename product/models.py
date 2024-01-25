@@ -642,7 +642,7 @@ class Order(models.Model):
         view_as = self.view_as(current_user_profile)
         if "DELIVERY_PERSON" in view_as:
             delivery_person = self.get_delivery_person(
-                delivery_person_id=current_user_profile.delivery_person.id
+                delivery_person_id=current_user_profile.get_delivery_person().id
             )
             if delivery_person:
                 order_status = delivery_person["status"]

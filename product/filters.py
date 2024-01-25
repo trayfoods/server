@@ -5,9 +5,6 @@ from product.models import Item, Order
 
 class ItemFilter(FilterSet):
     type = CharFilter(field_name="product_type__slug", lookup_expr="exact")
-    # category = CharFilter(
-    #     field_name="product_categories__slug", lookup_expr="exact"
-    # )
 
     store_nickname = CharFilter(
         field_name="product_creator__store_nickname", lookup_expr="exact"
@@ -89,7 +86,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
         fields = {"order_status": ["exact"]}
 
 
-class DeliveryPersonFilter(DateTypeFilter, FilterSet):
+class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
@@ -100,21 +97,13 @@ class DeliveryPersonFilter(DateTypeFilter, FilterSet):
                     order.id
                     for order in queryset
                     if order.get_delivery_person(
-                        delivery_person_id=self.request.user.profile.delivery_person.id
+                        delivery_person_id=self.request.user.profile.get_delivery_person().id
                     )["status"].upper()
                     == "OUT-FOR-DELIVERY"
-                ]
-            )
-        elif value == "delivered":
-            # filter by completed
-            return queryset.filter(
-                id__in=[
-                    order.id
-                    for order in queryset
-                    if order.get_delivery_person(
-                        delivery_person_id=self.request.user.profile.delivery_person.id
+                    or order.get_delivery_person(
+                        delivery_person_id=self.request.user.profile.get_delivery_person().id
                     )["status"].upper()
-                    == "DELIVERED"
+                    == "PICKED-UP"
                 ]
             )
         return queryset.filter(
@@ -122,7 +111,7 @@ class DeliveryPersonFilter(DateTypeFilter, FilterSet):
                 order.id
                 for order in queryset
                 if order.get_delivery_person(
-                    delivery_person_id=self.request.user.profile.delivery_person.id
+                    delivery_person_id=self.request.user.profile.get_delivery_person().id
                 )["status"].upper()
                 == value.upper()
             ]

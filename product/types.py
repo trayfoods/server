@@ -7,7 +7,7 @@ from trayapp.permissions import permission_checker, IsAuthenticated
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
 from users.types import StoreType, School
-from .filters import ItemFilter, OrderFilter, StoreOrderFilter
+from .filters import ItemFilter, OrderFilter, StoreOrderFilter, DeliveryPersonFilter
 
 
 class ItemImageType(DjangoObjectType):
@@ -428,7 +428,7 @@ class OrderType(DjangoObjectType):
         # set all price to 0 if the user is a delivery person
         if "DELIVERY_PERSON" in view_as:
             delivery_person = self.get_delivery_person(
-                delivery_person_id=current_user_profile.delivery_person.id
+                delivery_person_id=current_user_profile.get_delivery_person().id
             )
             if delivery_person:
                 # filter stores_infos to only the store that the delivery person is linked to
@@ -532,3 +532,39 @@ class StoreOrderNode(OrderType, DjangoObjectType):
                 items = store_info["items"]
                 break
         return items
+
+
+class DeliveryPersonOrderNode(OrderType, DjangoObjectType):
+    class Meta:
+        model = Order
+        interfaces = (graphene.relay.Node,)
+        filterset_class = DeliveryPersonFilter
+
+    def resolve_stores_infos(self, info):
+        stores_infos = self.stores_infos
+
+        current_user = info.context.user
+        current_user_profile = current_user.profile
+        view_as = self.view_as(current_user_profile)
+
+        # set all price to 0 if the user is a delivery person
+        if "DELIVERY_PERSON" in view_as:
+            delivery_person = self.get_delivery_person(
+                delivery_person_id=current_user_profile.get_delivery_person().id
+            )
+            if delivery_person:
+                # filter stores_infos to only the store that the delivery person is linked to
+                stores_infos = [
+                    store_info
+                    for store_info in stores_infos
+                    if str(store_info["storeId"]) == str(delivery_person["storeId"])
+                ]
+            for store_info in stores_infos:
+                store_info["total"]["price"] = 0
+                store_info["total"]["platePrice"] = 0
+
+                # set all item price to 0
+                for item in store_info["items"]:
+                    item["productPrice"] = 0
+
+        return stores_infos
