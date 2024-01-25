@@ -525,19 +525,16 @@ class Order(models.Model):
             "amount": float(kobo_ammount),
         }
 
-        print(data)
-
         headers = {
             "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
         }
 
         response = requests.post(url, data=data, headers=headers)
         response = response.json()
-        print("refund_user", response)
 
         if response["status"] == True:
-            self.order_payment_status = "pending-refund"
             self.update_store_status(store_id, "pending-refund")
+            self.order_payment_status = "pending-refund"
             self.save()
 
             # notify the user that a refund has been initiated
