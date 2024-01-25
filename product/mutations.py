@@ -516,14 +516,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     store_plate_price
                 )
 
-                # add the store total price to the store balance
-                store.wallet.add_balance(
-                    amount=overrall_store_price,
-                    title="New Order Payment",
-                    desc=f"Payment for Order {order.get_order_display_id()} was added to wallet",
-                    order=order,
-                )
-
                 store_statuses = get_store_statuses(order, store_id, "accepted")
 
                 # check if all stores has accepted the order
@@ -551,6 +543,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     has_notified_user = order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been partially accepted",
                     )
+
+                # add the store total price to the store balance
+                store.wallet.add_balance(
+                    amount=overrall_store_price,
+                    title="New Order Payment",
+                    desc=f"Payment for Order {order.get_order_display_id()} was added to wallet",
+                    order=order,
+                )
 
                 order.update_store_status(store_id, "accepted")
 
@@ -738,10 +738,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
                     )
 
-                # handle order cancelled
-
                 store_statuses = get_store_statuses(order, store_id, "cancelled")
-
                 # check if all stores has cancelled the order
                 if all(status == "cancelled" for status in store_statuses):
                     # update the order status to cancelled
@@ -774,7 +771,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.update_store_status(store_id, "cancelled")
 
                 return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
-
+            
+        # TODO: handle delivery person actions
         if "DELIVERY_PERSON" in view_as and user.profile.delivery_person:
             current_delivery_person_id = user.profile.delivery_person.id
             delivery_person = order.get_delivery_person(current_delivery_person_id)

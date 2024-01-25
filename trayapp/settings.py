@@ -95,6 +95,7 @@ else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
 
 ALLOWED_HOSTS = ["api.trayfoods.com", "localhost"]
+SMS_ENABLED = False
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
 CSRF_COOKIE_SECURE = DEBUG == False
@@ -418,7 +419,7 @@ ALLOWED_ORDER_STATUS = [
     "rejected",
     "ready-for-pickup",  # also know as "Awaiting Pickup"
     "ready-for-delivery",
-    "out-for-delivery",  # also know as "Assigned to Delivery Person"
+    "out-for-delivery",  # also know as "Assigned to Delivery Person & In Transit"
     "picked-up",
     "delivered",
     "no-delivery-person",

@@ -363,7 +363,6 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store.facebook_handle = facebook_handle
         store.save()
 
-        print(store)
         if store_open_hours:
             # delete all the store open hours
             store.store_open_hours.all().delete()
@@ -451,7 +450,6 @@ class UpdatePersonalInfoMutation(Output, graphene.Mutation):
         info,
         **kwargs,
     ):
-        print(kwargs)
         first_name = kwargs.get("first_name")
         last_name = kwargs.get("last_name")
         email = kwargs.get("email")
@@ -472,8 +470,6 @@ class UpdatePersonalInfoMutation(Output, graphene.Mutation):
 
         if last_name:
             user.last_name = last_name
-
-        print(first_name, last_name)
 
         user.save()
 
@@ -1106,34 +1102,25 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
         """
         user = info.context.user
-        user_profile = user.profile
+        user_profile: Profile = user.profile
+        order_track_id = order_track_id.strip()
+
+        order_qs = Order.objects.filter(order_track_id=order_track_id)
+
+        if not order_qs.exists():
+            return AcceptDeliveryMutation(error="This order Does not exists")
 
         if not "DELIVERY_PERSON" in user.roles:
             return AcceptDeliveryMutation(error="You are not a delivery personnal")
 
-        delivery_person = user_profile.delivery_person
-
-        order = Order.objects.filter(order_track_id=order_track_id).first()
-
-        if order is None:
-            return AcceptDeliveryMutation(error="This order Does not exists")
+        order = order_qs.first()
 
         if order.is_pickup():
             return AcceptDeliveryMutation(error="This order can not be delivered")
-
-        if order.order_status == "cancelled" or order.order_payment_status == "failed":
-            return AcceptDeliveryMutation(error="Order did not go through")
-
-        if order.order_status == "delivered":
-            return AcceptDeliveryMutation(error="Order is already delivered")
-
+        
+        
+        delivery_person = user_profile.delivery_person
         order_delivery_people = order.delivery_people
-        # the delivery people json format is as follows
-        # [{
-        #     "id": delivery_person,
-        #     "status": "out-for-delivery",
-        #     "storeId": store.id,
-        # }]
 
         # check if the delivery person is already linked to the order
         order_delivery_person = order.get_delivery_person(delivery_person.id)

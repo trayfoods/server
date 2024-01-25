@@ -127,7 +127,9 @@ class Item(models.Model):
 
     def save(self, *args, **kwargs):  # auto create product_slug
         if not self.product_slug:
-            self.product_slug = slugify(self.product_name + "-" + str(uuid.uuid4().hex)[:6])
+            self.product_slug = slugify(
+                self.product_name + "-" + str(uuid.uuid4().hex)[:6]
+            )
 
         if not self.product_creator:
             self.product_creator = self.request.user.profile.store
@@ -299,7 +301,7 @@ class Order(models.Model):
     )
     # the delivery people json format is as follows
     # [{
-    #     "id": delivery_person,
+    #     "id": delivery_person.id,
     #     "status": "out-for-delivery",
     #     "storeId": store.id,
     # }]
@@ -320,15 +322,15 @@ class Order(models.Model):
         blank=True,
         null=True,
         choices=(
-            ("failed", "failed"), 
+            ("failed", "failed"),
             ("success", "success"),
-              ("pending", "pending"),
-                ("pending-refund", "pending-refund"), 
-                 ("partially-refunded", "partially-refunded"),
-                 ("refunded", "refunded"),
-                 ("partially-failed-refund", "partially-failed-refund"),
-                 ("failed-refund", "failed-refund"),
-            ),
+            ("pending", "pending"),
+            ("pending-refund", "pending-refund"),
+            ("partially-refunded", "partially-refunded"),
+            ("refunded", "refunded"),
+            ("partially-failed-refund", "partially-failed-refund"),
+            ("failed-refund", "failed-refund"),
+        ),
     )
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
@@ -391,7 +393,7 @@ class Order(models.Model):
 
     def __str__(self):
         return "Order #" + str(self.order_track_id)
-    
+
     # get order display id
     def get_order_display_id(self):
         order_track_id = self.order_track_id
@@ -474,7 +476,6 @@ class Order(models.Model):
             self.save()
         return self.order_confirm_pin
 
-
     def is_pickup(self):
         shipping = self.shipping
         return (
@@ -482,26 +483,44 @@ class Order(models.Model):
         )
 
     def notify_delivery_people(self, delivery_people, store_id):
-        print("notify_delivery_people", delivery_people)
+        from users.models import Profile, School
+
+        print("start notify_delivery_people")
         shipping = self.shipping
-        order_address = f"{shipping["address"]} {shipping["sch"]}"
+        if not shipping:
+            raise ValueError("Invalid shipping format")
+
+        address = shipping.get("address")
+        sch = shipping.get("sch", None)
+
+        if sch:
+            sch = str(sch).strip()
+            # get the school name
+            sch = School.objects.get(slug=sch).name
+
+        order_address = "{}{}".format(address, f", {sch}" if sch else "")
+        print("delivery_people", delivery_people)
         for delivery_person in delivery_people:
-            # has_sent_push_notification = delivery_person.profile.send_push_notification(
-            #    title="New Order",
-            #    msg="You have a new order to deliver, check your account page for more details.",
-            # )
-            delivery_person.profile.send_sms(
-                "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.{}".format(
-                    self.get_order_display_id(),
-                    order_address,
-                    f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
-                )
+            delivery_person_profile: Profile = delivery_person.profile
+            print("delivery_person.profile", delivery_person_profile)
+            has_sent_push_notification = delivery_person_profile.send_push_notification(
+                title="New Order",
+                msg="You have a new order to deliver, check your account page for more details.",
             )
-            # if not has_sent_push_notification:
-            #     if not has_sent_sms:
-            #         self.update_store_status(store_id, "no-delivery-person")
+            if not has_sent_push_notification:
+                print("has_sent_push_notification", has_sent_push_notification)
+                has_sent_sms = delivery_person_profile.send_sms(
+                    "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.\n{}".format(
+                        self.get_order_display_id(),
+                        order_address.strip(),
+                        f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
+                    )
+                )
+                if not has_sent_sms:
+                    self.update_store_status(store_id, "no-delivery-person")
+                    return False
         return True
-    
+
     def notify_user(self, message: str, title: str = "Order Status"):
         has_sent_push_notification = self.user.send_push_notification(
             title=title,
@@ -512,7 +531,7 @@ class Order(models.Model):
             if not has_sent_sms:
                 return False
         return True
-    
+
     def store_refund_customer(self, amount: Decimal, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
 
@@ -549,6 +568,7 @@ class Order(models.Model):
     @classmethod
     def get_orders_by_store(cls, store):
         return cls.objects.filter(linked_stores=store, order_payment_status="success")
+
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod
     def get_orders_by_delivery_person(cls, delivery_person):

@@ -435,14 +435,24 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        if self.has_calling_code and self.phone_number_verified:
+        if (
+            self.has_calling_code and self.phone_number_verified
+        ) and settings.SMS_ENABLED:
             phone_number = f"{self.calling_code}{self.phone_number}"
             # from .tasks import send_async_sms
 
-            logger.info(f"Sending SMS to user {self.user.username}")
+            # logger.info(f"Sending SMS to user {self.user.username}")
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )
+            return True
+        if not settings.SMS_ENABLED:
+            print("SMS is disabled", flush=True)
+            print(self.has_calling_code and self.phone_number_verified, flush=True)
+            print(self.phone_number, flush=True)
+            print(self.calling_code, flush=True)
+            print(message, flush=True)
+            print("End of SMS is disabled", flush=True)
             return True
 
     def send_push_notification(self, title, msg, data=None):
@@ -802,7 +812,7 @@ class Wallet(models.Model):
         return transaction
 
     # put transaction on hold
-    def put_transaction_on_hold(self, transaction_id:str=None, order=None):
+    def put_transaction_on_hold(self, transaction_id: str = None, order=None):
         # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
@@ -1093,7 +1103,7 @@ class DeliveryPerson(models.Model):
     def get_active_orders_count(self):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
-    # function to check if a order is able to be delivered by a delivery person
+    # method to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
         order_user: Profile = order.user
         stores_status = order.stores_status
@@ -1167,7 +1177,7 @@ class DeliveryPerson(models.Model):
 
         return True
 
-    # function to get delivery people that can deliver a order
+    # method to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
         delivery_people = DeliveryPerson.objects.filter(
