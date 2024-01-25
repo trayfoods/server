@@ -219,29 +219,37 @@ class ProcessPayment:
         """
 
         # get the values from event_data
-        order_id = self.event_data["transaction_reference"]
+        order_id = self.event_data.get("transaction_reference", None)
+        order_price = self.event_data.get("amount", None)
 
-        order_price = self.event_data["amount"]
+        # check if the order_id and order_price is not None
+        if not order_id or not order_price:
+            return HttpResponse("Invalid data", status=400)
+
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
+        if not Order.objects.filter(
+            order_track_id=order_id, order_payment_status="pending-refund"
+        ).exists():
+            return HttpResponse("Order does not exist", status=404)
+
         # get the order from the database
-        order_qs = Order.objects.filter(
+        order = Order.objects.get(
             order_track_id=order_id, order_payment_status="pending-refund"
         )
 
-        # check if the order exists
-        if not order_qs.exists():
-            return HttpResponse("Order does not exist", status=404)
-
-        order = order_qs.first()
         # deduct the amount from all stores that are involved in the order
         stores_infos = order.stores_infos
-        store_statuses = []
+        affected_stores = []
         for store_info in stores_infos:
-            store_status = order.get_store_status(store_info["storeId"])
+            store_id = store_info.get("storeId")
+            if not store_id:
+                continue
+
+            store_status = order.get_store_status(store_id)
             if store_status == "pending-refund":
-                store = Store.objects.filter(id=int(store_info["storeId"])).first()
+                store = Store.objects.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
                     # get the store total normal price
@@ -253,6 +261,8 @@ class ProcessPayment:
                         store_plate_price
                     )
 
+                    affected_stores.append(str(store.id))
+
                     store.wallet.deduct_balance(
                         amount=overrall_store_price,
                         desc="Refund for order {}".format(order.get_order_display_id()),
@@ -260,19 +270,20 @@ class ProcessPayment:
                     )
 
                     order.update_store_status(store_id=store.id, status="refunded")
-                    # update the store status in the store_statuses list
-                    store_statuses.append({"storeId": store.id, "status": "refunded"})
 
-        
+        store_statuses = []
         # get all order store status
         for status in order.stores_status:
+            # replace affected stores status with refunded
+            if str(status["storeId"]) in affected_stores:
+                status["status"] = "refunded"
+                store_statuses.append(status)
             store_statuses.append(status["status"])
 
         # check if all the stores has refunded to the user
         if all(status == "refunded" for status in store_statuses):
             # update the order payment status
             order.order_payment_status = "refunded"
-            order.order_status = "failed"
             order.save()
             # notify the user
             order.notify_user(
@@ -281,8 +292,100 @@ class ProcessPayment:
                 )
             )
 
+        # check if some stores has refunded to the user
+        if any(status == "refunded" for status in store_statuses):
+            # update the order payment status
+            order.order_payment_status = "partially-refunded"
+            order.save()
+            # notify the user
+            order.notify_user(
+                message="Order {} has been partially refunded".format(
+                    order.get_order_display_id()
+                )
+            )
+
+        return HttpResponse("Refund successful", status=200)
+
     def refund_failed(self):
-        pass
+        """
+        Refund has failed to be processed by the processor.
+        """
+
+        # get the values from event_data
+        order_id = self.event_data.get("transaction_reference", None)
+        order_price = self.event_data.get("amount", None)
+
+        # check if the order_id and order_price is not None
+        if not order_id or not order_price:
+            return HttpResponse("Invalid data", status=400)
+
+        # convert the order_price to a decimal and divide it by 100
+        order_price = Decimal(order_price) / 100
+
+        if not Order.objects.filter(
+            order_track_id=order_id, order_payment_status="pending-refund"
+        ).exists():
+            return HttpResponse("Order does not exist", status=404)
+
+        # get the order from the database
+        order = Order.objects.get(
+            order_track_id=order_id, order_payment_status="pending-refund"
+        )
+
+        # deduct the amount from all stores that are involved in the order
+        stores_infos = order.stores_infos
+        affected_stores = []
+        for store_info in stores_infos:
+            store_id = store_info.get("storeId")
+            if not store_id:
+                continue
+
+            store_status = order.get_store_status(store_id)
+            if store_status == "pending-refund":
+                store = Store.objects.filter(id=int(store_id)).first()
+                # check if the store status is "pending-refund"
+                if store:
+
+                    affected_stores.append(str(store.id))
+
+                    store.wallet.put_transaction_on_hold(
+                        order=order,
+                    )
+
+                    order.update_store_status(store_id=store.id, status="refunded")
+
+        store_statuses = []
+        # get all order store status
+        for status in order.stores_status:
+            # replace affected stores status with failed-refund
+            if str(status["storeId"]) in affected_stores:
+                status["status"] = "failed-refund"
+                store_statuses.append(status)
+            store_statuses.append(status["status"])
+
+        # check if all the stores has failed-refund to the user
+        if all(status == "failed-refund" for status in store_statuses):
+            # update the order payment status
+            order.order_payment_status = "failed-refund"
+            order.save()
+            # notify the user
+            order.notify_user(
+                message="Order {} refund has failed".format(
+                    order.get_order_display_id()
+                )
+            )
+
+        # check if some stores has failed-refund to the user
+        if any(status == "failed-refund" for status in store_statuses):
+            # update the order payment status
+            order.order_payment_status = "partially-failed-refund"
+            order.save()
+            # notify the user
+            order.notify_user(
+                message="Order {} refund has partially failed".format(
+                    order.get_order_display_id()
+                )
+            )
 
 
 def get_paystack_balance(currency="NGN"):

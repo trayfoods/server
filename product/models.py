@@ -315,7 +315,7 @@ class Order(models.Model):
     order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_url = models.CharField(max_length=200, editable=False, blank=True)
     order_payment_status = models.CharField(
-        max_length=20,
+        max_length=25,
         editable=False,
         blank=True,
         null=True,
@@ -325,7 +325,9 @@ class Order(models.Model):
               ("pending", "pending"),
                 ("pending-refund", "pending-refund"), 
                  ("partially-refunded", "partially-refunded"),
-                 ("refunded", "refunded")
+                 ("refunded", "refunded"),
+                 ("partially-failed-refund", "partially-failed-refund"),
+                 ("failed-refund", "failed-refund"),
             ),
     )
 

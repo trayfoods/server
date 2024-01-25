@@ -677,7 +677,7 @@ class Wallet(models.Model):
             order_transaction = self.get_transactions().filter(order=order).first()
             if order_transaction:
                 raise Exception("Order already has a transaction")
-            
+
         # create a transaction
         transaction = Transaction.objects.create(
             wallet=self,
@@ -707,9 +707,15 @@ class Wallet(models.Model):
 
         total_amount = amount + transfer_fee
 
+        if not amount:
+            raise Exception("Amount is required")
+
         if order:
             # handle order refund logic
             order_transaction = self.get_transactions().filter(order=order).first()
+
+            if not order_transaction:
+                raise Exception("Order does not have a transaction")
 
             if order_transaction.status in ["settled", "success"]:
                 # debit the wallet
@@ -717,6 +723,7 @@ class Wallet(models.Model):
                 self.save()
 
                 # update the order transaction
+                order_transaction.amount = total_amount
                 order_transaction.status = "success"
                 order_transaction._type = "debit"
                 order_transaction.save()
@@ -738,8 +745,8 @@ class Wallet(models.Model):
             raise Exception("Insufficient funds")
 
         # check if transaction exists
-        transaction = Transaction.objects.get(
-            wallet=self, transaction_id=transaction_id, _type="debit"
+        transaction = self.get_transactions().objects.get(
+            transaction_id=transaction_id, _type="debit"
         )
 
         # debit the wallet
@@ -767,7 +774,11 @@ class Wallet(models.Model):
         order = kwargs.get("order", None)
         transaction_id = kwargs.get("transaction_id", None)
 
-        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+        transaction = (
+            self.get_transactions()
+            .objects.filter(transaction_id=transaction_id)
+            .first()
+        )
 
         amount = Decimal(amount)
 
@@ -788,6 +799,31 @@ class Wallet(models.Model):
         transaction.title = title
         transaction.desc = desc
         transaction.save()
+        return transaction
+
+    # put transaction on hold
+    def put_transaction_on_hold(self, transaction_id:str=None, order=None):
+        # transaction_id and order cannot be set at the same time
+        if transaction_id and order:
+            raise Exception("Transaction ID and Order cannot be set at the same time")
+
+        if transaction_id:
+            transaction = self.get_transactions().objects.get(
+                transaction_id=transaction_id
+            )
+        elif order:
+            transaction = self.get_transactions().objects.get(order=order)
+
+        # check if transaction is settled or successfull
+        if transaction.status in ["settled", "success"]:
+            # deduct the wallet
+            self.balance -= transaction.amount
+            self.save()
+
+        # update the transaction
+        transaction.status = "on-hold"
+        transaction.save()
+
         return transaction
 
 
@@ -921,10 +957,6 @@ class Store(models.Model):
     def store_open_hours(self):
         return StoreOpenHours.objects.filter(store=self)
 
-    # credit store wallet
-    def credit_wallet(self, **kwargs):
-        return self.wallet.add_balance(**kwargs)
-
     @property
     def orders(self):
         return Order.get_orders_by_store(store=self)
@@ -1053,10 +1085,6 @@ class DeliveryPerson(models.Model):
     class Meta:
         ordering = ["-is_approved", "-status"]
         verbose_name_plural = "Delivery People"
-
-    # credit delivery person wallet
-    def credit_wallet(self, **kwargs):
-        self.wallet.add_balance(**kwargs)
 
     @property
     def orders(self):
