@@ -856,14 +856,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # check if the order has not been marked as ready for delivery
                     if order_status != "ready-for-delivery":
                         return MarkOrderAsMutation(
-                            error="Order has not been marked as ready for delivery, cannot be marked as picked up"
+                            error="The order hasn't been marked as ready for delivery yet, so it can't be marked as picked up."
                         )
 
                     # get the delivery person full name and phone number
                     delivery_person = order.get_delivery_person(store_id=store_id)
                     if not delivery_person:
                         return MarkOrderAsMutation(
-                            error="No delivery person found for this order"
+                            error="Hmm, we couldn't find a delivery person for this order. Please try again later."
                         )
 
                     delivery_person_qs = DeliveryPerson.objects.filter(
@@ -872,29 +872,38 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     if not delivery_person_qs.exists():
                         return MarkOrderAsMutation(
-                            error="No delivery person found for this order"
+                            error="we couldn't find a delivery person for this order. Please try again later."
                         )
 
                     delivery_person = delivery_person_qs.first()
 
+                    # update the store status to out for delivery
+                    did_update = order.update_store_status(store_id, "out-for-delivery")
+
+                    if not did_update:
+                        return MarkOrderAsMutation(
+                            error="Sorry, there was an issue updating the order status. Could you please try again later?"
+                        )
+                    
                     # update the delivery person status to picked up
                     did_update = order.update_delivery_person_status(
-                        store_id=store_id, status="picked-up"
+                        store_id=store_id, status="out-for-delivery"
                     )
 
                     if not did_update:
                         return MarkOrderAsMutation(
-                            error="An error occured while updating delivery person status, please try again later"
+                            error="Sorry, there was an issue updating the order status. Could you please try again later?r"
                         )
+                    
 
                     # notify the user that the order has been picked up
                     order.notify_user(
-                        message="The items from Order {} for {} have been picked up by {}, contact number: {}.".format(
-                            order.get_order_display_id(),
-                            store.store_name,
-                            delivery_person.profile.user.get_full_name(),
-                            delivery_person.profile.get_full_phone_number(),
-                        )
+                        message=f"Your order {order.get_order_display_id()} from {store.store_name} has been picked up by {delivery_person.profile.user.get_full_name()}. We'll keep you updated on delivery progress. Your order is now on its way!"
+                    )
+
+                    return MarkOrderAsMutation(
+                        success=True,
+                        success_msg=f"Order {order.get_order_display_id()} has been marked as out for delivery",
                     )
 
         # TODO: handle delivery person actions
