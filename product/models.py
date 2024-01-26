@@ -252,7 +252,7 @@ class Order(models.Model):
         editable=False,
     )
     order_status = models.CharField(
-        max_length=26,
+        max_length=30,
         choices=(
             ("not-started", "not-started"),
             ("processing", "processing"),
@@ -262,6 +262,8 @@ class Order(models.Model):
             ("rejected", "rejected"),
             ("partially-ready-for-pickup", "partially-ready-for-pickup"),
             ("ready-for-pickup", "ready-for-pickup"),
+            ("partially-ready-for-delivery", "partially-ready-for-delivery"),
+            ("ready-for-delivery", "ready-for-delivery"),
             ("partially-out-for-delivery", "partially-out-for-delivery"),
             ("out-for-delivery", "out-for-delivery"),
             ("partially-delivered", "partially-delivered"),

@@ -425,6 +425,12 @@ class CreateOrderMutation(Output, graphene.Mutation):
 
         return CreateOrderMutation(order_id=new_order.order_track_id, success=True)
 
+def get_store_name_from_store_status(current_order: Order):
+    store_names = []
+    for store in current_order.stores_status:
+        store_id = store.get("storeId")
+        store_qs = Store.objects.get(id=int(store_id))
+        store_names.append(store_qs.store_name)
 
 class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
@@ -540,9 +546,15 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-accepted"
                     order.save()
 
+                    store_names = get_store_name_from_store_status(order)
+
+                    store_names_with_comma = ", ".join(store_names)
+                    # remove the last comma
+                    store_names_with_comma = store_names_with_comma[:-2]
+
                     # notify the user that some stores has accepted the order
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially accepted, {"we will notify you when some are ready for pickup" if is_order_pickup else "we will notify you when some has been picked up by delivery people"}",
+                        message=f"Order {order.get_order_display_id()} has been accepted by {store_names_with_comma}, {"we will notify you when some are ready for pickup" if is_order_pickup else "we will notify you when some has been picked up by delivery people"}",
                     )
 
                 # add the store total price to the store balance
@@ -585,10 +597,16 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # update the order status to partially rejected
                     order.order_status = "partially-rejected"
                     order.save()
+                    # get the stores names that rejected the order
+                    store_names = get_store_name_from_store_status(order)
+
+                    store_names_with_comma = ", ".join(store_names)
+                    # remove the last comma
+                    store_names_with_comma = store_names_with_comma[:-2]
 
                     # notify the user that some stores has rejected the order
                     order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially rejected",
+                        message=f"The items from your order {order.get_order_display_id()} provided by {store_names_with_comma} have been rejected.",
                     )
 
                 did_update = order.update_store_status(store_id, "rejected")
@@ -647,9 +665,16 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-cancelled"
                     order.save()
 
+                    # get the stores names that cancelled the order
+                    store_names = get_store_name_from_store_status(order)
+
+                    store_names_with_comma = ", ".join(store_names)
+                    # remove the last comma
+                    store_names_with_comma = store_names_with_comma[:-2]
+
                     # notify the user that some stores has cancelled the order
                     order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially cancelled",
+                        message=f"The items from your Order {order.get_order_display_id()} provided by {store_names_with_comma} have been cancelled.",
                     )
 
                 did_update = order.update_store_status(store_id, "cancelled")
@@ -702,6 +727,19 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while notifying delivery people, please try again later"
                     )
+                store_statuses = get_store_statuses(order, store_id, "ready-for-delivery")
+
+                # check if all stores has marked the order as ready for delivery
+                if all(status == "ready-for-delivery" for status in store_statuses):
+                    # update the order status to ready for delivery
+                    order.order_status = "ready-for-delivery"
+                    order.save()
+                    
+                elif any(status == "ready-for-delivery" for status in store_statuses):
+                    # update the order status to partially ready for delivery
+                    order.order_status = "partially-ready-for-delivery"
+                    order.save()
+
                 did_update = order.update_store_status(store_id, "ready-for-delivery")
                 if not did_update:
                     return MarkOrderAsMutation(
@@ -746,6 +784,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # update the order status to partially ready for pickup
                     order.order_status = "partially-ready-for-pickup"
                     order.save()
+
+                    # get the stores names that marked the order as ready for pickup
+                    store_names = get_store_name_from_store_status(order)
+
+                    store_names_with_comma = ", ".join(store_names)
+                    # remove the last comma
+                    store_names_with_comma = store_names_with_comma[:-2]
 
                     # notify the user that some stores has marked the order as ready for pickup
                     has_notified_user = order.notify_user(
