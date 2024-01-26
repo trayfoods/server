@@ -1133,10 +1133,10 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             return AcceptDeliveryMutation(error="Order is already taken")
 
         if order.order_payment_status == "success" or settings.DEBUG:
-            stores_status = order.stores_status
+            stores_statuses = order.stores_status
             # check if atleast one of the store has accepted the order
             has_accepted = False
-            for store_status in stores_status:
+            for store_status in stores_statuses:
                 if store_status.get("status") == "ready-for-delivery":
                     has_accepted = True
                     break
