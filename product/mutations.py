@@ -794,7 +794,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that some stores has marked the order as ready for pickup
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} is partially ready for pickup",
+                        message=f"Some items from your order {order.get_order_display_id()} are now ready for pickup.",
                     )
 
                 did_update = order.update_store_status(store_id, "ready-for-pickup")
@@ -868,8 +868,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that the order has been picked up
                     order.notify_user(
-                        message="Your Order {} has been picked up by {}, {}".format(
+                        message="The items from Order {} for {} have been picked up by {}, contact number: {}.".format(
                             order.get_order_display_id(),
+                            store.store_name,
                             delivery_person.profile.user.get_full_name(),
                             delivery_person.profile.get_full_phone_number(),
                         )
