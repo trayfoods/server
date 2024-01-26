@@ -1052,6 +1052,10 @@ class InitializeTransactionMutation(graphene.Mutation):
                 transaction_id = response["data"]["reference"]
                 payment_url = response["data"]["authorization_url"]
 
+                # update order payment status to pending
+                order.order_payment_status = "pending"
+                order.save()
+
                 return InitializeTransactionMutation(
                     success=True, transaction_id=transaction_id, payment_url=payment_url
                 )
