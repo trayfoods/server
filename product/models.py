@@ -325,8 +325,8 @@ class Order(models.Model):
         blank=True,
         null=True,
         choices=(
-            ("failed", "failed"),
             ("success", "success"),
+            ("failed", "failed"),
             ("pending", "pending"),
             ("pending-refund", "pending-refund"),
             ("partially-refunded", "partially-refunded"),
