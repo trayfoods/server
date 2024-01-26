@@ -1,13 +1,12 @@
-from decimal import Decimal
 import os
 import uuid
+import requests
+from decimal import Decimal
 from django.db import models
 from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
-from trayapp.utils import calculate_payment_gateway_fee
-
-import requests
+from datetime import datetime
 
 User = settings.AUTH_USER_MODEL
 FRONTEND_URL = settings.FRONTEND_URL
@@ -345,6 +344,7 @@ class Order(models.Model):
     # [{
     #   "title": "Order Created",
     #   "description": "The order was created by the user",
+    #   "activity_type": "order_created",
     #   "timestamp": "2021-09-01 12:00:00"
     # }]
 
@@ -442,6 +442,11 @@ class Order(models.Model):
                 return False
             if not delivery_person.get("storeId"):
                 return False
+            # check if the delivery_person is linked to a store
+            if not self.linked_stores.filter(
+                id=delivery_person.get("storeId")
+            ).exists():
+                return False
             if (
                 delivery_person.get("status")
                 not in ALLOWED_DELIVERY_PERSON_ORDER_STATUS
@@ -477,6 +482,20 @@ class Order(models.Model):
                 return False
 
         return True
+
+    # method to log activities
+    def log_activity(self, title: str, description: str, activity_type):
+        activities_log = self.activities_log
+        activities_log.append(
+            {
+                "title": title,
+                "description": description,
+                "activity_type": activity_type,
+                "timestamp": str(datetime.now()),
+            }
+        )
+        self.activities_log = activities_log
+        self.save()
 
     def get_confirm_pin(self):
         if not self.order_confirm_pin:
@@ -581,6 +600,17 @@ class Order(models.Model):
             self.update_store_status(store_id, "pending-refund")
             self.order_payment_status = "pending-refund"
             self.save()
+
+            store_qs = self.linked_stores.filter(id=int(store_id)).first()
+
+            store_name = store_qs.store_name if store_qs else "The store"
+
+            # log the activity
+            self.log_activity(
+                title="Refund Initiated",
+                description=f"{store_name} has initiated a refund of {self.order_currency} {amount}",
+                activity_type="refund_initiated",
+            )
 
             # notify the user that a refund has been initiated
             self.notify_user(

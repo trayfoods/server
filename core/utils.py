@@ -102,7 +102,7 @@ class ProcessPayment:
                 if not store_id:
                     continue
 
-                store = Store.objects.filter(id=int(store_id)).first()
+                store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 if store:
                     # calculate the store total normal price
                     store_total_price = store_info["total"]["price"]
@@ -298,7 +298,7 @@ class ProcessPayment:
                 store_plate_price
             )
             if store_status == "pending-refund" and overrall_store_price == order_price:
-                store = Store.objects.filter(id=int(store_id)).first()
+                store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
                     affected_stores.append(str(store.id))
@@ -396,7 +396,7 @@ class ProcessPayment:
             # check if the store status is "pending-refund"
             if store_status == "pending-refund" and overrall_store_price == order_price:
                 print("store_id", store_id)
-                store = Store.objects.get(id=int(store_id))
+                store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 print("store", store)
                 affected_stores.append(str(store.id))
 

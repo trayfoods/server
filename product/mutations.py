@@ -429,7 +429,9 @@ def get_store_name_from_store_status(current_order: Order):
     store_names = []
     for store in current_order.stores_status:
         store_id = store.get("storeId")
-        store_qs = Store.objects.get(id=int(store_id))
+        store_qs: Store = current_order.linked_stores.filter(id=int(store_id)).first()
+        if store_qs is None:
+            raise GraphQLError("An error occured while getting store names, please contact support")
         store_names.append(store_qs.store_name)
 
 class MarkOrderAsMutation(Output, graphene.Mutation):
@@ -592,6 +594,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                order.log_activity(
+                    title="Order Accepted",
+                    activity_type="order_accepted",
+                    desc=f"{store.store_name} accepted the order",
+                )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -635,6 +643,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                order.log_activity(
+                    title="Order Rejected",
+                    activity_type="order_rejected",
+                    desc=f"{store.store_name} rejected the order",
+                )
 
                 # refund funds from each store that has rejected the order
                 for store_status in order.stores_status:
@@ -703,6 +717,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                order.log_activity(
+                    title="Order Cancelled",
+                    activity_type="order_cancelled",
+                    desc=f"{store.store_name} cancelled the order",
+                )
 
                 # refund funds from each store that has cancelled the order
                 for store_status in order.stores_status:
@@ -766,6 +786,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                order.log_activity(
+                    title="Order Ready For Delivery",
+                    activity_type="order_ready_for_delivery",
+                    desc=f"{store.store_name} marked the order as ready for delivery",
+                )
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been marked as ready for delivery",
@@ -823,6 +849,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                order.log_activity(
+                    title="Order Ready For Pickup",
+                    activity_type="order_ready_for_pickup",
+                    desc=f"{store.store_name} marked the order as ready for pickup",
+                )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -847,6 +879,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         return MarkOrderAsMutation(
                             error="An error occured while updating order status, please try again later"
                         )
+                    
+                    order.log_activity(
+                        title="Order Picked Up",
+                        activity_type="order_picked_up",
+                        desc=f"You picked up the order",
+                    )
 
                     return MarkOrderAsMutation(
                         success=True,
@@ -897,8 +935,19 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     
 
                     # notify the user that the order has been picked up
-                    order.notify_user(
+                    has_notified_user = order.notify_user(
                         message=f"Your order {order.get_order_display_id()} from {store.store_name} has been picked up by {delivery_person.profile.user.get_full_name()}. We'll keep you updated on delivery progress. Your order is now on its way!"
+                    )
+
+                    if not has_notified_user:
+                        return MarkOrderAsMutation(
+                            error="An error occured while notifying customer, please try again later"
+                        )
+                    
+                    order.log_activity(
+                        title="Order In-Transit",
+                        activity_type="order_picked_up",
+                        desc=f"{delivery_person.profile.user.get_full_name()} picked up the order from {store.store_name}, and is on the way to you!",
                     )
 
                     return MarkOrderAsMutation(
@@ -973,6 +1022,17 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # update the order status to partially delivered
                     order.order_status = "partially-delivered"
                     order.save()
+
+                store_qs: Store = order.linked_stores.filter(id=int(delivery_person_store_id)).first()
+                if store_qs is None:
+                    raise GraphQLError("An error occured while getting store names, please contact support")
+                
+                store_name = store_qs.store_name
+                order.log_activity(
+                    title="Order Delivered",
+                    activity_type="order_delivered",
+                    desc=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
+                )
 
                 return MarkOrderAsMutation(success=True)
 
