@@ -598,7 +598,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Accepted",
                     activity_type="order_accepted",
-                    desc=f"{store.store_name} accepted the order",
+                    description=f"{store.store_name} accepted the order",
                 )
 
                 return MarkOrderAsMutation(
@@ -647,7 +647,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Rejected",
                     activity_type="order_rejected",
-                    desc=f"{store.store_name} rejected the order",
+                    description=f"{store.store_name} rejected the order",
                 )
 
                 # refund funds from each store that has rejected the order
@@ -721,7 +721,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Cancelled",
                     activity_type="order_cancelled",
-                    desc=f"{store.store_name} cancelled the order",
+                    description=f"{store.store_name} cancelled the order",
                 )
 
                 # refund funds from each store that has cancelled the order
@@ -790,7 +790,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Ready For Delivery",
                     activity_type="order_ready_for_delivery",
-                    desc=f"{store.store_name} marked the order as ready for delivery",
+                    description=f"{store.store_name} marked the order as ready for delivery",
                 )
                 return MarkOrderAsMutation(
                     success=True,
@@ -853,7 +853,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Ready For Pickup",
                     activity_type="order_ready_for_pickup",
-                    desc=f"{store.store_name} marked the order as ready for pickup",
+                    description=f"{store.store_name} marked the order as ready for pickup",
                 )
 
                 return MarkOrderAsMutation(
@@ -883,7 +883,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.log_activity(
                         title="Order Picked Up",
                         activity_type="order_picked_up",
-                        desc=f"You picked up the order",
+                        description=f"You picked up the order",
                     )
 
                     return MarkOrderAsMutation(
@@ -947,7 +947,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.log_activity(
                         title="Order In-Transit",
                         activity_type="order_picked_up",
-                        desc=f"{delivery_person.profile.user.get_full_name()} picked up the order from {store.store_name}, and is on the way to you!",
+                        description=f"{delivery_person.profile.user.get_full_name()} picked up the order from {store.store_name}, and is on the way to you!",
                     )
 
                     return MarkOrderAsMutation(
@@ -1031,7 +1031,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Delivered",
                     activity_type="order_delivered",
-                    desc=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
+                    description=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
                 )
 
                 return MarkOrderAsMutation(success=True)

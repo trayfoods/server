@@ -92,6 +92,7 @@ class OrderAdmin(admin.ModelAdmin):
         "delivery_fee",
         "order_payment_url",
         "stores_status",
+        "activities_log",
     )
     search_fields = [
         "user__username",
