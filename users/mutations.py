@@ -1128,6 +1128,13 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if order_delivery_person is not None:
             return AcceptDeliveryMutation(success=True)
 
+        # check if the order status is not ready-for-delivery or partially-ready-for-delivery
+        if not order.order_status in [
+            "ready-for-delivery",
+            "partially-ready-for-delivery",
+        ]:
+            return AcceptDeliveryMutation(error="This order is not ready for delivery")
+
         # check if the order store count is same as the delivery people count, if it is then return error
         if len(order_delivery_people) == order.linked_stores.count():
             return AcceptDeliveryMutation(error="Order is already taken")
@@ -1175,27 +1182,13 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order_delivery_people.append(
                 {
                     "id": delivery_person.id,
-                    "status": "out-for-delivery",
+                    "status": "pending",
                     "storeId": store.id,
                 }
             )
             order.delivery_people = order_delivery_people
-            order.order_status = "out-for-delivery"
-
             order.save()
-
-            # send sms to user
-            try:
-                order_disp_id = order.get_order_display_id()
-                order.user.send_push_notification(
-                    title="Order {} is on its way".format(order_disp_id),
-                    msg="Your order {} is on its way and will be delivered to you soon".format(
-                        order_disp_id
-                    ),
-                )
-            except Exception as e:
-                print(e)
-                print("Order :=> {}".format(order_track_id))
+            
             return AcceptDeliveryMutation(success=True)
         else:
             return AcceptDeliveryMutation(error="This order was taken")
