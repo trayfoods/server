@@ -525,8 +525,9 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.save()
 
                     # notify the user that all stores has accepted the order
+                    is_order_pickup = order.is_pickup()
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been accepted, we will notify you when it has been picked up by a delivery person",
+                        message=f"Order {order.get_order_display_id()} has been accepted, {"we will notify you when it's ready for pickup" if is_order_pickup else "we will notify you when it has been picked up by a delivery person"}",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -541,7 +542,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that some stores has accepted the order
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been partially accepted, we will notify you when some are picked up by delivery people",
+                        message=f"Order {order.get_order_display_id()} has been partially accepted, {"we will notify you when some are ready for pickup" if is_order_pickup else "we will notify you when some has been picked up by delivery people"}",
                     )
 
                 # add the store total price to the store balance
