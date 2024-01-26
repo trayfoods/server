@@ -454,10 +454,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         # check if the user has the right to interact with the order
         view_as = order.view_as(user.profile)
-        if not "DELIVERY_PERSON" in view_as and not "VENDOR" in view_as:
-            return MarkOrderAsMutation(
-                error="You are not authorized to interact with this order"
-            )
+        # if not "DELIVERY_PERSON" in view_as and not "VENDOR" in view_as:
+        #     return MarkOrderAsMutation(
+        #         error="You are not authorized to interact with this order"
+        #     )
 
         # convert action and order_status to lowercase and replace underscore with dash
         action = action.lower().replace("_", "-")
@@ -467,6 +467,27 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
         allowed_actions = settings.ALLOWED_STORE_ORDER_STATUS
         if not action in allowed_actions:
             return MarkOrderAsMutation(error="Invalid action")
+        
+        if "USER" in view_as or len(view_as) == 0:
+            # check if the order user is the current user
+            if order.user.user != user:
+                return MarkOrderAsMutation(
+                    error="You are not authorized to interact with this order"
+                )
+            
+            if action == "cancelled":
+                if order_status != "not-started" and not order.order_payment_status:
+                    return MarkOrderAsMutation(
+                        error="You cannot cancel this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
+                order.order_status = "cancelled"
+                order.save()
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg=f"Order {order.get_order_display_id()} has been cancelled",
+                )
 
         # handle vendor actions
         if "VENDOR" in view_as:
