@@ -384,7 +384,6 @@ class Profile(models.Model):
     def get_wallet(self):
         return Wallet.objects.filter(user=self).first()
 
-
     def get_delivery_person(self):
         return DeliveryPerson.objects.filter(profile=self).first()
 

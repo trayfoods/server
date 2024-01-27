@@ -8,11 +8,7 @@ from ..types import (
     StoreOrderNode,
     DeliveryPersonOrderNode,
     OrderType,
-    DiscoverDeliveryType,
 )
-
-from trayapp.utils import chunked_queryset
-import django.db
 
 
 class OrderQueries(graphene.ObjectType):
