@@ -71,7 +71,7 @@ class RatingAdmin(admin.ModelAdmin):
     list_display = (
         "__str__",
         "stars",
-        "updated_on",
+        "updated_at",
     )
     # readonly_fields = ("users_liked", "stars")
     search_fields = ["user__username", "item__product_name"]
