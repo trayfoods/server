@@ -957,7 +957,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         # TODO: handle delivery person actions
         if "DELIVERY_PERSON" in view_as:
-            current_delivery_person = user.profile.get_delivery_person()
+            current_delivery_person: DeliveryPerson = user.profile.get_delivery_person()
             if current_delivery_person is None:
                 return MarkOrderAsMutation(error="You are not a delivery person")
             current_delivery_person_id = current_delivery_person.id
@@ -965,76 +965,88 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 delivery_person_id=current_delivery_person_id
             )
 
-            if delivery_person is not None:
-                delivery_person_store_id = delivery_person.get("storeId", None)
-                if delivery_person_store_id is None:
-                    return MarkOrderAsMutation(
-                        error="No store id found for this order, please contact support"
-                    )
-                order_delivery_people = order.delivery_people
+            if not delivery_person:
+                return MarkOrderAsMutation(
+                    error="You are not authorized to interact with this order"
+                )
+            delivery_person_store_id = delivery_person.get("storeId", None)
+            if delivery_person_store_id is None:
+                return MarkOrderAsMutation(
+                    error="No store id found for this delivery, please contact support"
+                )
+            
+            # check if the store status is out for delivery
+            current_delivery_person_store_status = order.get_store_status(
+                delivery_person_store_id
+            )
+            if current_delivery_person_store_status != "out-for-delivery":
+                return MarkOrderAsMutation(
+                    error="The store hasn't indicated that this order was picked up by anyone yet."
+                )
+            order_delivery_people = order.delivery_people
 
-                did_update = order.update_delivery_person_status(
-                    delivery_person_id=current_delivery_person_id, status="delivered"
+            did_update = order.update_delivery_person_status(
+                delivery_person_id=current_delivery_person_id, status="delivered"
+            )
+
+            if not did_update:
+                return MarkOrderAsMutation(
+                    error="An error occured while updating order delivery status, please try again later"
                 )
 
-                if not did_update:
-                    return MarkOrderAsMutation(
-                        error="An error occured while updating order delivery status, please try again later"
-                    )
-
-                # update store status that the delivery person has delivered the order
-                did_update = order.update_store_status(
-                    delivery_person_store_id, "delivered"
+            # update store status that the delivery person has delivered the order
+            did_update = order.update_store_status(
+                delivery_person_store_id, "delivered"
+            )
+            if not did_update:
+                return MarkOrderAsMutation(
+                    error="An error occured while updating order status, please try again later"
                 )
-                if not did_update:
-                    return MarkOrderAsMutation(
-                        error="An error occured while updating order status, please try again later"
-                    )
 
-                # get delivery_fee by dividing the delivery fee by the number of delivery people
-                delivery_fee = order.delivery_fee / len(order_delivery_people)
+            # get delivery_fee by dividing the delivery fee by the number of delivery people
+            delivery_fee = order.delivery_fee / len(order_delivery_people)
 
-                delivery_person: DeliveryPerson = user.profile.get_delivery_person()
+            delivery_person: DeliveryPerson = user.profile.get_delivery_person()
 
-                # credit delivery person wallet
-                credit_kwargs = {
-                    "amount": delivery_fee,
-                    "title": "Delivery Fee",
-                    "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
-                    "order": order,
-                }
-                delivery_person.wallet.add_balance(**credit_kwargs)
+            # credit delivery person wallet
+            credit_kwargs = {
+                "amount": delivery_fee,
+                "title": "Delivery Fee",
+                "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
+                "order": order,
+            }
+            delivery_person.wallet.add_balance(**credit_kwargs)
 
+            order.save()
+
+            delivery_people_statuses = []
+            for delivery_person in order.delivery_people:
+                delivery_people_statuses.append(delivery_person["status"])
+
+            # check if all delivery people has delivered the order
+            if all(status == "delivered" for status in delivery_people_statuses):
+                # update the order status to delivered
+                order.order_status = "delivered"
                 order.save()
 
-                delivery_people_statuses = []
-                for delivery_person in order.delivery_people:
-                    delivery_people_statuses.append(delivery_person["status"])
+            # check if some delivery people has delivered the order
+            elif any(status == "delivered" for status in delivery_people_statuses):
+                # update the order status to partially delivered
+                order.order_status = "partially-delivered"
+                order.save()
 
-                # check if all delivery people has delivered the order
-                if all(status == "delivered" for status in delivery_people_statuses):
-                    # update the order status to delivered
-                    order.order_status = "delivered"
-                    order.save()
+            store_qs: Store = order.linked_stores.filter(id=int(delivery_person_store_id)).first()
+            if store_qs is None:
+                raise GraphQLError("An error occured while getting store names, please contact support")
+            
+            store_name = store_qs.store_name
+            order.log_activity(
+                title="Order Delivered",
+                activity_type="order_delivered",
+                description=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
+            )
 
-                # check if some delivery people has delivered the order
-                elif any(status == "delivered" for status in delivery_people_statuses):
-                    # update the order status to partially delivered
-                    order.order_status = "partially-delivered"
-                    order.save()
-
-                store_qs: Store = order.linked_stores.filter(id=int(delivery_person_store_id)).first()
-                if store_qs is None:
-                    raise GraphQLError("An error occured while getting store names, please contact support")
-                
-                store_name = store_qs.store_name
-                order.log_activity(
-                    title="Order Delivered",
-                    activity_type="order_delivered",
-                    description=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
-                )
-
-                return MarkOrderAsMutation(success=True)
+            return MarkOrderAsMutation(success=True)
 
 
 class RateItemMutation(graphene.Mutation):
