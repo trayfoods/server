@@ -210,12 +210,12 @@ class Rating(models.Model):
         User, related_name="users_liked", blank=True, editable=False
     )
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
-    updated_on = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("user", "item")
         index_together = ("user", "item")
-        ordering = ["-updated_on"]
+        ordering = ["-updated_at", "-stars", "-id"]
 
     def __str__(self):
         return f"{self.user.username} - {self.item.product_name}"
