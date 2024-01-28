@@ -19,6 +19,8 @@ class OrderQueries(graphene.ObjectType):
     # discover_deliveries = graphene.List(DiscoverDeliveryType)
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
 
+    order_status = graphene.String(order_id=graphene.String(required=True))
+
     @permission_checker([IsAuthenticated])
     def resolve_get_order(self, info, order_id):
         user = info.context.user
@@ -89,3 +91,13 @@ class OrderQueries(graphene.ObjectType):
             return user.profile.get_delivery_person().orders.all()
         else:
             raise GraphQLError("You are not a delivery person")
+
+    @permission_checker([IsAuthenticated])
+    def resolve_order_status(self, info, order_id):
+        user = info.context.user
+        current_user_profile = user.profile
+        order_qs = Order.objects.filter(order_track_id=order_id)
+        if not order_qs.exists():
+            raise GraphQLError("Order Not Found")
+
+        return order_qs.first().get_order_status(current_user_profile)

@@ -901,7 +901,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     delivery_person = order.get_delivery_person(store_id=store_id)
                     if not delivery_person:
                         return MarkOrderAsMutation(
-                            error="Hmm, we couldn't find a delivery person for this order. Please try again later."
+                            error="Oops, it seems like no delivery person has accepted this order yet. Please check back in a little while."
                         )
 
                     delivery_person_qs = DeliveryPerson.objects.filter(
@@ -1006,8 +1006,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # get delivery_fee by dividing the delivery fee by the number of delivery people
             delivery_fee = order.delivery_fee / len(order_delivery_people)
 
-            delivery_person: DeliveryPerson = user.profile.get_delivery_person()
-
             # credit delivery person wallet
             credit_kwargs = {
                 "amount": delivery_fee,
@@ -1015,7 +1013,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
                 "order": order,
             }
-            delivery_person.wallet.add_balance(**credit_kwargs)
+            current_delivery_person.wallet.add_balance(**credit_kwargs)
 
             order.save()
 
@@ -1043,7 +1041,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             order.log_activity(
                 title="Order Delivered",
                 activity_type="order_delivered",
-                description=f"{delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
+                description=f"{current_delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
             )
 
             return MarkOrderAsMutation(success=True)
