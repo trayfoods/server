@@ -337,7 +337,7 @@ class Order(models.Model):
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True) # this is the last time the order was updated
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
     activities_log = models.JSONField(default=list, blank=True)
     # the activities_log json format is as follows
@@ -624,6 +624,11 @@ class Order(models.Model):
     @classmethod
     def get_orders_by_store(cls, store):
         return cls.objects.filter(linked_stores=store, order_payment_status="success")
+    
+    # check if a user has ever ordered an item
+    @classmethod
+    def has_user_ordered_item(cls, profile, item):
+        return cls.objects.filter(user=profile, linked_items=item).exists()
 
     # check if a delivery person is linked in any order, if yes, return the orders
     @classmethod

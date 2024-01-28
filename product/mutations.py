@@ -1047,38 +1047,46 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             return MarkOrderAsMutation(success=True)
 
 
-class RateItemMutation(graphene.Mutation):
+class RateItemMutation(Output, graphene.Mutation):
     class Arguments:
         item_slug = graphene.String(required=True)
         rating = graphene.Argument(RatingInputType, required=True)
 
-    success = graphene.Boolean()
-    review_id = graphene.ID()
+    review_id = graphene.String()
 
-    @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(root, info, item_slug, rating):
+    def mutate(self, info, item_slug, rating):
         user = info.context.user
+        item_qs = Item.get_items().filter(product_slug=item_slug)
+        if not item_qs.exists():
+            return RateItemMutation(error="")
+        item = item_qs.first()
+        # check if the user has ever ordered the item
+        has_ordered_item = Order.has_user_ordered_item(user.profile, item)
+        if not has_ordered_item:
+            return RateItemMutation(
+                error="Oops, it looks like you haven't ordered this item before. You need to have ordered an item before you can rate it."
+            )
+        # check if the user is a vendor and the item belongs to the user
+        if user.profile.is_vendor and item.product_creator == user.profile.store:
+            return RateItemMutation(
+                error="You cannot rate your own item"
+            )
         try:
-            item = Item.get_items().get(product_slug=item_slug)
-            try:
-                rating_qs = Rating.objects.get(user=user, item=item)
-                rating_qs.stars = rating.stars.value
-                rating_qs.comment = filter_comment(rating.comment)
-                rating_qs.save()
-                return RateItemMutation(success=True, review_id=rating_qs.id)
-            except Rating.DoesNotExist:
-                new_rating = Rating.objects.create(
-                    user=user,
-                    item=item,
-                    stars=rating.stars.value,
-                    comment=rating.comment,
-                )
-                new_rating.save()
-                return RateItemMutation(success=True, review_id=new_rating.id)
-        except Item.DoesNotExist:
-            raise ValueError("Invalid Item Slug")
-
+            rating_qs = Rating.objects.get(user=user, item=item)
+            rating_qs.stars = rating.stars.value
+            rating_qs.comment = filter_comment(rating.comment)
+            rating_qs.save()
+            return RateItemMutation(success=True, review_id=rating_qs.id)
+        except Rating.DoesNotExist:
+            new_rating = Rating.objects.create(
+                user=user,
+                item=item,
+                stars=rating.stars.value,
+                comment=rating.comment,
+            )
+            new_rating.save()
+            return RateItemMutation(success=True, review_id=new_rating.id)
 
 class DeleteRatingMutation(graphene.Mutation):
     class Arguments:
