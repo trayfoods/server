@@ -1052,7 +1052,7 @@ class RateItemMutation(Output, graphene.Mutation):
         item_slug = graphene.String(required=True)
         rating = graphene.Argument(RatingInputType, required=True)
 
-    review_id = graphene.String()
+    review_id = graphene.Int()
 
     @permission_checker([IsAuthenticated])
     def mutate(self, info, item_slug, rating):
@@ -1088,52 +1088,32 @@ class RateItemMutation(Output, graphene.Mutation):
             new_rating.save()
             return RateItemMutation(success=True, review_id=new_rating.id)
 
-class DeleteRatingMutation(graphene.Mutation):
+
+class HelpfulReviewMutation(Output, graphene.Mutation):
     class Arguments:
-        item_slug = graphene.ID(required=True)
-
-    success = graphene.Boolean()
-
-    @staticmethod
-    @permission_checker([IsAuthenticated])
-    def mutate(root, info, item_slug):
-        user = info.context.user
-        try:
-            item = Item.get_items().get(product_slug=item_slug)
-            try:
-                rating_qs = Rating.objects.get(user=user, item=item)
-                rating_qs.delete()
-            except Rating.DoesNotExist:
-                raise ValueError("Rating Does Not Exist")
-        except Item.DoesNotExist:
-            raise ValueError("Invalid Item Slug")
-
-        return DeleteRatingMutation(success=True)
-
-
-class HelpfulReviewMutation(graphene.Mutation):
-    class Arguments:
-        review_id = graphene.ID(required=True)
+        review_id = graphene.Int(required=True)
         helpful = graphene.Boolean(required=True)
 
-    success = graphene.Boolean()
-
-    @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(root, info, review_id, helpful):
+    def mutate(self, info, review_id, helpful):
         user = info.context.user
         try:
-            rating = Rating.objects.get(id=review_id, user=user)
-            # update rating users_liked
+            rating_qs = Rating.objects.filter(id=review_id, user=user)
+
+            if not rating_qs.exists():
+                return HelpfulReviewMutation(error="Could not find this review")
+            
+            rating = rating_qs.first()
+
             if helpful:
                 rating.users_liked.add(user)
             else:
                 rating.users_liked.remove(user)
             rating.save()
-        except Rating.DoesNotExist:
-            raise ValueError("Invalid Rating Id")
+            return HelpfulReviewMutation(success=True)
+        except Exception:
+            return HelpfulReviewMutation(error = "Somwthing went wrong, please try again later")
 
-        return HelpfulReviewMutation(success=True)
 
 
 class InitializeTransactionMutation(graphene.Mutation):
