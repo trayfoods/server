@@ -193,7 +193,7 @@ class Item(models.Model):
         - weight_of_clicks = click_weight_factor * total_clicks / total_weights
 
         The weighted average rating is calculated as follows:
-        - weighted_average_rating = weight_of_ratings * sum_of_ratings + weight_of_views * total_views 
+        - weighted_average_rating = weight_of_ratings * sum_of_ratings + weight_of_views * total_views
             + weight_of_clicks * total_clicks
 
         The normalized weighted average rating is calculated as follows:
@@ -209,7 +209,7 @@ class Item(models.Model):
         total_ratings = self.get_total_ratings()
 
         # Get the sum of all ratings
-        sum_of_ratings = self.ratings.aggregate(models.Sum("stars"))["stars__sum"]
+        sum_of_ratings = sum(rating.stars for rating in self.ratings.all())
 
         # Count the number of bad reviews
         bad_reviews = self.ratings.filter(stars__lt=bad_review_threshold).count()
@@ -218,8 +218,8 @@ class Item(models.Model):
         new_total_ratings = total_ratings - bad_reviews
 
         # Get the total number of views and clicks
-        total_views = self.product_views
-        total_clicks = self.product_clicks
+        total_views = self.product_views if self.product_views else 0
+        total_clicks = self.product_clicks if self.product_clicks else 0
 
         # Define the weight factors
         rating_weight_factor = 0.5  # decrease this to make ratings less influential
