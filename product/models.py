@@ -163,12 +163,10 @@ class Item(models.Model):
             product_creator=store
         )
 
-    @property
-    def total_ratings(self):
+    def get_total_ratings(self):
         return self.ratings.count()
 
-    @property
-    def average_rating(self):
+    def get_average_rating(self):
         ratings = self.ratings.all()
         count = ratings.count()
         if count > 0:
@@ -177,6 +175,43 @@ class Item(models.Model):
             rounded_up = round(total * 10**1) / (10**1)
             return rounded_up
         return 0.0
+
+    def calculate_rating_percentage(self):
+        # Define the threshold for a bad review
+        bad_review_threshold = 3
+
+        # Get the total number of ratings
+        total_ratings = self.get_total_ratings()
+
+        # Get the sum of all ratings
+        sum_of_ratings = self.ratings.aggregate(models.Sum("stars"))["stars__sum"]
+
+        # Count the number of bad reviews
+        bad_reviews = self.ratings.filter(stars__lt=bad_review_threshold).count() # lt = less than
+
+        # Subtract the number of bad reviews from the total ratings
+        new_total_ratings = total_ratings - bad_reviews
+
+        # Get the total number of views and clicks
+        total_views = self.product_views
+        total_clicks = self.product_clicks
+
+        # Calculate the total sum of weights
+        total_weights = new_total_ratings + total_views + total_clicks
+
+        # Normalize the weights so that they sum up to 100%
+        normalized_sum_of_ratings = (
+            sum_of_ratings / total_weights if total_weights else 0
+        )
+        normalized_total_views = total_views / total_weights if total_weights else 0
+        normalized_total_clicks = total_clicks / total_weights if total_weights else 0
+
+        # Calculate the weighted average rating
+        weighted_average_rating = (
+            normalized_sum_of_ratings + normalized_total_views + normalized_total_clicks
+        ) * 100
+
+        return weighted_average_rating
 
     @property
     # check if the current user is the creator of the product
@@ -204,12 +239,12 @@ class Item(models.Model):
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
     stars = models.IntegerField()
     comment = models.TextField(max_length=300, null=True, blank=True)
     users_liked = models.ManyToManyField(
         User, related_name="users_liked", blank=True, editable=False
     )
-    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="ratings")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -337,7 +372,9 @@ class Order(models.Model):
 
     delivery_person_note = models.CharField(blank=True, null=True, max_length=200)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True) # this is the last time the order was updated
+    updated_at = models.DateTimeField(
+        auto_now=True
+    )  # this is the last time the order was updated
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
     activities_log = models.JSONField(default=list, blank=True)
     # the activities_log json format is as follows
@@ -624,7 +661,7 @@ class Order(models.Model):
     @classmethod
     def get_orders_by_store(cls, store):
         return cls.objects.filter(linked_stores=store, order_payment_status="success")
-    
+
     # check if a user has ever ordered an item
     @classmethod
     def has_user_ordered_item(cls, profile, item):

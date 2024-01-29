@@ -1,6 +1,6 @@
 from trayapp.base_filters import DateTypeFilter
 from django_filters import FilterSet, CharFilter, NumberFilter
-from product.models import Item, Order
+from product.models import Item, Order, Rating
 
 
 class ItemFilter(FilterSet):
@@ -25,6 +25,9 @@ class ItemFilter(FilterSet):
             "product_price": ["exact", "lt", "gt"],  # lt = less than, gt = greater than
         }
 
+class ReviewFilter(FilterSet):
+    class Meta:
+        model = Rating
 
 class DefaultOrderFilter(FilterSet):
     year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021

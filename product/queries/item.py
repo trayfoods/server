@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 
 from ..models import Item
-from ..types import ItemNode, ItemType
+from ..types import ItemNode, ItemType, ReviewNode
 from users.models import UserActivity
 from graphene_django.filter import DjangoFilterConnectionField
 
@@ -16,12 +16,15 @@ class ItemQueries(graphene.ObjectType):
     )
     hero_data = graphene.List(ItemType)
 
+    item_reviews = DjangoFilterConnectionField(ReviewNode, item_slug=graphene.String(required=True))
+
     def resolve_items(self, info, **kwargs):
         return Item.get_items().exclude(product_creator__is_approved=False)
 
     def resolve_hero_data(self, info):
         items = (
-            Item.get_items().exclude(product_creator__is_approved=False)
+            Item.get_items()
+            .exclude(product_creator__is_approved=False)
             .filter(product_type__slug__icontains="dish")
             .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]

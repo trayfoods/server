@@ -1,5 +1,3 @@
-import json
-
 import graphene
 from graphene_django.types import DjangoObjectType
 
@@ -7,7 +5,7 @@ from trayapp.permissions import permission_checker, IsAuthenticated
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
 from users.types import StoreType, School
-from .filters import ItemFilter, OrderFilter, StoreOrderFilter, DeliveryPersonFilter
+from .filters import ItemFilter, ReviewFilter, OrderFilter, StoreOrderFilter, DeliveryPersonFilter
 
 
 class ItemImageType(DjangoObjectType):
@@ -41,7 +39,7 @@ class RatingInputType(graphene.InputObjectType):
     comment = graphene.String()
 
 
-class ReviewsType(DjangoObjectType):
+class ReviewType(DjangoObjectType):
     did_user_like = graphene.Boolean()
     helpful_count = graphene.Int()
 
@@ -58,15 +56,22 @@ class ReviewsType(DjangoObjectType):
     def resolve_helpful_count(self, info, *args, **kwargs):
         return self.users_liked.count()
 
+class ReviewNode(ReviewType, DjangoObjectType):
+    class Meta:
+        model = Rating
+        interfaces = (graphene.relay.Node,)
+        filterset_class = ReviewFilter
 
 class ItemType(DjangoObjectType):
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     average_rating = graphene.Float()
-    reviews = graphene.List(ReviewsType)
+    reviews = graphene.List(ReviewType)
     reviews_count = graphene.Int()
-    current_user_review = graphene.Field(ReviewsType)
+    current_user_review = graphene.Field(ReviewType)
     is_avaliable_for_store = graphene.String()
+    
+    rating_percentage = graphene.Float()
 
     class Meta:
         model = Item
@@ -96,6 +101,7 @@ class ItemType(DjangoObjectType):
             "product_created_on",
             "is_avaliable",
             "store_menu_name",
+            "rating_percentage",
         ]
 
     def resolve_current_user_review(self, info):
@@ -106,14 +112,14 @@ class ItemType(DjangoObjectType):
         return current_user_review
 
     def resolve_reviews(self, info):
-        item_ratings = Rating.objects.filter(item=self)
+        item_ratings = Rating.objects.filter(item=self)[:20]
         return item_ratings
 
     def resolve_reviews_count(self, info):
         return Rating.objects.filter(item=self).count()
 
-    def resolve_average_rating(self, info):
-        return self.average_rating
+    def resolve_average_rating(self: Item, info):
+        return self.get_average_rating()
 
     def resolve_product_share_visibility(self, info):
         user = info.context.user
@@ -171,6 +177,9 @@ class ItemType(DjangoObjectType):
 
     def resolve_is_avaliable(self, info):
         return self.is_avaliable
+    
+    def resolve_rating_percentage(self: Item, info):
+        return self.calculate_rating_percentage()
 
 
 class ItemNode(ItemType, DjangoObjectType):
