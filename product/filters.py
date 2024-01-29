@@ -28,6 +28,7 @@ class ItemFilter(FilterSet):
 class ReviewFilter(FilterSet):
     class Meta:
         model = Rating
+        fields = "__all__"
 
 class DefaultOrderFilter(FilterSet):
     year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021

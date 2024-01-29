@@ -177,6 +177,31 @@ class Item(models.Model):
         return 0.0
 
     def calculate_rating_percentage(self):
+        """
+        Calculate the weighted average rating for a product.
+
+        The function first calculates the weights for each component (ratings, views, clicks)
+        by dividing each by the total weights. The weights are adjusted by factors to make
+        ratings less influential and views and clicks more influential. Then, it calculates
+        the weighted average rating by multiplying each component by its weight and summing
+        these up. Finally, it normalizes the weighted average rating to be a percentage by
+        dividing it by the total weights and multiplying by 100.
+
+        The weights are calculated as follows:
+        - weight_of_ratings = rating_weight_factor * new_total_ratings / total_weights
+        - weight_of_views = view_weight_factor * total_views / total_weights
+        - weight_of_clicks = click_weight_factor * total_clicks / total_weights
+
+        The weighted average rating is calculated as follows:
+        - weighted_average_rating = weight_of_ratings * sum_of_ratings + weight_of_views * total_views 
+            + weight_of_clicks * total_clicks
+
+        The normalized weighted average rating is calculated as follows:
+        - normalized_weighted_average_rating = (weighted_average_rating / total_weights) * 100
+
+        Returns:
+            float: The normalized weighted average rating as a percentage.
+        """
         # Define the threshold for a bad review
         bad_review_threshold = 3
 
@@ -187,7 +212,7 @@ class Item(models.Model):
         sum_of_ratings = self.ratings.aggregate(models.Sum("stars"))["stars__sum"]
 
         # Count the number of bad reviews
-        bad_reviews = self.ratings.filter(stars__lt=bad_review_threshold).count() # lt = less than
+        bad_reviews = self.ratings.filter(stars__lt=bad_review_threshold).count()
 
         # Subtract the number of bad reviews from the total ratings
         new_total_ratings = total_ratings - bad_reviews
@@ -196,22 +221,44 @@ class Item(models.Model):
         total_views = self.product_views
         total_clicks = self.product_clicks
 
-        # Calculate the total sum of weights
-        total_weights = new_total_ratings + total_views + total_clicks
+        # Define the weight factors
+        rating_weight_factor = 0.5  # decrease this to make ratings less influential
+        view_weight_factor = 1.5  # increase this to make views more influential
+        click_weight_factor = 1.5  # increase this to make clicks more influential
 
-        # Normalize the weights so that they sum up to 100%
-        normalized_sum_of_ratings = (
-            sum_of_ratings / total_weights if total_weights else 0
+        # Calculate the total sum of weights
+        total_weights = (
+            rating_weight_factor * new_total_ratings
+            + view_weight_factor * total_views
+            + click_weight_factor * total_clicks
         )
-        normalized_total_views = total_views / total_weights if total_weights else 0
-        normalized_total_clicks = total_clicks / total_weights if total_weights else 0
+
+        # Calculate the weights for each component
+        weight_of_ratings = (
+            rating_weight_factor * new_total_ratings / total_weights
+            if total_weights
+            else 0
+        )
+        weight_of_views = (
+            view_weight_factor * total_views / total_weights if total_weights else 0
+        )
+        weight_of_clicks = (
+            click_weight_factor * total_clicks / total_weights if total_weights else 0
+        )
 
         # Calculate the weighted average rating
         weighted_average_rating = (
-            normalized_sum_of_ratings + normalized_total_views + normalized_total_clicks
-        ) * 100
+            weight_of_ratings * sum_of_ratings
+            + weight_of_views * total_views
+            + weight_of_clicks * total_clicks
+        )
 
-        return weighted_average_rating
+        # Normalize the weighted average rating to be a percentage
+        normalized_weighted_average_rating = (
+            (weighted_average_rating / total_weights) * 100 if total_weights else 0
+        )
+
+        return normalized_weighted_average_rating
 
     @property
     # check if the current user is the creator of the product
