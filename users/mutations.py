@@ -144,6 +144,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
 
         # store location
         country = graphene.String()
+        # if you are not a student that is creating a store, then you must provide the state, city, street_name, primary_address_lat, primary_address_lng
         state = graphene.String()
         city = graphene.String()
         primary_address = graphene.String()
@@ -152,6 +153,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         primary_address_lng = graphene.Float()
         school = graphene.String()
         campus = graphene.String()
+
         timezone = graphene.String()
 
         # store contact
@@ -188,9 +190,9 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             "store_open_hours",
         ]
         address_fields = [
-            "primary_address",
             "state",
             "city",
+            "primary_address",
             "street_name",
             "primary_address_lat",
             "primary_address_lng",
@@ -205,6 +207,17 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         if not event_type in allowed_event_types:
             return CreateUpdateStoreMutation(error="Invalid event type")
 
+        # check if user is a student
+        is_user_student = user.profile.is_student
+        if is_user_student:
+            # extend address_fields
+            address_fields.extend(["school", "campus"])
+            for field in required_fields:
+                if field in kwargs:
+                    return CreateUpdateStoreMutation(
+                        error="A student can not have more than one school, campus and address fields kindly ignore them"
+                    )
+
         # get kwargs values
         store_name = kwargs.get("store_name")
         store_nickname = kwargs.get("store_nickname")
@@ -214,14 +227,29 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         store_bio = kwargs.get("store_bio")
         has_physical_store = kwargs.get("has_physical_store")
         country = kwargs.get("country")
-        city = kwargs.get("city")
+
         state = kwargs.get("state")
+        city = kwargs.get("city")
         primary_address = kwargs.get("primary_address")
         street_name = kwargs.get("street_name")
         primary_address_lat = kwargs.get("primary_address_lat")
         primary_address_lng = kwargs.get("primary_address_lng")
         school = kwargs.get("school")
         campus = kwargs.get("campus")
+
+        if is_user_student:
+            user_profile: Profile = user.profile
+            state = user_profile.state
+            city = user_profile.city
+            primary_address = ""
+            street_name = ""
+            primary_address_lat = 0.0
+            primary_address_lng = 0.0
+
+            user_student_profile: Student = user_profile.student
+            school = user_student_profile.school.slug
+            campus = user_student_profile.campus
+
         timezone = kwargs.get("timezone")
         whatsapp_numbers = kwargs.get("whatsapp_numbers")
         instagram_handle = kwargs.get("instagram_handle")
@@ -1188,7 +1216,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             )
             order.delivery_people = order_delivery_people
             order.save()
-            
+
             return AcceptDeliveryMutation(success=True)
         else:
             return AcceptDeliveryMutation(error="This order was taken")
