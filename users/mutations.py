@@ -187,7 +187,6 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             "store_cover_image",
             "has_physical_store",
             "country",
-            "store_open_hours",
         ]
         address_fields = [
             "state",
@@ -206,15 +205,6 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             required_fields.extend(address_fields)
         if not event_type in allowed_event_types:
             return CreateUpdateStoreMutation(error="Invalid event type")
-
-        # check if user is a student
-        is_user_student = user.profile.is_student
-        if is_user_student:
-            # extend address_fields
-            address_fields.extend(["school", "campus"])
-            for field in required_fields:
-                if field in kwargs and (not kwargs[field] and kwargs[field] == ""):
-                    kwargs.pop(field)
 
         # get kwargs values
         store_name = kwargs.get("store_name")
@@ -235,6 +225,8 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         school = kwargs.get("school")
         campus = kwargs.get("campus")
 
+        # check if user is a student
+        is_user_student = user.profile.is_student
         if is_user_student:
             user_profile: Profile = user.profile
             state = user_profile.state
@@ -254,9 +246,11 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         twitter_handle = kwargs.get("twitter_handle")
         facebook_handle = kwargs.get("facebook_handle")
 
-        print(store_nickname, school)
-
         if event_type == "CREATE":
+            if not store_open_hours:
+                return CreateUpdateStoreMutation(
+                    error="Store Open Hours is required, please try again"
+                )
             # check if the required fields are valid
             for field in required_fields:
                 if not field in kwargs:
