@@ -329,7 +329,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 street_name=street_name,
                 primary_address_lat=primary_address_lat,
                 primary_address_lng=primary_address_lng,
-                school=school_qs,
+                school=school_qs.first(),
                 campus=campus,
                 timezone=timezone,
                 # store contact
