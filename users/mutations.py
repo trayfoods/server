@@ -213,10 +213,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             # extend address_fields
             address_fields.extend(["school", "campus"])
             for field in required_fields:
-                if field in kwargs and (
-                    kwargs[field] is not None and kwargs[field] != ""
-                ):
-                    # remove the field from kwargs
+                if field in kwargs and (not kwargs[field] and kwargs[field] == ""):
                     kwargs.pop(field)
 
         # get kwargs values
@@ -257,15 +254,9 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         twitter_handle = kwargs.get("twitter_handle")
         facebook_handle = kwargs.get("facebook_handle")
 
+        print(store_nickname, school)
+
         if event_type == "CREATE":
-            # check if the user is a vendor
-            if "VENDOR" in user.roles:
-                return CreateUpdateStoreMutation(error="You already have a store")
-            # check if the store nickname is already taken
-            if Store.objects.filter(store_nickname=store_nickname.strip()).exists():
-                return CreateUpdateStoreMutation(
-                    error="Nickname already exists, please use a unique name"
-                )
             # check if the required fields are valid
             for field in required_fields:
                 if not field in kwargs:
@@ -280,6 +271,14 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                     return CreateUpdateStoreMutation(
                         error="{} is required".format(field)
                     )
+            # check if the user is a vendor
+            if "VENDOR" in user.roles:
+                return CreateUpdateStoreMutation(error="You already have a store")
+            # check if the store nickname is already taken
+            if Store.objects.filter(store_nickname=store_nickname.strip()).exists():
+                return CreateUpdateStoreMutation(
+                    error="Nickname already exists, please use a unique name"
+                )
         else:
             # check if the user is a vendor
             if not "VENDOR" in user.roles:
