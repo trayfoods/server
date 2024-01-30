@@ -213,10 +213,11 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             # extend address_fields
             address_fields.extend(["school", "campus"])
             for field in required_fields:
-                if field in kwargs:
-                    return CreateUpdateStoreMutation(
-                        error="A student can not have more than one school, campus and address fields kindly ignore them"
-                    )
+                if field in kwargs and (
+                    kwargs[field] is not None and kwargs[field] != ""
+                ):
+                    # remove the field from kwargs
+                    kwargs.pop(field)
 
         # get kwargs values
         store_name = kwargs.get("store_name")
@@ -268,7 +269,9 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             # check if the required fields are valid
             for field in required_fields:
                 if not field in kwargs:
-                    if field in address_fields:
+                    if field in address_fields and (
+                        kwargs[field] is None or kwargs[field] == ""
+                    ):
                         return CreateUpdateStoreMutation(
                             error="Valid Address is required, please try again".format(
                                 field
