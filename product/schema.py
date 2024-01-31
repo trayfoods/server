@@ -50,13 +50,6 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
             "Energy Drink",
         ]
         food_categories.sort()
-        item_types = [
-            "Food",
-            "Drink",
-            "Combo",
-            "Package",
-        ]
-        item_types.sort()
         item_attributes = ItemAttribute.objects.all()
         if item_attributes.count() > 0:
             pass
@@ -69,14 +62,6 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
                 )
                 new_item_attribute.save()
             item_attributes = ItemAttribute.objects.all()
-
-            for item_type in item_types:
-                new_item_attribute = ItemAttribute.objects.create(
-                    name=item_type,
-                    _type="TYPE",
-                    slug=item_type.replace(" ", "-").lower(),
-                )
-                new_item_attribute.save()
 
         return item_attributes
 

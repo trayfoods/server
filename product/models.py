@@ -309,6 +309,7 @@ class Rating(models.Model):
 
 class ItemAttribute(models.Model):
     name = models.CharField(max_length=50)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.CASCADE)
     slug = models.SlugField(null=False, unique=True)
     _type = models.CharField(max_length=10, choices=PRODUCT_TYPES)
     timestamp = models.DateTimeField(auto_now_add=True)

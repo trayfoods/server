@@ -423,7 +423,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                             store.store_name,
                             store.store_nickname,
                             store.store_type,
-                            store.store_country.code,
+                            store.country.code,
                             store.pk,
                         ),
                         recipient_list=[admin_user.email],
@@ -441,7 +441,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                             store.store_name,
                             store.store_nickname,
                             store.store_type,
-                            store.store_country.code,
+                            store.country.code,
                             store.pk,
                         ),
                     )
