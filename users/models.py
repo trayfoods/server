@@ -17,6 +17,7 @@ from trayapp.utils import image_resized, image_exists
 
 from product.models import Item, Order
 
+from datetime import datetime
 from django.conf import settings
 
 from trayapp.utils import get_twilio_client
@@ -447,12 +448,12 @@ class Profile(models.Model):
             )
             return True
         if not settings.SMS_ENABLED:
-            print("SMS is disabled", flush=True)
-            print(self.has_calling_code() and self.phone_number_verified, flush=True)
-            print(self.phone_number, flush=True)
-            print(self.calling_code, flush=True)
-            print(message, flush=True)
-            print("End of SMS is disabled", flush=True)
+            print("SMS is disabled")
+            print(self.has_calling_code() and self.phone_number_verified)
+            print(self.phone_number)
+            print(self.calling_code)
+            print(message)
+            print("End of SMS is disabled")
             return False if not settings.DEBUG else True
 
     def send_push_notification(self, title, msg, data=None):
@@ -842,7 +843,9 @@ class Wallet(models.Model):
 
 class StoreOpenHours(models.Model):
     store = models.ForeignKey("Store", on_delete=models.CASCADE)
-    day = models.CharField(max_length=10, choices=settings.DAYS_OF_WEEK)
+    day = models.CharField(
+        max_length=10, choices=settings.DAYS_OF_WEEK, null=True, blank=True
+    )
     open_time = models.TimeField()
     close_time = models.TimeField()
 
@@ -852,6 +855,49 @@ class StoreOpenHours(models.Model):
     # get store's open hours
     def get_store_open_hours(store_id):
         return StoreOpenHours.objects.filter(store__id=store_id)
+
+    # Check store's open status
+    @classmethod
+    def check_store_open_status(cls, store_id, timezone=None, current_day=None):
+        now = datetime.now(tz=timezone) if timezone else datetime.now()
+        current_day = now.strftime("%a") if not current_day else current_day
+
+        try:
+            store_open_hours = cls.get_store_open_hours(store_id)
+        except cls.DoesNotExist:
+            return {"isOpen": False, "message": "Store does not exist."}, 404
+        today_opening_hours = next(
+            (
+                hour
+                for hour in store_open_hours
+                if hour.day and hour.day.lower() == current_day.lower()
+            )
+            or store_open_hours[0],
+            None,
+        )
+
+        # check if the first day is None
+        if store_open_hours[0].day is None:
+            today_opening_hours = store_open_hours[0]
+
+        if not today_opening_hours:
+            return {"isOpen": False, "message": "We are closed today."}
+
+        open_time = today_opening_hours.open_time
+        close_time = today_opening_hours.close_time
+
+        if now.time() < open_time:
+            return {
+                "isOpen": False,
+                "message": f"Opens today by {open_time.strftime('%I:%M %p')}",
+            }
+        elif now.time() >= close_time:
+            return {"isOpen": False, "message": "We have closed."}
+        else:
+            return {
+                "isOpen": True,
+                "message": f"Closes today by {close_time.strftime('%I:%M %p')}",
+            }
 
 
 class Store(models.Model):
@@ -918,18 +964,12 @@ class Store(models.Model):
 
     # check if store is open
     def is_open(self):
-        # from datetime import datetime
-
-        # today = datetime.now().strftime("%A").lower()
-        # open_hours = StoreOpenHours.objects.filter(store=self, day=today).first()
-        # if open_hours:
-        #     open_time = open_hours.open_time
-        #     close_time = open_hours.close_time
-        #     now = datetime.now().time()
-        #     if now >= open_time and now <= close_time:
-        #         return True
-        # return False
-        return True
+        # get current day like Mon, Tue, Wed, etc
+        current_day = datetime.now().strftime("%a")
+        open_status = StoreOpenHours.check_store_open_status(
+            store_id=self.id, timezone=self.timezone, current_day=current_day
+        )
+        return open_status.get("isOpen", False)
 
     class Meta:
         ordering = ["-store_rank"]
