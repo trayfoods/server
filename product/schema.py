@@ -50,7 +50,7 @@ class Query(ItemQueries, OrderQueries, graphene.ObjectType):
             "Energy Drink",
         ]
         food_categories.sort()
-        item_attributes = ItemAttribute.objects.all()
+        item_attributes = ItemAttribute.objects.filter(_type="CATEGORY")
         if item_attributes.count() > 0:
             pass
         else:  # create item attributes
