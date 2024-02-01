@@ -866,6 +866,7 @@ class StoreOpenHours(models.Model):
             store_open_hours = cls.get_store_open_hours(store_id)
         except cls.DoesNotExist:
             return {"isOpen": False, "message": "Store does not exist."}, 404
+        
         today_opening_hours = next(
             (
                 hour
@@ -877,7 +878,7 @@ class StoreOpenHours(models.Model):
         )
 
         # check if the first day is None
-        if store_open_hours[0].day is None:
+        if len(store_open_hours) > 0 and store_open_hours[0].day is None:
             today_opening_hours = store_open_hours[0]
 
         if not today_opening_hours:
