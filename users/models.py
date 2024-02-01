@@ -17,7 +17,7 @@ from trayapp.utils import image_resized, image_exists
 
 from product.models import Item, Order
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.conf import settings
 
 from trayapp.utils import get_twilio_client
@@ -851,6 +851,31 @@ class StoreOpenHours(models.Model):
 
     def __str__(self) -> str:
         return f"{self.store.store_name} - {self.day}"
+    
+    def save(self, *args, **kwargs):
+            # Convert open_time and close_time to UTC before saving
+            self.open_time = self._convert_to_utc(self.open_time)
+            self.close_time = self._convert_to_utc(self.close_time)
+            
+            super().save(*args, **kwargs)
+
+    def _convert_to_utc(self, time):
+        # Convert the provided time to UTC
+        if time is not None:
+            # Combine the time with today's date to get a datetime object
+            datetime_obj = datetime.combine(datetime.today(), time)
+            
+            # Get the current time zone (assuming vendors provide their local time zone)
+            current_timezone = timezone.get_current_timezone()
+            
+            # Convert the datetime to UTC
+            utc_datetime = timezone.make_aware(datetime_obj, current_timezone).astimezone(timezone.utc)
+            
+            # Extract the time from the UTC datetime
+            utc_time = utc_datetime.time()
+            
+            return utc_time
+        return None
 
     # get store's open hours
     def get_store_open_hours(store_id):
@@ -964,13 +989,81 @@ class Store(models.Model):
         return f"{self.store_nickname}"
 
     # check if store is open
+
     def is_open(self):
-        # get current day like Mon, Tue, Wed, etc
-        current_day = datetime.now().strftime("%a")
-        open_status = StoreOpenHours.check_store_open_status(
-            store_id=self.id, timezone=self.timezone, current_day=current_day
-        )
-        return open_status.get("isOpen", False)
+        import pytz
+
+        # Get the current time in the store's time zone
+        current_datetime = timezone.now()
+
+        if self.timezone:
+            try:
+                current_datetime = current_datetime.astimezone(pytz.timezone(self.timezone))
+            except pytz.UnknownTimeZoneError:
+                print(f"Error: Invalid timezone '{self.timezone}'. Check and update if necessary.")
+                return False
+
+        # Get the abbreviated day of the week (e.g., "Mon", "Tue", etc.)
+        current_day_abbrev = current_datetime.strftime('%a')
+
+        # Get the store's open hours for the current day or the default open hours
+        try:
+            store_open_hours = self.storeopenhours_set.filter(
+                models.Q(day=current_day_abbrev) | models.Q(day__isnull=True) | models.Q(day__exact='')
+            ).first()
+        except (AttributeError, ValueError):
+            print("Error: Issue retrieving store open hours. Check the data model and data integrity.")
+            return False
+
+        if not store_open_hours:
+            print("Store open hours not found for this day. Consider adding default hours.")
+            return False
+
+        # Convert the open and close time to the store's timezone (handle potential errors)
+        try:
+            open_time = store_open_hours.open_time
+            close_time = store_open_hours.close_time
+        except (AttributeError, ValueError):
+            print("Error: Invalid open or close time format in store hours data.")
+            return False
+
+        if self.timezone:
+            try:
+                open_datetime = datetime.combine(datetime.today(), open_time)
+                close_datetime = datetime.combine(datetime.today(), close_time)
+                open_datetime = open_datetime.astimezone(pytz.timezone(self.timezone))
+                close_datetime = close_datetime.astimezone(pytz.timezone(self.timezone))
+            except (pytz.UnknownTimeZoneError, ValueError):
+                print(f"Error: Error converting time to store timezone. Check timezone settings.")
+                return False
+
+        else:
+            open_datetime = datetime.combine(datetime.today(), open_time)
+            close_datetime = datetime.combine(datetime.today(), close_time)
+
+        # Extract the time from the datetime
+        open_time = open_datetime.time()
+        close_time = close_datetime.time()
+
+        # Handle midnight closure edge case
+        if open_time == close_time:
+            print("Store is closed today (open and close times are the same).")
+            return False
+
+        # Check if store is open
+        if open_time <= current_datetime.time() < close_time:
+            return True
+
+        # If the current time is not within the open hours, check if it's within the next day's hours
+        if close_time < open_time:
+            next_day_datetime = current_datetime + timedelta(days=1)
+            next_day_open_time = store_open_hours.open_time
+            next_day_close_time = store_open_hours.close_time
+
+            if next_day_open_time <= next_day_datetime.time() < next_day_close_time:
+                return True
+
+        return False
 
     class Meta:
         ordering = ["-store_rank"]
