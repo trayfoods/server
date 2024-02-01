@@ -866,7 +866,7 @@ class StoreOpenHours(models.Model):
             store_open_hours = cls.get_store_open_hours(store_id)
         except cls.DoesNotExist:
             return {"isOpen": False, "message": "Store does not exist."}, 404
-        
+
         today_opening_hours = next(
             (
                 hour
