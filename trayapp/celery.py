@@ -23,6 +23,6 @@ app.conf.beat_schedule = {
     },
 }
 
-app.autodiscover_tasks()
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
 
 app.conf.broker_connection_retry_on_startup = True

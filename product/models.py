@@ -351,6 +351,7 @@ class Order(models.Model):
             ("partially-delivered", "partially-delivered"),
             ("delivered", "delivered"),
             ("partially-cancelled", "partially-cancelled"),
+            ("no-delivery-people", "no-delivery-people"),
             ("cancelled", "cancelled"),
             ("failed", "failed"),
         ),
@@ -475,8 +476,7 @@ class Order(models.Model):
                         ).exists():
                             self.linked_delivery_people.add(delivery_person.get("id"))
                 else:
-                    self.linked_delivery_people.clear()
-
+                    self.linked_delivery_people.clear()                   
         super().save(*args, **kwargs)
 
     def __str__(self):

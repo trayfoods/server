@@ -33,3 +33,6 @@ EXPOSE 8000
 
 # Startup command for the application
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+COPY start_celery_worker.sh /usr/local/bin/celery_worker
+RUN chmod +x /usr/local/bin/celery_worker

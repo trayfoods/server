@@ -1,5 +1,7 @@
 from decimal import Decimal
 import os
+import time
+
 import uuid
 from django.utils import timezone
 
@@ -160,7 +162,6 @@ class UserDevice(models.Model):
     user = models.ForeignKey(UserAccount, on_delete=models.CASCADE)
     device_token = models.TextField()
     device_type = models.CharField(max_length=100, null=True, blank=True)
-    device_name = models.CharField(max_length=100, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -1241,7 +1242,7 @@ class DeliveryPerson(models.Model):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
     # method to check if a order is able to be delivered by a delivery person
-    def can_deliver(self, order: Order, flag=False):
+    def can_deliver(self, order: Order):
         order_user: Profile = order.user
 
         delivery_person_profile = self.profile
@@ -1316,6 +1317,23 @@ class DeliveryPerson(models.Model):
                 delivery_people_that_can_deliver.append(delivery_person)
         return delivery_people_that_can_deliver
 
+class Delivery(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True, blank=True)
+    delivery_person = models.ForeignKey(DeliveryPerson, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=30,
+        choices=(
+            ("pending", "pending"),
+            ("accepted", "accepted"),
+            ("rejected", "rejected"),
+            ("out-for-delivery", "out-for-delivery"),
+            ("delivered", "delivered"),
+        ),
+        default="pending",
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+
 
 class UserActivity(models.Model):
     ACTIVITY_TYPES = (
@@ -1343,6 +1361,32 @@ class UserActivity(models.Model):
     def item_idx(self):
         return self.item.id
 
+def handle_delivery_queue():
+    while True:
+        # Get a pending delivery from the waiting queue
+        delivery = Delivery.objects.filter(status='pending').first()
+        print("delivery", delivery)
+        if delivery:
+            # Send a notification to the delivery person
+            delivery_person_profile = delivery.delivery_person.profile
+            delivery_person_profile.send_push_notification(
+                title="New Delivery Request",
+                msg="You have a new delivery request. Please respond to it.",
+                data={
+                    "type": "delivery_request",
+                    "order_id": delivery.order.order_track_id,
+                    "shipping_address": delivery.order.shipping,
+                    "delivery_id": delivery.pk,
+                },
+            )
+            # Wait for the delivery person to respond
+            time.sleep(60)
+            # If the delivery person hasn't responded, move to the next delivery person
+            if delivery.status == 'pending':
+                delivery.status = 'rejected'
+                delivery.save()
+            else:
+                break
 
 # Signals
 @receiver(post_save, sender=UserAccount)
@@ -1383,3 +1427,18 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
         instance.image.delete(save=False)
     except:
         pass
+
+# handle delivery queue
+# @receiver(post_save, sender=Delivery)
+# def delivery_updated_handler(sender, instance, created, **kwargs):
+#     # when a delivery is created, start the delivery queue
+#     if created:
+#         # Start the delivery queue
+#         handle_delivery_queue()
+#     else:
+#         # If the delivery status changes to 'accepted', notify the user
+#         if instance.status == 'accepted':
+#             instance.order.notify_user(
+#                 title="Delivery Accepted",
+#                 msg="Your delivery request has been accepted. Your delivery is on the way.",
+#             )

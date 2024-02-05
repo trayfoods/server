@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, Profile, DeliveryPerson
+from users.models import UserActivity, Store, Profile, DeliveryPerson, Delivery
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
@@ -422,6 +422,26 @@ class CreateOrderMutation(Output, graphene.Mutation):
         new_order.linked_items.set(avaliable_items)
         new_order.linked_stores.set(avaliable_stores)
         new_order.save()
+
+        if new_order.is_pickup() == False:
+            # create a delivery for the order
+            people_who_can_deliver = DeliveryPerson.get_delivery_people_that_can_deliver(new_order)
+            # check if there are people who can deliver the order
+            if people_who_can_deliver and len(people_who_can_deliver) > 0:
+                for delivery_person in people_who_can_deliver:
+                    Delivery.objects.create(order=new_order, delivery_person=delivery_person, status='pending')
+
+            else: # if there are no people who can deliver the order
+                for store_id in new_order.linked_stores.all():
+                    new_order.update_store_status(store_id=store_id, status="no-delivery-person")
+                new_order.order_status = "no-delivery-people"
+                # notify the user that there are no delivery people
+                new_order.notify_user(
+                    message="There are no delivery people available to deliver your order. Please try again later.",
+                    title="No Delivery People",
+                )
+                return CreateOrderMutation(order_id=new_order.order_track_id, success=True, error="There are no delivery people available to deliver your order. Please try again later.")
+        
 
         return CreateOrderMutation(order_id=new_order.order_track_id, success=True)
 
