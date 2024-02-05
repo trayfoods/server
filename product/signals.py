@@ -1,7 +1,3 @@
-import io
-from PIL import Image
-from pathlib import Path
-import blurhash
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, pre_delete
@@ -23,9 +19,6 @@ def save_image(sender, instance, **kwargs):
             file, "ImageField", name, content_type, size, None
         )
         instance.item_image = new_item_image
-        instance.item_image_hash = blurhash.encode(
-            new_item_image, x_components=4, y_components=3
-        )
 
     # update Itemimage (original)
     if not instance._state.adding:
@@ -52,9 +45,6 @@ def save_image(sender, instance, **kwargs):
                 file, "ImageField", name, content_type, size, None
             )
             instance.item_image = new_item_image
-            instance.item_image_hash = blurhash.encode(
-                new_item_image, x_components=4, y_components=3
-            )
 
 
 @receiver(pre_delete, sender=ItemImage, dispatch_uid="ItemImage.delete_image")

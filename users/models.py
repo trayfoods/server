@@ -24,6 +24,8 @@ from django.conf import settings
 
 from trayapp.utils import get_twilio_client
 from celery.utils.log import get_task_logger
+from django.contrib.auth.hashers import check_password, make_password
+
 
 logger = get_task_logger(__name__)
 
@@ -627,7 +629,6 @@ class Wallet(models.Model):
         wallet.set_passcode("1234")
         ```
         """
-        from django.contrib.auth.hashers import make_password
 
         self.passcode = make_password(passcode)
         self.save()
@@ -642,7 +643,6 @@ class Wallet(models.Model):
         # returns True if the passcode is correct
         ```
         """
-        from django.contrib.auth.hashers import check_password
 
         # check if passcode is set
         if self.passcode is None:
