@@ -10,8 +10,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='itemimage',
-            name='item_image_hash',
-        ),
+        # migrations.RemoveField(
+        #     model_name='itemimage',
+        #     name='item_image_hash',
+        # ),
     ]
