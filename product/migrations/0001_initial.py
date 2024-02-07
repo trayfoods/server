@@ -53,6 +53,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('item_image', models.ImageField(help_text='Upload Item Image.', upload_to=product.models.item_directory_path, verbose_name='Item Image')),
+                ('item_image_hash', models.CharField(blank=True, editable=False, max_length=32, null=True, verbose_name='Item Image Hash')),
                 ('is_primary', models.BooleanField(default=False)),
                 ('timestamp', models.DateTimeField(auto_now_add=True)),
             ],

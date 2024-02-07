@@ -52,6 +52,13 @@ class ItemImage(models.Model):
         blank=False,
         help_text=_("Upload Item Image."),
     )
+    item_image_hash = models.CharField(
+        "Item Image Hash",
+        max_length=32,
+        null=True,
+        blank=True,
+        editable=False,
+    )
     is_primary = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
