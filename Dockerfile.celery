@@ -19,7 +19,7 @@ WORKDIR /app
 # Copy project files
 COPY . .
 
-COPY celery-startup.sh /usr/local/bin/celery_worker
+COPY celery-startup.sh celery-startup.sh
 
 # Copy dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
