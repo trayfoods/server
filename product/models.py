@@ -496,6 +496,16 @@ class Order(models.Model):
         stores_infos = self.stores_infos
         view_as = self.view_as(current_user_profile)
 
+        # add store status to each store
+        for store_info in stores_infos:
+            store_id = store_info.get("storeId")
+            store_status = self.get_store_status(store_id)
+
+            if not store_status:
+                store_info["status"] = "error"
+
+            store_info["status"] = store_status
+
         # set all price to 0 if the user is a delivery person
         if "DELIVERY_PERSON" in view_as:
             delivery_person = self.get_delivery_person(

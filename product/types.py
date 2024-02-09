@@ -284,9 +284,14 @@ class StoreInfoType(StoreInfo, graphene.ObjectType):
     count = graphene.Field(CountOrderType, required=True)
     items = graphene.List(StoreItemType, required=True)
     store = graphene.Field(StoreType)
+    status = graphene.String()
 
     def resolve_store(self, info):
         return Store.objects.filter(id=int(self.get("storeId"))).first()
+
+    def resolve_status(self, info):
+        store_status = self.get("status", "ERROR")
+        return store_status.upper().replace("-", "_")
 
 
 class StoreInfoInputType(graphene.InputObjectType):
@@ -334,6 +339,10 @@ class OrderUserType(graphene.ObjectType):
 class OrderDeliveryPersonType(OrderUserType, graphene.ObjectType):
     status = graphene.String()
     storeId = graphene.String()
+
+    def resolve_status(self, info):
+        store_status = self.status
+        return store_status.upper().replace("-", "_")
 
 
 class OrderType(DjangoObjectType):
