@@ -453,6 +453,7 @@ def get_store_name_from_store_status(current_order: Order):
         if store_qs is None:
             raise GraphQLError("An error occured while getting store names, please contact support")
         store_names.append(store_qs.store_name)
+    return store_names
 
 class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
