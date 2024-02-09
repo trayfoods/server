@@ -5,7 +5,13 @@ from trayapp.permissions import permission_checker, IsAuthenticated
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
 from users.models import Store, DeliveryPerson
 from users.types import StoreType, School
-from .filters import ItemFilter, ReviewFilter, OrderFilter, StoreOrderFilter, DeliveryPersonFilter
+from .filters import (
+    ItemFilter,
+    ReviewFilter,
+    OrderFilter,
+    StoreOrderFilter,
+    DeliveryPersonFilter,
+)
 
 
 class ItemImageType(DjangoObjectType):
@@ -56,11 +62,13 @@ class ReviewType(DjangoObjectType):
     def resolve_helpful_count(self, info, *args, **kwargs):
         return self.users_liked.count()
 
+
 class ReviewNode(ReviewType, DjangoObjectType):
     class Meta:
         model = Rating
         interfaces = (graphene.relay.Node,)
         filterset_class = ReviewFilter
+
 
 class ItemType(DjangoObjectType):
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
@@ -70,7 +78,7 @@ class ItemType(DjangoObjectType):
     reviews_count = graphene.Int()
     current_user_review = graphene.Field(ReviewType)
     is_avaliable_for_store = graphene.String()
-    
+
     rating_percentage = graphene.Float()
 
     class Meta:
@@ -177,7 +185,7 @@ class ItemType(DjangoObjectType):
 
     def resolve_is_avaliable(self, info):
         return self.is_avaliable
-    
+
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()
 
@@ -304,8 +312,9 @@ class StoreNoteInputType(StoreNote, graphene.InputObjectType):
 
 class OrderUserType(graphene.ObjectType):
     image = graphene.String(default_value=None)
-    calling_code = graphene.String(required=True)
-    phone_number = graphene.String(required=True)
+    full_name = graphene.String()
+    calling_code = graphene.String()
+    phone_number = graphene.String()
 
     def resolve_image(self, info):
         if not self.image:
@@ -317,6 +326,9 @@ class OrderUserType(graphene.ObjectType):
 
     def resolve_phone_number(self, info):
         return self.phone_number
+
+    def resolve_full_name(self, info):
+        return self.full_name
 
 
 class OrderDeliveryPersonType(OrderUserType, graphene.ObjectType):
@@ -373,28 +385,51 @@ class OrderType(DjangoObjectType):
         current_user = info.context.user
         order_status = self.get_order_status(current_user.profile)
         view_as = self.view_as(current_user.profile)
-        if order_status == "DELIVERED" or order_status == "CANCELLED" or "PENDING":
+        if order_status == "DELIVERED" or order_status == "CANCELLED":
             return None
         # delivery_people = self.delivery_people
         # if self.user == current_user.profile and len(delivery_people) > 0:
         #     return None
-        if len(view_as) > 0:
-            return self.user
 
-    def resolve_delivery_people(self, info):
-        delivery_people = self.delivery_people
+        if len(view_as) > 0:
+            customer_profile = self.user
+            return OrderUserType(
+                image=customer_profile.image,
+                full_name=customer_profile.user.get_full_name(),
+                calling_code=customer_profile.calling_code,
+                phone_number=customer_profile.phone_number,
+            )
+
+    def resolve_delivery_people(self: Order, info):
+        current_user = info.context.user
+        current_user_profile = current_user.profile
+        view_as = self.view_as(current_user_profile)
+
+        delivery_people = []
+
+        if len(view_as) == 0 or "USER" in view_as:
+            delivery_people = self.delivery_people
+
+        elif "VENDOR" in view_as:
+            store_id = current_user_profile.store.id
+            store_delivery_person = self.get_delivery_person(store_id=store_id)
+            delivery_people = [store_delivery_person] if store_delivery_person else []
+
         delivery_people_infos = []
         for delivery_person in delivery_people:
             delivery_person_profile = (
-                DeliveryPerson.objects.filter(id=delivery_person["id"]).first().profile
+                DeliveryPerson.objects.filter(id=int(delivery_person["id"]))
+                .first()
+                .profile
             )
             delivery_people_infos.append(
                 OrderDeliveryPersonType(
-                    image=delivery_person_profile.image,
-                    calling_code=delivery_person_profile.calling_code,
-                    phone_number=delivery_person_profile.phone_number,
                     status=delivery_person["status"],
                     storeId=delivery_person["storeId"],
+                    image=delivery_person_profile.image,
+                    full_name=delivery_person_profile.user.get_full_name(),
+                    calling_code=delivery_person_profile.calling_code,
+                    phone_number=delivery_person_profile.phone_number,
                 )
             )
 
@@ -409,14 +444,18 @@ class OrderType(DjangoObjectType):
         return self.linked_items.count()
 
     def resolve_items_images_urls(self, info):
-        images_urls = []
-        for item in self.linked_items.all():
-            images_urls.append(
-                info.context.build_absolute_uri(
-                    item.product_images.first().item_image.url
-                )
-            )
-        return images_urls
+        current_user = info.context.user
+        current_user_profile = current_user.profile
+        curr_store_infos = self.get_current_store_infos(current_user_profile)
+
+        items_images = []
+
+        for store in curr_store_infos:
+            items = store.get("items", [])
+            for item in items:
+                items_images.append(item.get("product_image", ""))
+
+        return items_images
 
     def resolve_shipping(self, info):
         shipping = self.shipping
@@ -427,43 +466,10 @@ class OrderType(DjangoObjectType):
             }
             return ShippingType(**shipping)
 
-    def resolve_stores_infos(self, info):
-        stores_infos = self.stores_infos
-
+    def resolve_stores_infos(self: Order, info):
         current_user = info.context.user
         current_user_profile = current_user.profile
-        view_as = self.view_as(current_user_profile)
-
-        # set all price to 0 if the user is a delivery person
-        if "DELIVERY_PERSON" in view_as:
-            delivery_person = self.get_delivery_person(
-                delivery_person_id=current_user_profile.get_delivery_person().id
-            )
-            if delivery_person:
-                # filter stores_infos to only the store that the delivery person is linked to
-                stores_infos = [
-                    store_info
-                    for store_info in stores_infos
-                    if str(store_info["storeId"]) == str(delivery_person["storeId"])
-                ]
-            for store_info in stores_infos:
-                store_info["total"]["price"] = 0
-                store_info["total"]["platePrice"] = 0
-
-                # set all item price to 0
-                for item in store_info["items"]:
-                    item["productPrice"] = 0
-
-        # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if "VENDOR" in view_as:
-            current_user_profile = current_user.profile
-            stores_infos = [
-                store_info
-                for store_info in stores_infos
-                if str(store_info["storeId"]) == str(current_user_profile.store.id)
-            ]  # filter the stores_infos to only the store that the vendor is linked to
-
-        return stores_infos
+        return self.get_current_store_infos(current_user_profile)
 
     def resolve_customer_note(self: Order, info):
         current_user = info.context.user

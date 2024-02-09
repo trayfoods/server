@@ -480,7 +480,7 @@ class Order(models.Model):
                         ).exists():
                             self.linked_delivery_people.add(delivery_person.get("id"))
                 else:
-                    self.linked_delivery_people.clear()                   
+                    self.linked_delivery_people.clear()
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -491,6 +491,40 @@ class Order(models.Model):
         order_track_id = self.order_track_id
         formatteed_order_track_id = order_track_id.replace("order_", "")
         return f"#{formatteed_order_track_id}".upper()
+
+    def get_current_store_infos(self, current_user_profile):
+        stores_infos = self.stores_infos
+        view_as = self.view_as(current_user_profile)
+
+        # set all price to 0 if the user is a delivery person
+        if "DELIVERY_PERSON" in view_as:
+            delivery_person = self.get_delivery_person(
+                delivery_person_id=current_user_profile.get_delivery_person().id
+            )
+            if delivery_person:
+                # filter stores_infos to only the store that the delivery person is linked to
+                stores_infos = [
+                    store_info
+                    for store_info in stores_infos
+                    if str(store_info["storeId"]) == str(delivery_person["storeId"])
+                ]
+            for store_info in stores_infos:
+                store_info["total"]["price"] = 0
+                store_info["total"]["platePrice"] = 0
+
+                # set all item price to 0
+                for item in store_info["items"]:
+                    item["productPrice"] = 0
+
+        # check if view_as is set to vendor, then return only the store that the vendor is linked to
+        if "VENDOR" in view_as:
+            stores_infos = [
+                store_info
+                for store_info in stores_infos
+                if str(store_info["storeId"]) == str(current_user_profile.store.id)
+            ]  # filter the stores_infos to only the store that the vendor is linked to
+
+        return stores_infos
 
     # validate the order store status format is correct
     def validate_stores_status(self):
@@ -863,9 +897,11 @@ class Order(models.Model):
 
         callback_url = f"{FRONTEND_URL}/checkout/{order_track_id}"
         data = {
-            "email": self.user.user.email
-            if self.user.user.email
-            else f"{self.user.user.username}@gmail.com",
+            "email": (
+                self.user.user.email
+                if self.user.user.email
+                else f"{self.user.user.username}@gmail.com"
+            ),
             "currency": self.order_currency,
             "amount": Decimal(amount),
             "reference": f"{order_track_id}",
