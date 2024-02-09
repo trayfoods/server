@@ -383,7 +383,8 @@ class OrderType(DjangoObjectType):
 
     def resolve_user(self: Order, info):
         current_user = info.context.user
-        order_status = self.get_order_status(current_user.profile)
+        current_user_profile = current_user.profile
+        order_status = self.get_order_status(current_user_profile)
         view_as = self.view_as(current_user.profile)
         if order_status == "DELIVERED" or order_status == "CANCELLED":
             return None
@@ -392,6 +393,12 @@ class OrderType(DjangoObjectType):
         #     return None
 
         if len(view_as) > 0:
+            if "DELIVERY_PERSON" in view_as:
+                delivery_person_info = self.get_delivery_person(
+                    delivery_person_id=current_user_profile.deliveryperson.id
+                )
+                if delivery_person_info["status"] != "out-for-delivery":
+                    return None
             customer_profile = self.user
             return OrderUserType(
                 image=customer_profile.image,
