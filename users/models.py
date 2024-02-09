@@ -475,12 +475,14 @@ class Profile(models.Model):
             title=title,
             msg=msg,
             tokens=device_tokens,
-            data=data
-            if data
-            else {
-                "priority": "high",
-                "sound": "default",
-            },
+            data=(
+                data
+                if data
+                else {
+                    "priority": "high",
+                    "sound": "default",
+                }
+            ),
         ).start()
 
         return True
@@ -852,29 +854,32 @@ class StoreOpenHours(models.Model):
 
     def __str__(self) -> str:
         return f"{self.store.store_name} - {self.day}"
-    
+
     def save(self, *args, **kwargs):
-            # Convert open_time and close_time to UTC before saving
-            self.open_time = self._convert_to_utc(self.open_time)
-            self.close_time = self._convert_to_utc(self.close_time)
-            
-            super().save(*args, **kwargs)
+        # Convert open_time and close_time to UTC before saving
+        self.open_time = self._convert_to_utc(self.open_time)
+        self.close_time = self._convert_to_utc(self.close_time)
+
+        super().save(*args, **kwargs)
 
     def _convert_to_utc(self, time):
         # Convert the provided time to UTC
         if time is not None:
+            time = datetime.strptime(time, "%H:%M").time()
             # Combine the time with today's date to get a datetime object
             datetime_obj = datetime.combine(datetime.today(), time)
-            
+
             # Get the current time zone (assuming vendors provide their local time zone)
             current_timezone = timezone.get_current_timezone()
-            
+
             # Convert the datetime to UTC
-            utc_datetime = timezone.make_aware(datetime_obj, current_timezone).astimezone(timezone.utc)
-            
+            utc_datetime = timezone.make_aware(
+                datetime_obj, current_timezone
+            ).astimezone(timezone.utc)
+
             # Extract the time from the UTC datetime
             utc_time = utc_datetime.time()
-            
+
             return utc_time
         return None
 
@@ -999,25 +1004,35 @@ class Store(models.Model):
 
         if self.timezone:
             try:
-                current_datetime = current_datetime.astimezone(pytz.timezone(self.timezone))
+                current_datetime = current_datetime.astimezone(
+                    pytz.timezone(self.timezone)
+                )
             except pytz.UnknownTimeZoneError:
-                print(f"Error: Invalid timezone '{self.timezone}'. Check and update if necessary.")
+                print(
+                    f"Error: Invalid timezone '{self.timezone}'. Check and update if necessary."
+                )
                 return False
 
         # Get the abbreviated day of the week (e.g., "Mon", "Tue", etc.)
-        current_day_abbrev = current_datetime.strftime('%a')
+        current_day_abbrev = current_datetime.strftime("%a")
 
         # Get the store's open hours for the current day or the default open hours
         try:
             store_open_hours = self.storeopenhours_set.filter(
-                models.Q(day=current_day_abbrev) | models.Q(day__isnull=True) | models.Q(day__exact='')
+                models.Q(day=current_day_abbrev)
+                | models.Q(day__isnull=True)
+                | models.Q(day__exact="")
             ).first()
         except (AttributeError, ValueError):
-            print("Error: Issue retrieving store open hours. Check the data model and data integrity.")
+            print(
+                "Error: Issue retrieving store open hours. Check the data model and data integrity."
+            )
             return False
 
         if not store_open_hours:
-            print("Store open hours not found for this day. Consider adding default hours.")
+            print(
+                "Store open hours not found for this day. Consider adding default hours."
+            )
             return False
 
         # Convert the open and close time to the store's timezone (handle potential errors)
@@ -1035,7 +1050,9 @@ class Store(models.Model):
                 open_datetime = open_datetime.astimezone(pytz.timezone(self.timezone))
                 close_datetime = close_datetime.astimezone(pytz.timezone(self.timezone))
             except (pytz.UnknownTimeZoneError, ValueError):
-                print(f"Error: Error converting time to store timezone. Check timezone settings.")
+                print(
+                    f"Error: Error converting time to store timezone. Check timezone settings."
+                )
                 return False
 
         else:
@@ -1317,6 +1334,7 @@ class DeliveryPerson(models.Model):
                 delivery_people_that_can_deliver.append(delivery_person)
         return delivery_people_that_can_deliver
 
+
 class Delivery(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
     store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True, blank=True)
@@ -1361,10 +1379,11 @@ class UserActivity(models.Model):
     def item_idx(self):
         return self.item.id
 
+
 def handle_delivery_queue():
     while True:
         # Get a pending delivery from the waiting queue
-        delivery = Delivery.objects.filter(status='pending').first()
+        delivery = Delivery.objects.filter(status="pending").first()
         print("delivery", delivery)
         if delivery:
             # Send a notification to the delivery person
@@ -1382,11 +1401,12 @@ def handle_delivery_queue():
             # Wait for the delivery person to respond
             time.sleep(60)
             # If the delivery person hasn't responded, move to the next delivery person
-            if delivery.status == 'pending':
-                delivery.status = 'rejected'
+            if delivery.status == "pending":
+                delivery.status = "rejected"
                 delivery.save()
             else:
                 break
+
 
 # Signals
 @receiver(post_save, sender=UserAccount)
@@ -1427,6 +1447,7 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
         instance.image.delete(save=False)
     except:
         pass
+
 
 # handle delivery queue
 # @receiver(post_save, sender=Delivery)

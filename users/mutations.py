@@ -370,8 +370,8 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store.primary_address_lat = primary_address_lat
             if primary_address_lng:
                 store.primary_address_lng = primary_address_lng
-            if school_qs:
-                store.school = school_qs
+            if school and school_qs.exists():
+                store.school = school_qs.first()
             if campus:
                 store.campus = campus
             if timezone:

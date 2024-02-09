@@ -213,6 +213,7 @@ class StoreType(DjangoObjectType):
     whatsapp_numbers = graphene.List(graphene.String)
 
     country = graphene.String()
+    country_code = graphene.String()
 
     class Meta:
         model = Store
@@ -261,6 +262,9 @@ class StoreType(DjangoObjectType):
 
     def resolve_country(self, info):
         return self.country.name
+    
+    def resolve_country_code(self, info):
+        return self.country.code
 
 
 class StoreNode(StoreType, graphene.ObjectType):
