@@ -862,9 +862,11 @@ class StoreOpenHours(models.Model):
 
         super().save(*args, **kwargs)
 
-    def _convert_to_utc(self, time):
+    def _convert_to_utc(self, time: str):
         # Convert the provided time to UTC
         if time is not None:
+            time_cols = time.split(":")
+            time = "{}:{}".format(time_cols[0], time_cols[1])
             time = datetime.strptime(time, "%H:%M").time()
             # Combine the time with today's date to get a datetime object
             datetime_obj = datetime.combine(datetime.today(), time)
