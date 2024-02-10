@@ -477,10 +477,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
         # check if the user has the right to interact with the order
         view_as = order.view_as(user.profile)
-        # if not "DELIVERY_PERSON" in view_as and not "VENDOR" in view_as:
-        #     return MarkOrderAsMutation(
-        #         error="You are not authorized to interact with this order"
-        #     )
 
         # convert action and order_status to lowercase and replace underscore with dash
         action = action.lower().replace("_", "-")
