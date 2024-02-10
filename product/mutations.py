@@ -472,7 +472,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             return MarkOrderAsMutation(error="Order does not exists")
 
         order = order.first()
-        order.user: Profile = order.user
+        order.user = order.user
         shipping = order.shipping
 
         # check if the user has the right to interact with the order
