@@ -16,9 +16,10 @@ from product.models import ItemAttribute
 
 from product.queries.item import ItemQueries
 from product.queries.order import OrderQueries
+from product.queries.reviews import ReviewQueries
 
 
-class Query(ItemQueries, OrderQueries, graphene.ObjectType):
+class Query(ItemQueries, ReviewQueries, OrderQueries, graphene.ObjectType):
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, slug=graphene.String())
