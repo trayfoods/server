@@ -999,6 +999,9 @@ class Store(models.Model):
     # check if store is open
 
     def is_open(self):
+        if settings.DEBUG:
+            return True
+
         import pytz
 
         # Get the current time in the store's time zone
