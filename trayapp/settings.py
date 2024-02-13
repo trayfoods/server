@@ -357,6 +357,7 @@ if DEBUG == False:
 
 CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
+    "http://localhost:45678",
     "https://localhost",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
