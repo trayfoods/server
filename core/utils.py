@@ -88,6 +88,7 @@ class ProcessPayment:
             # update the order payment status
             order.order_payment_status = order_payment_status
             order.order_payment_method = order_payment_method
+            order.delivery_fee_percentage = delivery_fee_percentage
             order.delivery_fee = new_delivery_fee
             order.order_status = "processing"
             order.save()

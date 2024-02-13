@@ -374,6 +374,7 @@ class OrderType(DjangoObjectType):
             "customer_note",
             "order_track_id",
             "delivery_fee",
+            "delivery_fee_percentage",
             "linked_items",
             "order_status",
             "display_date",

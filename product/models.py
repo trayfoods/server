@@ -383,6 +383,9 @@ class Order(models.Model):
     service_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
+    delivery_fee_percentage = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=list)
     store_notes = models.JSONField(
