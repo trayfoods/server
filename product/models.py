@@ -500,10 +500,21 @@ class Order(models.Model):
         for store_info in stores_infos:
             store_id = store_info.get("storeId")
             store_status = self.get_store_status(store_id)
-            
+
             store_info["status"] = None
 
-            if self.order_payment_status == "success" and store_status:
+            if (
+                self.order_payment_status
+                in [
+                    "success",
+                    "partially-failed-refund",
+                    "failed-refund",
+                    "refunded",
+                    "partially-refunded",
+                    "pending-refund",
+                ]
+                and store_status
+            ):
                 store_info["status"] = store_status
 
         # set all price to 0 if the user is a delivery person
