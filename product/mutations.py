@@ -1108,20 +1108,26 @@ class RateItemMutation(Output, graphene.Mutation):
 
 class HelpfulReviewMutation(Output, graphene.Mutation):
     class Arguments:
-        review_id = graphene.Int(required=True)
+        review_id = graphene.ID(required=True)
         helpful = graphene.Boolean(required=True)
 
     @permission_checker([IsAuthenticated])
     def mutate(self, info, review_id, helpful):
         user = info.context.user
+        from graphql_relay import from_global_id
         try:
-            rating_qs = Rating.objects.filter(id=review_id, user=user)
+            review_id = from_global_id(review_id)[1]
+        except Exception:
+            return HelpfulReviewMutation(error="Invalid review id")
 
-            if not rating_qs.exists():
-                return HelpfulReviewMutation(error="Could not find this review")
-            
-            rating = rating_qs.first()
+        rating_qs = Rating.objects.filter(id=review_id, user=user)
 
+        if not rating_qs.exists():
+            return HelpfulReviewMutation(error="Could not find this review")
+        
+        rating = rating_qs.first()
+
+        try:
             if helpful:
                 rating.users_liked.add(user)
             else:
@@ -1129,7 +1135,7 @@ class HelpfulReviewMutation(Output, graphene.Mutation):
             rating.save()
             return HelpfulReviewMutation(success=True)
         except Exception:
-            return HelpfulReviewMutation(error = "Somwthing went wrong, please try again later")
+            return HelpfulReviewMutation(error = "Something went wrong, please try again later")
 
 
 

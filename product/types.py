@@ -284,14 +284,14 @@ class StoreInfoType(StoreInfo, graphene.ObjectType):
     count = graphene.Field(CountOrderType, required=True)
     items = graphene.List(StoreItemType, required=True)
     store = graphene.Field(StoreType)
-    status = graphene.String()
+    status = graphene.String(default_value=None)
 
     def resolve_store(self, info):
         return Store.objects.filter(id=int(self.get("storeId"))).first()
 
     def resolve_status(self, info):
-        store_status = self.get("status", "ERROR")
-        return store_status.upper().replace("-", "_")
+        store_status = self.get("status", None)
+        return store_status.upper().replace("-", "_") if store_status else None
 
 
 class StoreInfoInputType(graphene.InputObjectType):
