@@ -534,7 +534,7 @@ class Order(models.Model):
                     item["productPrice"] = 0
 
         # check if view_as is set to vendor, then return only the store that the vendor is linked to
-        if "VENDOR" in view_as:
+        if "VENDOR" in view_as and not "USER" in view_as:
             stores_infos = [
                 store_info
                 for store_info in stores_infos
