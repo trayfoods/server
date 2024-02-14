@@ -455,6 +455,105 @@ def get_store_name_from_store_status(current_order: Order):
         store_names.append(store_qs.store_name)
     return store_names
 
+class ReOrderMutation(Output, graphene.Mutation):
+    class Arguments:
+        order_id = graphene.String(required=True)
+
+    order_id = graphene.String()
+    success = graphene.Boolean()
+    error = graphene.String()
+    
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, order_id):
+        user = info.context.user
+        profile = user.profile
+
+        order = Order.objects.filter(order_track_id=order_id).first()
+        if order is None:
+            return ReOrderMutation(error="Order does not exist")
+
+        if order.user != profile:
+            return ReOrderMutation(error="You are not allowed to reorder this order")
+
+        if order.order_status != "delivered":
+            return ReOrderMutation(error="You are not allowed to reorder this order")
+
+        # get store status from linked stores
+        avaliable_stores = order.linked_stores.all()
+        stores_status = []
+        
+        for store in avaliable_stores:
+            store_status = {
+                "storeId": store.id,
+                "status": "pending",
+            }
+            stores_status.append(store_status)
+
+        """
+        validate the order items by checking:
+        1. if the item is available
+        2. if the item's store is available
+        3. if the item qty is available
+        """
+
+        avaliable_items = order.linked_items.all()
+        # get all items in the stores_infos
+        items_in_stores_infos = []
+        for store_info in order.stores_infos:
+            for item in store_info.get("items"):
+                items_in_stores_infos.append(item.get("itemId"))
+
+        # get all items that are not in the stores_infos
+        items_not_in_stores_infos = list(set(avaliable_items) - set(items_in_stores_infos))
+        if len(items_not_in_stores_infos) > 0:
+            return ReOrderMutation(error="Some items are not available")
+
+        # get all stores in the stores_infos
+        stores_in_stores_infos = []
+        for store_info in order.stores_infos:
+            stores_in_stores_infos.append(store_info.get("storeId"))
+                        
+        # get all stores that are not in the stores_infos
+        stores_not_in_stores_infos = list(set(avaliable_stores) - set(stores_in_stores_infos))
+        if len(stores_not_in_stores_infos) > 0:
+            return ReOrderMutation(error="Some stores are not available")
+        
+        # check which store is not open
+        for store in avaliable_stores:
+            if store.is_open() == False:
+                return ReOrderMutation(error=f"{store.store_name} has closed")
+                        
+        # check if the item is available
+        for item in avaliable_items:
+            if item.product_status != "active":
+                return ReOrderMutation(error="Some items are not available")
+                        
+        # create new order
+        new_order = Order.objects.create(
+            user=profile,
+            overall_price=order.overall_price,
+            delivery_fee=order.delivery_fee,
+            service_fee=order.service_fee,
+            shipping=order.shipping,
+            store_notes=order.store_notes,
+            stores_status=stores_status,
+            delivery_person_note=order.delivery_person_note,
+            extra_delivery_fee=order.extra_delivery_fee,
+            stores_infos=order.stores_infos,
+        )
+        new_order.save()
+
+        # add items to the new order
+        for item in avaliable_items:
+            new_order.linked_items.add(item)
+
+        # add stores to the new order
+        for store in avaliable_stores:
+            new_order.linked_stores.add(store)
+
+
+        return ReOrderMutation(order_id=new_order.order_track_id, success=True)
+
 class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
         order_id = graphene.String(required=True)
@@ -507,7 +606,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been cancelled",
                 )
-
+        def get_store_statuses(current_order: Order, new_status, store_id: int=None):
+            store_statuses = []
+            for store_status in current_order.stores_status:
+                # remove the current store status and append the new status
+                if store_id and str(store_status["storeId"]) == str(store_id):
+                    store_status["status"] = new_status
+                store_statuses.append(store_status["status"])
+            return store_statuses
         # handle vendor actions
         if "VENDOR" in view_as:
             # TODO: check if the user is the vendor of the store
@@ -527,14 +633,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
                 )
 
-            def get_store_statuses(current_order: Order, store_id: int, new_status):
-                store_statuses = []
-                for store_status in current_order.stores_status:
-                    # remove the current store status and append the new status
-                    if str(store_status["storeId"]) == str(store_id):
-                        store_status["status"] = new_status
-                    store_statuses.append(store_status["status"])
-                return store_statuses
+
 
             # accept order if it is pending
             if action == "accepted":
@@ -953,7 +1052,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that the order has been picked up
                     has_notified_user = order.notify_user(
-                        message=f"Your order {order.get_order_display_id()} from {store.store_name} has been picked up by {delivery_person.profile.user.get_full_name()}. We'll keep you updated on delivery progress. Your order is now on its way!"
+                        message=f"Order {order.get_order_display_id()} from {store.store_name} is now being delivered by {delivery_person.profile.user.get_full_name()}. It's on its way!"
                     )
 
                     if not has_notified_user:
@@ -1033,19 +1132,16 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             current_delivery_person.wallet.add_balance(**credit_kwargs)
 
             order.save()
+            store_statuses = get_store_statuses(order, "delivered")
 
-            delivery_people_statuses = []
-            for delivery_person in order.delivery_people:
-                delivery_people_statuses.append(delivery_person["status"])
-
-            # check if all delivery people has delivered the order
-            if all(status == "delivered" for status in delivery_people_statuses):
+            # check if all store has delivered the order
+            if all(status == "delivered" for status in store_statuses):
                 # update the order status to delivered
                 order.order_status = "delivered"
                 order.save()
 
-            # check if some delivery people has delivered the order
-            elif any(status == "delivered" for status in delivery_people_statuses):
+            # check if some stores has delivered the order
+            elif any(status == "delivered" for status in store_statuses):
                 # update the order status to partially delivered
                 order.order_status = "partially-delivered"
                 order.save()

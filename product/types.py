@@ -12,6 +12,7 @@ from .filters import (
     StoreOrderFilter,
     DeliveryPersonFilter,
 )
+from decimal import Decimal
 
 
 class ItemImageType(DjangoObjectType):
@@ -391,6 +392,22 @@ class OrderType(DjangoObjectType):
     def resolve_id(self, info):
         return self.order_track_id
 
+    def resolve_delivery_fee(self, info):
+        # make it zero if the view_as is delivery person
+        view_as = self.view_as(info.context.user.profile)
+        if len(view_as) > 0:
+            if "DELIVERY_PERSON" in view_as or "VENDOR" in view_as:
+                return Decimal(0.00)
+        return self.delivery_fee
+
+    def resolve_delivery_fee_percentage(self, info):
+        # make it zero if the view_as is delivery person
+        view_as = self.view_as(info.context.user.profile)
+        if len(view_as) > 0:
+            if "DELIVERY_PERSON" in view_as or "VENDOR" in view_as:
+                return Decimal(0.00)
+        return self.delivery_fee_percentage
+
     def resolve_user(self: Order, info):
         current_user = info.context.user
         current_user_profile = current_user.profile
@@ -498,7 +515,7 @@ class OrderType(DjangoObjectType):
 
         if "USER" in view_as:
             return None
-        
+
         if "DELIVERY_PERSON" in view_as:
             customer_note = self.delivery_person_note
 
