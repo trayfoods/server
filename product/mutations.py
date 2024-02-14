@@ -565,13 +565,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store_statuses = get_store_statuses(order, store_id, "accepted")
 
                 # check if all stores has accepted the order
+                is_order_pickup = order.is_pickup()
                 if all(status == "accepted" for status in store_statuses):
                     # update the order status to accepted
                     order.order_status = "accepted"
                     order.save()
 
                     # notify the user that all stores has accepted the order
-                    is_order_pickup = order.is_pickup()
                     has_notified_user = order.notify_user(
                         message=f"Order {order.get_order_display_id()} has been accepted, {"we will notify you when it's ready for pickup" if is_order_pickup else "we will notify you when it has been picked up by a delivery person"}",
                     )

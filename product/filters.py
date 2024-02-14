@@ -25,10 +25,12 @@ class ItemFilter(FilterSet):
             "product_price": ["exact", "lt", "gt"],  # lt = less than, gt = greater than
         }
 
+
 class ReviewFilter(FilterSet):
     class Meta:
         model = Rating
         fields = "__all__"
+
 
 class DefaultOrderFilter(FilterSet):
     year = NumberFilter(field_name="created_at", lookup_expr="year")  # eg. 2020, 2021
@@ -52,8 +54,9 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
-        if value == "ready":
+        if value == "READY":
             # filter by ready for pickup or delivery
+            print(queryset)
             return queryset.filter(
                 id__in=[
                     order.id
@@ -64,7 +67,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                     == "READY_FOR_DELIVERY"
                 ]
             )
-        elif value == "completed":
+        elif value == "COMPLETED":
             # filter by completed
             return queryset.filter(
                 id__in=[
