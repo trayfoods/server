@@ -496,6 +496,12 @@ class OrderType(DjangoObjectType):
         store_notes = self.store_notes
         customer_note = self.delivery_person_note
 
+        if "USER" in view_as:
+            return None
+        
+        if "DELIVERY_PERSON" in view_as:
+            customer_note = self.delivery_person_note
+
         # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
         if "VENDOR" in view_as and not "USER" in view_as:
