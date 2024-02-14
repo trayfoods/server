@@ -1283,6 +1283,10 @@ class DeliveryPerson(models.Model):
         ):
             return False
 
+        # check if delivery person is already delivering this order
+        if order.get_delivery_person(delivery_person_id=self.id):
+            return False
+
         # handle if the delivery person is a student
         if delivery_person_profile.is_student:
             # has_passed_valid_vendor_check = False

@@ -1150,6 +1150,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if not order.order_status in [
             "ready-for-delivery",
             "partially-ready-for-delivery",
+            "partially-delivered"
         ]:
             return AcceptDeliveryMutation(error="This order is not ready for delivery")
 
