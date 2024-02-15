@@ -445,13 +445,16 @@ class CreateOrderMutation(Output, graphene.Mutation):
 
         return CreateOrderMutation(order_id=new_order.order_track_id, success=True)
 
-def get_store_name_from_store_status(current_order: Order):
+def get_store_name_from_store_status(current_order: Order, filter_status: str=None):
     store_names = []
     for store in current_order.stores_status:
         store_id = store.get("storeId")
         store_qs: Store = current_order.linked_stores.filter(id=int(store_id)).first()
         if store_qs is None:
             raise GraphQLError("An error occured while getting store names, please contact support")
+        if filter_status is not None:
+            if store.get("status") != filter_status:
+                continue
         store_names.append(store_qs.store_name)
     return store_names
 
