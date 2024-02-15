@@ -664,7 +664,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
 
                 store_statuses = get_store_statuses(order, "accepted", store_id)
-                print(store_statuses)
+                
+                # remove status that are not pending or accepted
+                store_statuses = [
+                    status for status in store_statuses if status in ["pending", "accepted"]
+                ]
+
 
                 # check if all stores has accepted the order
                 is_order_pickup = order.is_pickup()
@@ -688,7 +693,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-accepted"
                     order.save()
 
-                    store_names = get_store_name_from_store_status(order)
+                    store_names = get_store_name_from_store_status(order, "accepted")
 
                     store_names_with_comma = ", ".join(store_names)
                     # remove the last comma
@@ -727,7 +732,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # reject order if it is pending
             if action == "rejected":
-                store_statuses = get_store_statuses(order, "rejected", store_id,)
+                store_statuses = get_store_statuses(order, "rejected", store_id)
+
+                # remove status that are not pending or rejected
+                store_statuses = [
+                    status for status in store_statuses if status in ["pending", "rejected"]
+                ]
+
 
                 # check if all stores has rejected the order
                 if all(status == "rejected" for status in store_statuses):
@@ -798,6 +809,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
 
                 store_statuses = get_store_statuses(order, "cancelled", store_id)
+
+                # remove status that are not accepted or cancelled
+                store_statuses = [
+                    status for status in store_statuses if status in ["accepted", "cancelled"]
+                    ]
+
+
                 # check if all stores has cancelled the order
                 if all(status == "cancelled" for status in store_statuses):
                     # update the order status to cancelled
@@ -889,6 +907,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
                 store_statuses = get_store_statuses(order, "ready-for-delivery", store_id)
 
+                # remove status that are not accepted or ready-for-delivery
+                store_statuses = [
+                    status for status in store_statuses if status in ["accepted", "ready-for-delivery"]
+                ]
+
                 # check if all stores has marked the order as ready for delivery
                 if all(status == "ready-for-delivery" for status in store_statuses):
                     # update the order status to ready for delivery
@@ -929,6 +952,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     )
 
                 store_statuses = get_store_statuses(order, "ready-for-pickup", store_id)
+
+                # remove status that are not accepted or ready-for-pickup
+                store_statuses = [
+                    status for status in store_statuses if status in ["accepted", "ready-for-pickup"]
+                    ]
+
 
                 # check if all stores has marked the order as ready for pickup
                 if all(status == "ready-for-pickup" for status in store_statuses):
@@ -1136,6 +1165,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             order.save()
             store_statuses = get_store_statuses(order, "delivered")
+
+            # remove status that are not out-for-delivery or delivered
+            for status in store_statuses:
+                if status not in ["out-for-delivery", "delivered"]:
+                    store_statuses.remove(status)
+
 
             # check if all store has delivered the order
             if all(status == "delivered" for status in store_statuses):
