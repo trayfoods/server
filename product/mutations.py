@@ -663,7 +663,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     store_plate_price
                 )
 
-                store_statuses = get_store_statuses(order, store_id, "accepted")
+                store_statuses = get_store_statuses(order, "accepted", store_id)
                 print(store_statuses)
 
                 # check if all stores has accepted the order
@@ -727,7 +727,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # reject order if it is pending
             if action == "rejected":
-                store_statuses = get_store_statuses(order, store_id, "rejected")
+                store_statuses = get_store_statuses(order, "rejected", store_id,)
 
                 # check if all stores has rejected the order
                 if all(status == "rejected" for status in store_statuses):
@@ -797,7 +797,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
                     )
 
-                store_statuses = get_store_statuses(order, store_id, "cancelled")
+                store_statuses = get_store_statuses(order, "cancelled", store_id)
                 # check if all stores has cancelled the order
                 if all(status == "cancelled" for status in store_statuses):
                     # update the order status to cancelled
@@ -887,7 +887,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while notifying delivery people, please try again later"
                     )
-                store_statuses = get_store_statuses(order, store_id, "ready-for-delivery")
+                store_statuses = get_store_statuses(order, "ready-for-delivery", store_id)
 
                 # check if all stores has marked the order as ready for delivery
                 if all(status == "ready-for-delivery" for status in store_statuses):
@@ -928,7 +928,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="Order has not been accepted, cannot be marked as ready for pickup"
                     )
 
-                store_statuses = get_store_statuses(order, store_id, "ready-for-pickup")
+                store_statuses = get_store_statuses(order, "ready-for-pickup", store_id)
 
                 # check if all stores has marked the order as ready for pickup
                 if all(status == "ready-for-pickup" for status in store_statuses):
