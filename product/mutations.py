@@ -553,7 +553,16 @@ class ReOrderMutation(Output, graphene.Mutation):
 
 
         return ReOrderMutation(order_id=new_order.order_track_id, success=True)
-
+    
+def get_store_statuses(current_order: Order, new_status, store_id: int=None):
+    print(store_id, new_status)
+    store_statuses = []
+    for store_status in current_order.stores_status:
+        # remove the current store status and append the new status
+        if store_id and str(store_status["storeId"]) == str(store_id):
+            store_status["status"] = new_status
+        store_statuses.append(store_status["status"])
+    return store_statuses
 class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
         order_id = graphene.String(required=True)
@@ -593,27 +602,20 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     error="You are not authorized to interact with this order"
                 )
             
-            if action == "cancelled":
-                if order_status != "not-started" and not order.order_payment_status:
-                    return MarkOrderAsMutation(
-                        error="You cannot cancel this order because it has been marked as {}".format(
-                            order_status.replace("-", " ").capitalize()
-                        )
-                    )
-                order.order_status = "cancelled"
-                order.save()
-                return MarkOrderAsMutation(
-                    success=True,
-                    success_msg=f"Order {order.get_order_display_id()} has been cancelled",
-                )
-        def get_store_statuses(current_order: Order, new_status, store_id: int=None):
-            store_statuses = []
-            for store_status in current_order.stores_status:
-                # remove the current store status and append the new status
-                if store_id and str(store_status["storeId"]) == str(store_id):
-                    store_status["status"] = new_status
-                store_statuses.append(store_status["status"])
-            return store_statuses
+            # if action == "cancelled":
+            #     if order_status != "not-started" and not order.order_payment_status:
+            #         return MarkOrderAsMutation(
+            #             error="You cannot cancel this order because it has been marked as {}".format(
+            #                 order_status.replace("-", " ").capitalize()
+            #             )
+            #         )
+            #     order.order_status = "cancelled"
+            #     order.save()
+            #     return MarkOrderAsMutation(
+            #         success=True,
+            #         success_msg=f"Order {order.get_order_display_id()} has been cancelled",
+            #     )
+
         # handle vendor actions
         if "VENDOR" in view_as:
             # TODO: check if the user is the vendor of the store
@@ -662,6 +664,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
 
                 store_statuses = get_store_statuses(order, store_id, "accepted")
+                print(store_statuses)
 
                 # check if all stores has accepted the order
                 is_order_pickup = order.is_pickup()
@@ -693,7 +696,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that some stores has accepted the order
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been accepted by {store_names_with_comma}, {"we will notify you when some are ready for pickup" if is_order_pickup else "we will notify you when some has been picked up by delivery people"}",
+                        message=f"Order {order.get_order_display_id()} has been accepted by {store_names_with_comma}, {"we will notify you when some items are ready for pickup" if is_order_pickup else "we will notify you when some items has been picked up by delivery people"}",
                     )
 
                 # add the store total price to the store balance

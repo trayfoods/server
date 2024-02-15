@@ -396,7 +396,9 @@ class OrderType(DjangoObjectType):
         # make it zero if the view_as is delivery person
         view_as = self.view_as(info.context.user.profile)
         if len(view_as) > 0:
-            if "DELIVERY_PERSON" in view_as or "VENDOR" in view_as:
+            if (
+                "DELIVERY_PERSON" in view_as or "VENDOR" in view_as
+            ) and not "USER" in view_as:
                 return Decimal(0.00)
         return self.delivery_fee
 
@@ -404,7 +406,9 @@ class OrderType(DjangoObjectType):
         # make it zero if the view_as is delivery person
         view_as = self.view_as(info.context.user.profile)
         if len(view_as) > 0:
-            if "DELIVERY_PERSON" in view_as or "VENDOR" in view_as:
+            if (
+                "DELIVERY_PERSON" in view_as or "VENDOR" in view_as
+            ) and not "USER" in view_as:
                 return Decimal(0.00)
         return self.delivery_fee_percentage
 
@@ -546,7 +550,7 @@ class OrderType(DjangoObjectType):
 
     def resolve_order_status(self: Order, info):
         current_user_profile = info.context.user.profile
-        return self.get_order_status(current_user_profile)
+        return self.get_order_status(current_user_profile, True)
 
 
 class DiscoverDeliveryType(OrderType, DjangoObjectType):
@@ -587,6 +591,10 @@ class StoreOrderNode(OrderType, DjangoObjectType):
                 items = store_info["items"]
                 break
         return items
+
+    def resolve_order_status(self: Order, info):
+        current_user_profile = info.context.user.profile
+        return self.get_order_status(current_user_profile)
 
 
 class DeliveryPersonOrderNode(OrderType, DjangoObjectType):

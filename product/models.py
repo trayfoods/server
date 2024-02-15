@@ -814,7 +814,7 @@ class Order(models.Model):
                 return store_info
         raise ValueError("No store info found for this order, please contact support")
 
-    def get_order_status(self, current_user_profile):
+    def get_order_status(self, current_user_profile, flag=False):
         order_status = self.order_status
         view_as = self.view_as(current_user_profile)
         if "DELIVERY_PERSON" in view_as:
@@ -824,7 +824,10 @@ class Order(models.Model):
             if delivery_person:
                 order_status = delivery_person["status"]
         if "VENDOR" in view_as:
-            order_status = self.get_store_status(current_user_profile.store.id)
+            if flag and "USER" in view_as:
+                pass
+            else:
+                order_status = self.get_store_status(current_user_profile.store.id)
         return order_status.upper().replace("-", "_") if order_status else "NO_STATUS"
 
     def update_store_status(self, store_id: int, status: str):
