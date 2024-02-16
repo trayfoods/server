@@ -970,7 +970,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                     # notify the user that all stores has marked the order as ready for pickup
                     has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} is ready for pickup",
+                        message=f"Order {order.get_order_display_id()} is ready for pickup, you can now pick up your order",
                     )
                     if not has_notified_user:
                         return MarkOrderAsMutation(
@@ -1021,16 +1021,25 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             error="Order has not been marked as ready for pickup, cannot be marked as picked up"
                         )
 
-                    # notify the user that the order has been picked up
-                    order.user.send_sms(
-                        message=f"Your Order {order.get_order_display_id()} has been picked up"
-                    )
+                    store_statuses = get_store_statuses(order, "picked-up", store_id)
                     did_update = order.update_store_status(store_id, "picked-up")
                     if not did_update:
                         return MarkOrderAsMutation(
                             error="An error occured while updating order status, please try again later"
                         )
                     
+                    # check if all stores has marked the order as picked up
+                    if all(status == "picked-up" for status in store_statuses):
+                        # update the order status to picked up
+                        order.order_status = "picked-up"
+                        order.save()
+                    
+                    # check if some stores has marked the order as picked up
+                    elif any(status == "picked-up" for status in store_statuses):
+                        # update the order status to partially picked up
+                        order.order_status = "partially-picked-up"
+                        order.save()
+
                     order.log_activity(
                         title="Order Picked Up",
                         activity_type="order_picked_up",

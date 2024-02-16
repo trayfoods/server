@@ -56,7 +56,6 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
     def filter_by_order_status(self, queryset, name, value):
         if value == "READY":
             # filter by ready for pickup or delivery
-            print(queryset)
             return queryset.filter(
                 id__in=[
                     order.id

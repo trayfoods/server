@@ -346,6 +346,8 @@ class Order(models.Model):
             ("partially-out-for-delivery", "partially-out-for-delivery"),
             ("out-for-delivery", "out-for-delivery"),
             ("partially-delivered", "partially-delivered"),
+            ("partially-picked-up", "partially-picked-up"),
+            ("picked-up", "picked-up"),
             ("delivered", "delivered"),
             ("partially-cancelled", "partially-cancelled"),
             ("no-delivery-people", "no-delivery-people"),
@@ -720,7 +722,16 @@ class Order(models.Model):
         # get the store plate price
         store_plate_price = current_store_info["total"]["plate_price"]
 
-        amount = Decimal(store_total_price) + Decimal(store_plate_price)
+        # get len of stores linked to this order
+        store_count = len(self.linked_stores.all())
+
+        # divide the delivery fee by the number of stores linked to the order to get the delivery fee for each store
+        delivery_fee = self.delivery_fee / store_count
+
+        amount = Decimal(store_total_price) + Decimal(store_plate_price) + Decimal(
+            delivery_fee
+        )
+
 
         # convert the overall_price to kobo
         kobo_amount = amount * Decimal(100)
