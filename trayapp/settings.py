@@ -390,12 +390,12 @@ CORS_ALLOW_HEADERS = (
 # CELERY SETTINGS
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379")
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": CELERY_BROKER_URL,
-    }
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django.core.cache.backends.redis.RedisCache",
+#         "LOCATION": CELERY_BROKER_URL,
+#     }
+# }
 
 # CELERY_BROKER_TRANSPORT_OPTIONS = {
 #     "ssl": True,
