@@ -9,17 +9,18 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "trayapp.settings")
 
 app = Celery("trayapp", broker=settings.CELERY_BROKER_URL)
 # add broker_connection_retry_on_startup
-app.conf.enable_utc = False
+# app.conf.enable_utc = False
 
-app.conf.update(timezone="Africa/Lagos")
+# app.conf.update(timezone="Africa/Lagos")
 
 app.config_from_object(settings, namespace="CELERY")
 
 # Celery Beat Settings
 app.conf.beat_schedule = {
-    'settle-transactions-every-hour': {
+    'settle-transactions-every-minute': {
         'task': 'users.tasks.settle_transactions',
-        'schedule': crontab(minute=0, hour='*'),  # runs at the top of every hour
+        # run every 1 minute
+        'schedule': crontab(minute='*/1'),
     },
 }
 

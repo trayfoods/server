@@ -6,6 +6,7 @@ from users.models import Transaction
 
 class Command(BaseCommand):
     help = "Settle transactions that are older than 24 hours"
+    print("Settle transactions that are older than 24 hours")
 
     def handle(self, *args, **kwargs):
         # Calculate the time for 24 hours ago

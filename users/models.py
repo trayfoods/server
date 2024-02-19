@@ -566,6 +566,7 @@ class Transaction(models.Model):
         return Transaction.objects.filter(wallet=wallet).first()
 
     def settle(self):
+        print("Settling transaction")
         if self.status == "unsettled":
             # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
