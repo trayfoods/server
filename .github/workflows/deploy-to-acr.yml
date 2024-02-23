@@ -24,8 +24,3 @@ jobs:
         run: |
           docker build -t trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }} .
           docker push trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }}
-
-      - name: Build and push Celery image
-        run: |
-          docker build -f Dockerfile.celery -t trayfoodsapi.azurecr.io/trayfoods-celery:${{ github.sha }} .
-          docker push trayfoodsapi.azurecr.io/trayfoods-celery:${{ github.sha }}

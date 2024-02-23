@@ -23,11 +23,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 
 from trayapp.utils import get_twilio_client
-from celery.utils.log import get_task_logger
 from django.contrib.auth.hashers import check_password, make_password
-
-
-logger = get_task_logger(__name__)
 
 TWILIO_CLIENT = get_twilio_client()
 
@@ -443,9 +439,6 @@ class Profile(models.Model):
             self.has_calling_code() and self.phone_number_verified
         ) and settings.SMS_ENABLED:
             phone_number = f"{self.calling_code}{self.phone_number}"
-            # from .tasks import send_async_sms
-
-            # logger.info(f"Sending SMS to user {self.user.username}")
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )

@@ -30,10 +30,6 @@ COPY . .
 # Copy dependencies from builder stage
 COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 
-
-COPY start_celery_worker.sh /usr/local/bin/celery_worker
-RUN chmod +x /usr/local/bin/celery_worker
-
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1

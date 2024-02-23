@@ -139,8 +139,6 @@ INSTALLED_APPS = [
     "anymail",
     "theme",
     "django_countries",
-    "django_celery_results",
-    "django_celery_beat",
 ]
 
 USE_MAILERSEND = "True" == os.environ.get("USE_MAILERSEND", "False")
@@ -384,35 +382,6 @@ CORS_ALLOW_HEADERS = (
     "x-client-data",
     "x-requested-with",
 )
-
-
-
-# CELERY SETTINGS
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6379")
-
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-#         "LOCATION": CELERY_BROKER_URL,
-#     }
-# }
-
-# CELERY_BROKER_TRANSPORT_OPTIONS = {
-#     "ssl": True,
-#     "ssl_cert_reqs": ssl.CERT_NONE,
-# }
-# accept_content = ["application/json"]
-# result_serializer = "json"
-# task_serializer = "json"
-# timezone = "Africa/Lagos"
-result_backend = "django-db"
-# EMAIL_ASYNC_TASK = True
-imports = ("users.tasks",)
-
-# CELERY_BEAT
-CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CELERY_RESULT_BACKEND = "django-db"
-
 
 # Global settings
 DAYS_OF_WEEK = (

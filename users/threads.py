@@ -1,9 +1,6 @@
 import threading
 from typing import Optional
 from firebase_admin import messaging
-from celery.utils.log import get_task_logger
-
-logger = get_task_logger(__name__)
 
 
 class FCMThread(threading.Thread):
@@ -47,10 +44,11 @@ class FCMThread(threading.Thread):
                 for token in chunk
             ]
             response = messaging.send_all(messages)
-            logger.info(
+            print(response)
+            print(
                 f"Number of successful notifications: {response._success_count}"
             )
-            logger.error(
+            print(
                 f"Number of failed notifications: {len(messages) - response._success_count}"
             )
 
