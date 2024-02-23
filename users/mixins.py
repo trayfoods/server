@@ -110,6 +110,7 @@ class ObtainJSONWebTokenMixin(Output):
 
     token = graphene.String(default_value=None)
     refresh_token = graphene.String(default_value=None)
+    refresh_expires_in = graphene.Int()
 
     @classmethod
     def resolve(cls, root, info, **kwargs):
