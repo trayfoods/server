@@ -217,7 +217,6 @@ GRAPHQL_AUTH = {
     "REGISTER_MUTATION_FIELDS": ["email", "username", "first_name", "last_name"],
     "UPDATE_MUTATION_FIELDS": ["first_name", "last_name", "email"],
     "USER_NODE_EXCLUDE_FIELDS": ["password", "is_superuser"],
-    "EMAIL_ASYNC_TASK": "users.tasks.graphql_auth_async_email",
 }
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
