@@ -563,7 +563,7 @@ class UpdateSchoolInfoMutation(Output, graphene.Mutation):
         if not "STUDENT" in user.roles:
             return UpdateSchoolInfoMutation(error="You are not a student")
 
-        student = user.profile.student
+        student: Student = user.profile.student
 
         if school:
             school = School.objects.filter(slug=school.strip()).first()
