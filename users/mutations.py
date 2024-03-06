@@ -983,14 +983,12 @@ class UserDeviceMutation(Output, graphene.Mutation):
         list_of_actions = ["add", "remove"]
         if not action in list_of_actions:
             raise GraphQLError("Invalid action")
-        
+
         user = info.context.user
         user_devices = user.devices.all()
-        
+
         # check if the device token and device type exists in the user devices
-        device = user_devices.filter(
-            device_token=device_token, device_type=device_type
-        )
+        device = user_devices.filter(device_token=device_token, device_type=device_type)
         if not device.exists() and action == "add":
             user.add_device(
                 **{
@@ -1005,9 +1003,9 @@ class UserDeviceMutation(Output, graphene.Mutation):
                 device.delete()
                 return UserDeviceMutation(success=True)
             else:
-                return UserDeviceMutation(error = "Device token does not exist")
+                return UserDeviceMutation(error="Device token does not exist")
         else:
-            return UserDeviceMutation(error = "Device token already exists")
+            return UserDeviceMutation(error="Device token already exists")
 
 
 class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
@@ -1150,7 +1148,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
         if not order.order_status in [
             "ready-for-delivery",
             "partially-ready-for-delivery",
-            "partially-delivered"
+            "partially-delivered",
         ]:
             return AcceptDeliveryMutation(error="This order is not ready for delivery")
 
@@ -1257,3 +1255,23 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
         store.store_menu = new_menu
         store.save()
         return UpdateStoreMenuMutation(success=True)
+
+
+class HideWalletBalanceMutation(Output, graphene.Mutation):
+    class Arguments:
+        is_hidden = graphene.Boolean()
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, is_hidden):
+        user = info.context.user
+
+        user_wallet = user.profile.wallet
+
+        if not user_wallet:
+            return HideWalletBalanceMutation(
+                error="There is no wallet linked to this account"
+            )
+
+        user_wallet.hide_balance = is_hidden
+        user_wallet.save()
+        return HideWalletBalanceMutation(success=True)

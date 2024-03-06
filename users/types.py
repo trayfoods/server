@@ -75,9 +75,18 @@ class ProfileType(DjangoObjectType):
 
 class UserSettingsType(graphene.ObjectType):
     has_token_device = graphene.Boolean()
+    hide_wallet_balance = graphene.Boolean()
 
     def resolve_has_token_device(self, info, *args, **kwargs):
         return self.has_token_device
+    
+    def resolve_hide_wallet_balance(self, info):
+        user = info.context.user
+
+        if user.is_authenticated and user.profile.wallet:
+            return user.profile.wallet.hide_balance
+        
+        return False
 
 
 class UserNodeType(UserNode, graphene.ObjectType):

@@ -584,6 +584,7 @@ class Wallet(models.Model):
         blank=True,
         editable=False,
     )
+    hide_balance = models.BooleanField(default=False)
     passcode = models.CharField(
         _("passcode"), max_length=128, editable=False, null=True, blank=True
     )
@@ -993,7 +994,7 @@ class Store(models.Model):
     # check if store is open
 
     def is_open(self):
-        if settings.DEBUG:
+        if settings.DEBUG == True:
             return True
 
         import pytz
