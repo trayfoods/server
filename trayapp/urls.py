@@ -12,8 +12,8 @@ from core.views import order_redirect_share_view
 # from users.views import get_bank_list
 
 urlpatterns = [
-    path("admin/", admin.site.urls, name="admin"),
     path("admin/host/ping", admin_ping, name="admin-ping"),
+    path("admin/", admin.site.urls, name="admin"),
     path("", index_view, name="index"),
     path("api/", include("core.urls"), name="rest-api"),
     path("users/", include("users.urls"), name="users-api"),
