@@ -89,6 +89,7 @@ class OrderAdmin(admin.ModelAdmin):
         "order_track_id",
         "overall_price",
         "order_payment_status",
+        "delivery_fee_percentage",
         "delivery_fee",
         "order_payment_url",
         "stores_status",
