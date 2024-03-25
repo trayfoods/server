@@ -90,6 +90,7 @@ class OrderAdmin(admin.ModelAdmin):
         "overall_price",
         "order_payment_status",
         "delivery_fee_percentage",
+        "service_fee",
         "delivery_fee",
         "order_payment_url",
         "stores_status",
