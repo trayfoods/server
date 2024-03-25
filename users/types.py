@@ -189,6 +189,18 @@ class TransactionType(DjangoObjectType):
 
     def resolve_display_date(self, info):
         return convert_time_to_ago(self.created_at)
+    
+    def resolve_desc(self: Transaction, info):
+        is_order_transaction = self.order is not None
+        desc = self.desc
+        if is_order_transaction:
+            order = self.order
+            # get order id in uppercase
+            order_id = order.get_order_display_id().upper()
+            if order.get_order_display_id() in desc.upper():
+                # replace the order id in the description with a link to the order
+                desc = desc.replace(order_id, f"<a href='/checkout/{self.order.order_track_id}'>{order_id}</a>")
+        return desc
 
 
 class TransactionNode(TransactionType, graphene.ObjectType):
