@@ -520,16 +520,13 @@ class OrderType(DjangoObjectType):
         if "USER" in view_as:
             return None
 
-        if "DELIVERY_PERSON" in view_as:
-            customer_note = self.delivery_person_note
-
         # check if view_as is set to VENDOR,
         # then find and return the store note as customer note
         if "VENDOR" in view_as and not "USER" in view_as:
             store_note = [
                 store_note
                 for store_note in store_notes
-                if store_note["storeId"] == current_user_profile.store.id
+                if str(store_note["storeId"]) == str(current_user_profile.store.id)
             ]  # filter the stores_infos to only the store that the vendor is linked to
             if len(store_note) > 0:
                 customer_note = store_note[0]["note"]
