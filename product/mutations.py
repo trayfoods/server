@@ -1335,6 +1335,7 @@ class RemoveOrdersStoresSeenMutation(Output, graphene.Mutation):
         if not store:
             return RemoveOrdersStoresSeenMutation(success=True)
         for order_id in orders:
+            print(order_id)
             order_qs = Order.objects.filter(order_track_id=order_id)
             if order_qs.exists():
                 order = order_qs.first()

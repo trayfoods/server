@@ -555,8 +555,7 @@ class Order(models.Model):
             stores_seen = self.stores_seen
             if value in stores_seen:
                 return True
-            new_stores_seen = stores_seen.append(value)
-            self.stores_seen = new_stores_seen
+            self.stores_seen.append(value)
             self.save()
 
         if action == "remove":
@@ -564,9 +563,11 @@ class Order(models.Model):
             if not value in stores_seen:
                 return False
             new_stores_seen = []
-            for vendor in stores_seen:
-                if not value == vendor:
-                    new_stores_seen.append(vendor)
+            for store_id in stores_seen:
+                if value != store_id:
+                    new_stores_seen.append(store_id)
+            self.stores_seen = new_stores_seen
+            self.save()
             return True
 
     # validate the order store status format is correct
