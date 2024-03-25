@@ -173,6 +173,7 @@ class TransactionType(DjangoObjectType):
     display_date = (
         graphene.String()
     )  # display date in format 1 hour ago, 2 days ago etc
+    order_display_id = graphene.String(default_value=None)
 
     class Meta:
         model = Transaction
@@ -185,22 +186,17 @@ class TransactionType(DjangoObjectType):
             "created_at",
             "transaction_id",
             "display_date",
+            "order_url"
         ]
 
     def resolve_display_date(self, info):
         return convert_time_to_ago(self.created_at)
     
-    def resolve_desc(self: Transaction, info):
+    def resolve_order_display_id(self: Transaction, info):
         is_order_transaction = self.order is not None
-        desc = self.desc
         if is_order_transaction:
-            order = self.order
-            # get order id in uppercase
-            order_id = order.get_order_display_id().upper()
-            if order.get_order_display_id() in desc.upper():
-                # replace the order id in the description with a link to the order
-                desc = desc.replace(order_id, f"<a href='/checkout/{self.order.order_track_id}'>{order_id}</a>")
-        return desc
+            return self.order.get_order_display_id()
+        return None
 
 
 class TransactionNode(TransactionType, graphene.ObjectType):
