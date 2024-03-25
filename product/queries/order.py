@@ -23,6 +23,7 @@ class OrderQueries(graphene.ObjectType):
 
     @permission_checker([IsAuthenticated])
     def resolve_get_order(self, info, order_id):
+        order_id = order_id.lower()
         user = info.context.user
         allowed_view_as_roles = ["DELIVERY_PERSON", "VENDOR"]
 
