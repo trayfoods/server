@@ -427,6 +427,7 @@ class Order(models.Model):
         auto_now=True
     )  # this is the last time the order was updated
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
+    stores_seen = models.JSONField(default=list, blank=True)
     activities_log = models.JSONField(default=list, blank=True)
     # the activities_log json format is as follows
     # [{
@@ -544,6 +545,29 @@ class Order(models.Model):
             ]  # filter the stores_infos to only the store that the vendor is linked to
 
         return stores_infos
+
+    # method to set stores_seen list
+    def set_stores_seen(self, value, action):
+        if not action in ["add", "remove"]:
+            return False
+
+        if action == "add":
+            stores_seen = self.stores_seen
+            if value in stores_seen:
+                return True
+            new_stores_seen = stores_seen.append(value)
+            self.stores_seen = new_stores_seen
+            self.save()
+
+        if action == "remove":
+            stores_seen = self.stores_seen
+            if not value in stores_seen:
+                return False
+            new_stores_seen = []
+            for vendor in stores_seen:
+                if not value == vendor:
+                    new_stores_seen.append(vendor)
+            return True
 
     # validate the order store status format is correct
     def validate_stores_status(self):
@@ -728,10 +752,11 @@ class Order(models.Model):
         # divide the delivery fee by the number of stores linked to the order to get the delivery fee for each store
         delivery_fee = self.delivery_fee / store_count
 
-        amount = Decimal(store_total_price) + Decimal(store_plate_price) + Decimal(
-            delivery_fee
+        amount = (
+            Decimal(store_total_price)
+            + Decimal(store_plate_price)
+            + Decimal(delivery_fee)
         )
-
 
         # convert the overall_price to kobo
         kobo_amount = amount * Decimal(100)

@@ -630,6 +630,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             store: Store = user.profile.store
 
+            order.set_stores_seen(value=store.id, action="add")
+
             # check if the order has been accepted or rejected
             if order_status == "pending" and not action in ["accepted", "rejected"]:
                 return MarkOrderAsMutation(
@@ -1321,3 +1323,23 @@ class InitializeTransactionMutation(graphene.Mutation):
         except Exception as e:
             print(e)
             raise GraphQLError("An error occured while initializing transaction")
+
+class RemoveOrdersStoresSeenMutation(Output, graphene.Mutation):
+    class Arguments:
+        orders = graphene.List(graphene.String)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, orders: list[str]):
+        profile: Profile = info.context.user.profile
+        store = profile.store
+        if not store:
+            return RemoveOrdersStoresSeenMutation(success=True)
+        for order_id in orders:
+            order_qs = Order.objects.filter(order_track_id=order_id)
+            if order_qs.exists():
+                order = order_qs.first()
+                order.set_stores_seen(value=store.id, action="remove")
+        return RemoveOrdersStoresSeenMutation(success=True)
+
+
+    

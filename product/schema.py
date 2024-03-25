@@ -11,6 +11,7 @@ from product.mutations import (
     InitializeTransactionMutation,
     UpdateItemMenuMutation,
     MarkOrderAsMutation,
+    RemoveOrdersStoresSeenMutation,
 )
 from product.models import ItemAttribute
 
@@ -100,6 +101,7 @@ class Mutation(graphene.ObjectType):
     create_order = CreateOrderMutation.Field()
     initialize_transaction = InitializeTransactionMutation.Field()
     mark_order_as = MarkOrderAsMutation.Field()
+    remove_order_stores_seen = RemoveOrdersStoresSeenMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
