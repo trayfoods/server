@@ -630,7 +630,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             store: Store = user.profile.store
 
-            order.set_stores_seen(value=store.id, action="add")
+            order.set_profiles_seen(value=user.profile.id, action="add")
 
             # check if the order has been accepted or rejected
             if order_status == "pending" and not action in ["accepted", "rejected"]:
@@ -1335,11 +1335,10 @@ class RemoveOrdersStoresSeenMutation(Output, graphene.Mutation):
         if not store:
             return RemoveOrdersStoresSeenMutation(success=True)
         for order_id in orders:
-            print(order_id)
             order_qs = Order.objects.filter(order_track_id=order_id)
             if order_qs.exists():
                 order = order_qs.first()
-                order.set_stores_seen(value=store.id, action="remove")
+                order.set_profiles_seen(value=profile.id, action="remove")
         return RemoveOrdersStoresSeenMutation(success=True)
 
 

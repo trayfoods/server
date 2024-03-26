@@ -8,7 +8,10 @@ from ..types import (
     StoreOrderNode,
     DeliveryPersonOrderNode,
     OrderType,
+    StatusOrdersCountType,
 )
+
+from django.utils import timezone
 
 
 class OrderQueries(graphene.ObjectType):
@@ -20,6 +23,12 @@ class OrderQueries(graphene.ObjectType):
     get_order = graphene.Field(OrderType, order_id=graphene.String(required=True))
 
     order_status = graphene.String(order_id=graphene.String(required=True))
+
+    status_orders_count = graphene.Field(
+        StatusOrdersCountType,
+        statuses=graphene.List(graphene.String),
+        who=graphene.String(),
+    )
 
     @permission_checker([IsAuthenticated])
     def resolve_get_order(self, info, order_id):
@@ -102,3 +111,34 @@ class OrderQueries(graphene.ObjectType):
             raise GraphQLError("Order Not Found")
 
         return order_qs.first().get_order_status(current_user_profile)
+
+    @permission_checker([IsAuthenticated])
+    def resolve_status_orders_count(self, info, statuses: list[str], who: str):
+        statuses_with_counts = []
+        user = info.context.user
+        profile = user.profile
+        if not who.lower() in ["delivery_person", "vendor"]:
+            raise GraphQLError("Invalid Role")
+
+        if who == "vendor":
+            if not "VENDOR" in user.roles:
+                raise GraphQLError("You are not a vendor")
+            # get recent orders
+            store_orders: list[Order] = profile.store.orders.filter(
+                created_at__date__gte=timezone.now().date() - timezone.timedelta(days=7)
+            )
+            orders_not_seen_by_profile = store_orders.exclude(profiles_seen__contains=[profile.id])
+            print(orders_not_seen_by_profile)  
+            for status in statuses:
+                orders_with_status = [
+                    order
+                    for order in store_orders
+                    if order.get_order_status(profile).upper() == status
+                    and not profile.id in order.profiles_seen
+                ]
+                print(StatusOrdersCountType(status=status, count=len(orders_with_status)))
+                statuses_with_counts.append(
+                    StatusOrdersCountType(status=status, count=len(orders_with_status))
+                )
+        print(statuses_with_counts)
+        return statuses_with_counts

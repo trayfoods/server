@@ -427,7 +427,7 @@ class Order(models.Model):
         auto_now=True
     )  # this is the last time the order was updated
     order_confirm_pin = models.CharField(max_length=4, blank=True, null=True)
-    stores_seen = models.JSONField(default=list, blank=True)
+    profiles_seen = models.JSONField(default=list, blank=True)
     activities_log = models.JSONField(default=list, blank=True)
     # the activities_log json format is as follows
     # [{
@@ -546,27 +546,27 @@ class Order(models.Model):
 
         return stores_infos
 
-    # method to set stores_seen list
-    def set_stores_seen(self, value, action):
+    # method to set profiles_seen list
+    def set_profiles_seen(self, value, action):
         if not action in ["add", "remove"]:
             return False
 
         if action == "add":
-            stores_seen = self.stores_seen
-            if value in stores_seen:
+            profiles_seen = self.profiles_seen
+            if value in profiles_seen:
                 return True
-            self.stores_seen.append(value)
+            self.profiles_seen.append(value)
             self.save()
 
         if action == "remove":
-            stores_seen = self.stores_seen
-            if not value in stores_seen:
+            profiles_seen = self.profiles_seen
+            if not value in profiles_seen:
                 return False
-            new_stores_seen = []
-            for store_id in stores_seen:
+            new_profiles_seen = []
+            for store_id in profiles_seen:
                 if value != store_id:
-                    new_stores_seen.append(store_id)
-            self.stores_seen = new_stores_seen
+                    new_profiles_seen.append(store_id)
+            self.profiles_seen = new_profiles_seen
             self.save()
             return True
 

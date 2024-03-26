@@ -550,6 +550,11 @@ class OrderType(DjangoObjectType):
         return self.get_order_status(current_user_profile, True)
 
 
+class StatusOrdersCountType(graphene.ObjectType):
+    status = graphene.String()
+    count = graphene.Int()
+
+
 class DiscoverDeliveryType(OrderType, DjangoObjectType):
     class Meta:
         model = Order
