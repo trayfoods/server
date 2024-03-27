@@ -25,7 +25,7 @@ class ItemQueries(graphene.ObjectType):
         items = (
             Item.get_items()
             .exclude(product_creator__is_approved=False)
-            .filter(product_type__slug__icontains="dish")
+            .filter(product_type__slug__icontains="food")
             .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]
         )
