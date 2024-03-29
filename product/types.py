@@ -79,13 +79,21 @@ class Option:
 
 class OptionType(Option, graphene.ObjectType):
     item = graphene.Field("product.types.ItemType", default_value=None)
+    slug = graphene.String(required=False)
 
     def resolve_item(self, info):
         item = None
         if self.slug:
-            item = Item.objects.filter(option_groups__options__slug=self.slug).first()
+            item = Item.objects.filter(product_slug=self.slug).first()
 
         return item
+    
+    def resolve_is_active(self, info):
+        if self.slug:
+            item = Item.objects.filter(product_slug=self.slug).first()
+            if item:
+                return item.is_avaliable
+        return self.is_active
 
 
 class OptionInputType(Option, graphene.InputObjectType):
@@ -100,6 +108,9 @@ class OptionGroup:
 
 class OptionGroupType(OptionGroup, graphene.ObjectType):
     options = graphene.List(OptionType, required=True)
+
+    def resolve_options(self, info):
+        return self.options
 
 
 class OptionGroupInputType(OptionGroup, graphene.InputObjectType):
@@ -160,10 +171,10 @@ class ItemType(DjangoObjectType):
                 is_required=option_group["is_required"],
                 options=[
                     OptionType(
-                        name=option["name"],
-                        price=option["price"],
+                        name=option.get("name", None),
+                        price=option.get("price", None),
+                        is_active=option.get("is_active", False),
                         slug=option.get("slug", None),
-                        img=option.get("img", None),
                     )
                     for option in option_group["options"]
                 ],
