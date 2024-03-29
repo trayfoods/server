@@ -24,7 +24,7 @@ class OrderQueries(graphene.ObjectType):
 
     order_status = graphene.String(order_id=graphene.String(required=True))
 
-    status_orders_count = graphene.Field(
+    status_orders_count = graphene.List(
         StatusOrdersCountType,
         statuses=graphene.List(graphene.String),
         who=graphene.String(),
@@ -117,28 +117,39 @@ class OrderQueries(graphene.ObjectType):
         statuses_with_counts = []
         user = info.context.user
         profile = user.profile
-        if not who.lower() in ["delivery_person", "vendor"]:
+        who = who.lower()
+        if not who in ["delivery_person", "vendor"]:
             raise GraphQLError("Invalid Role")
+
+        orders = []
 
         if who == "vendor":
             if not "VENDOR" in user.roles:
                 raise GraphQLError("You are not a vendor")
             # get recent orders
-            store_orders: list[Order] = profile.store.orders.filter(
-                created_at__date__gte=timezone.now().date() - timezone.timedelta(days=7)
+            orders: list[Order] = profile.store.orders.filter(
+                created_at__date__gte=timezone.now().date()
+                - timezone.timedelta(days=7)  # get orders from the last 7 days
             )
-            orders_not_seen_by_profile = store_orders.exclude(profiles_seen__contains=[profile.id])
-            print(orders_not_seen_by_profile)  
-            for status in statuses:
-                orders_with_status = [
-                    order
-                    for order in store_orders
-                    if order.get_order_status(profile).upper() == status
-                    and not profile.id in order.profiles_seen
-                ]
-                print(StatusOrdersCountType(status=status, count=len(orders_with_status)))
-                statuses_with_counts.append(
-                    StatusOrdersCountType(status=status, count=len(orders_with_status))
-                )
-        print(statuses_with_counts)
+        elif who == "delivery_person":
+            if not "DELIVERY_PERSON" in user.roles:
+                raise GraphQLError("You are not a delivery person")
+            orders: list[Order] = profile.get_delivery_person().orders.all()
+
+        else:
+            raise GraphQLError("Invalid Role")
+
+        orders_not_seen_by_profile = orders.exclude(
+            profiles_seen__contains=[profile.id]
+        )
+        for status in statuses:
+            orders_with_status = [
+                order
+                for order in orders_not_seen_by_profile
+                if order.get_order_status(profile).upper() == status
+                and not profile.id in order.profiles_seen
+            ]
+            statuses_with_counts.append(
+                {"status": status, "count": len(orders_with_status)}
+            )
         return statuses_with_counts

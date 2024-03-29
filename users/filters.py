@@ -45,7 +45,6 @@ class StoreFilter(FilterSet):
         }
 
     def filter_by_name_nickname(self, queryset, name, value):
-        print(name, value)
         return queryset.filter(
             Q(store_name__icontains=value) | Q(store_nickname__icontains=value)
         )
