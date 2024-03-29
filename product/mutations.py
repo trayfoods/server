@@ -13,6 +13,7 @@ from .types import (
     RatingInputType,
     StoreInfoInputType,
     StoreItemInputType,
+    OptionGroupInputType
 )
 
 from trayapp.permissions import IsAuthenticated, permission_checker
@@ -42,6 +43,7 @@ class AddProductMutation(Output, graphene.Mutation):
         product_calories = graphene.Float()
         product_qty_unit = graphene.String()
         product_categories = graphene.List(graphene.String)
+        option_groups = graphene.List(OptionGroupInputType)
         product_images = Upload(required=True)
         product_name = graphene.String(required=True)
         product_slug = graphene.String(required=True)
@@ -177,6 +179,137 @@ class AddProductMutation(Output, graphene.Mutation):
             except Exception as e:
                 raise GraphQLError(e)
 
+class EditProductMutation(Output, graphene.Mutation):
+    class Arguments:
+        product_slug = graphene.String(required=True)
+        product_qty = graphene.Int()
+        product_desc = graphene.String()
+        is_groupable = graphene.Boolean()
+        product_calories = graphene.Float()
+        product_qty_unit = graphene.String()
+        product_categories = graphene.List(graphene.String)
+        product_images = Upload()
+        product_name = graphene.String()
+        product_type = graphene.String()
+        product_price = graphene.Decimal()
+        store_menu_name = graphene.String()
+        product_share_visibility = graphene.String()
+
+    product = graphene.Field(ItemType, default_value=None)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, **kwargs):
+        list_of_required_fields = ["product_slug"]
+
+        if not kwargs.get("product_qty") is None and kwargs.get("product_qty") > 0:
+            list_of_required_fields.append("product_qty_unit")
+
+        # Check if all the required fields are present
+        for field in list_of_required_fields:
+            if (
+                field not in kwargs
+                or kwargs.get(field) is None
+                or kwargs.get(field) == ""
+            ):
+                field = str(field).replace("_", " ").capitalize()
+                return EditProductMutation(error=f"{field} is required.")
+
+        kwargs = {
+            k: v for k, v in kwargs.items() if v is not None
+        }  # Remove None values from kwargs
+
+        product_slug = kwargs.get("product_slug")
+        product_name = kwargs.get("product_name")
+        product_images = kwargs.get("product_images")
+        product_categories_vals = kwargs.get("product_categories", None)
+        product_type_val = kwargs.get("product_type")
+
+        # Remove category, type and images from kwargs
+        kwargs.pop("product_categories")
+        kwargs.pop("product_type")
+        kwargs.pop("product_images")
+
+        profile = info.context.user.profile
+        if profile.store is None:
+            return EditProductMutation(error="You are not a vendor")
+
+        proudct_menu_name = kwargs.get("store_menu_name", "Others")
+        if not proudct_menu_name in profile.store.store_menu:
+            return EditProductMutation(error="Invalid Menu Name")
+
+        product = (
+            Item.get_items()
+            .filter(
+                product_slug=product_slug.strip(), product_name=product_name.strip()
+            )
+            .first()
+        )
+
+        if product is None:
+            return EditProductMutation(error="Product does not exist")
+
+        with transaction.atomic():
+            try:
+                product_categories = None
+                if product_categories_vals and len(product_categories_vals) > 0:
+                    product_categories = ItemAttribute.objects.filter(
+                        slug__in=product_categories_vals
+                    )
+                product_type = ItemAttribute.objects.get(slug=product_type_val)
+
+                if product is not None and not profile is None:
+                    # Spread the kwargs
+                    save_data = {
+                        **kwargs,
+                        "product_creator": profile.store,
+                        "product_type": product_type,
+                        "has_qty": kwargs.get("product_qty")
+                        and kwargs.get("product_qty", 0) > 0,
+                    }
+
+                    # update the product
+                    if (
+                        Item.get_items()
+                        .filter(product_slug=product_slug.strip())
+                        .exists()
+                    ):
+                        product.product_slug = product_slug
+                        product.product_name = product_name
+                        product.product_price = kwargs.get("product_price")
+                        product.product_desc = kwargs.get("product_desc")
+                        product.is_groupable = kwargs.get("is_groupable")
+                        product.product_calories = kwargs.get("product_calories")
+                        product.product_qty_unit = kwargs.get("product_qty_unit")
+                        product.product_share_visibility = kwargs.get(
+                            "product_share_visibility"
+                        )
+                        product.store_menu_name = kwargs.get("store_menu_name")
+
+                        if not product_categories is None:
+                            product.product_categories.set(product_categories)
+
+                        product.save()
+
+                    # Check if the product has been created
+                    if product is None:
+                        raise GraphQLError("An error occured while creating product")
+
+                    # Optimize Image Handling
+                    item_images = [
+                        ItemImage(
+                            product=product, item_image=image, is_primary=is_primary
+                        )
+                        for image, is_primary in zip(
+                            # convert to list to avoid multiple iteration
+                            product_images,
+                            [True] + [False] * (len(product_images) - 1),
+                        )
+                    ]
+                    ItemImage.objects.bulk_create(item_images)
+
+                return EditProductMutation(product=product, success=True)
+            except IntegrityError as e:
+                raise GraphQLError(e)
 
 # This Mutation Only Add One Product to the storeProducts as available
 class ItemCopyDeleteMutation(Output, graphene.Mutation):

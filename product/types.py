@@ -190,6 +190,17 @@ class ItemType(DjangoObjectType):
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()
 
+class OptionInputType(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    price = graphene.Int(required=True)
+    slug = graphene.String(required=False)
+    img = graphene.String(required=False)
+
+class OptionGroupInputType(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    is_multiple = graphene.Boolean(required=True)
+    is_required = graphene.Boolean(required=True)
+    options = graphene.List(OptionInputType, required=True)
 
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:

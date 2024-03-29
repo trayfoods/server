@@ -114,6 +114,7 @@ class Item(models.Model):
     )
 
     is_groupable = models.BooleanField(default=False)
+    option_groups = models.JSONField(default=list, blank=True)
 
     class Meta:
         ordering = ["-product_clicks"]
