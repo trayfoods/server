@@ -71,7 +71,43 @@ class ReviewNode(ReviewType, DjangoObjectType):
         filterset_class = ReviewFilter
 
 
+class Option:
+    name = graphene.String(required=True)
+    price = graphene.Int(required=True)
+    is_active = graphene.Boolean(default_value=True)
+
+
+class OptionType(Option, graphene.ObjectType):
+    item = graphene.Field("product.types.ItemType", default_value=None)
+
+    def resolve_item(self, info):
+        item = None
+        if self.slug:
+            item = Item.objects.filter(option_groups__options__slug=self.slug).first()
+
+        return item
+
+
+class OptionInputType(Option, graphene.InputObjectType):
+    slug = graphene.String(required=False)
+
+
+class OptionGroup:
+    name = graphene.String(required=True)
+    is_multiple = graphene.Boolean(required=True)
+    is_required = graphene.Boolean(required=True)
+
+
+class OptionGroupType(OptionGroup, graphene.ObjectType):
+    options = graphene.List(OptionType, required=True)
+
+
+class OptionGroupInputType(OptionGroup, graphene.InputObjectType):
+    options = graphene.List(OptionInputType, required=True)
+
+
 class ItemType(DjangoObjectType):
+    option_groups = graphene.List(OptionGroupType)
     product_images = graphene.List(ItemImageType, count=graphene.Int(required=False))
     is_avaliable = graphene.Boolean()
     average_rating = graphene.Float()
@@ -111,6 +147,28 @@ class ItemType(DjangoObjectType):
             "is_avaliable",
             "store_menu_name",
             "rating_percentage",
+        ]
+
+    def resolve_option_groups(self, info):
+        # get self.option_groups [json, list]
+        option_groups = self.option_groups
+        # loop through the option_groups and return the OptionGroupType
+        return [
+            OptionGroupType(
+                name=option_group["name"],
+                is_multiple=option_group["is_multiple"],
+                is_required=option_group["is_required"],
+                options=[
+                    OptionType(
+                        name=option["name"],
+                        price=option["price"],
+                        slug=option.get("slug", None),
+                        img=option.get("img", None),
+                    )
+                    for option in option_group["options"]
+                ],
+            )
+            for option_group in option_groups
         ]
 
     def resolve_current_user_review(self, info):
@@ -190,17 +248,6 @@ class ItemType(DjangoObjectType):
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()
 
-class OptionInputType(graphene.InputObjectType):
-    name = graphene.String(required=True)
-    price = graphene.Int(required=True)
-    slug = graphene.String(required=False)
-    img = graphene.String(required=False)
-
-class OptionGroupInputType(graphene.InputObjectType):
-    name = graphene.String(required=True)
-    is_multiple = graphene.Boolean(required=True)
-    is_required = graphene.Boolean(required=True)
-    options = graphene.List(OptionInputType, required=True)
 
 class ItemNode(ItemType, DjangoObjectType):
     class Meta:
