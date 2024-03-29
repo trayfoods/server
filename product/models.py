@@ -80,6 +80,7 @@ class Item(models.Model):
         max_length=30,
         default="OTHERS",
         blank=True,
+        editable=False
     )
 
     product_categories = models.ManyToManyField(
@@ -95,13 +96,13 @@ class Item(models.Model):
         null=True,
     )
     product_creator = models.ForeignKey(
-        "users.Store", null=True, on_delete=models.CASCADE, blank=True
+        "users.Store", null=True, on_delete=models.CASCADE, blank=True, editable=False
     )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
     product_views = models.IntegerField(default=0)
     product_slug = models.SlugField(null=False, unique=True)
-    product_currency = models.CharField(max_length=20, default="NGN")
+    product_currency = models.CharField(max_length=20, default="NGN", editable=False)
 
     product_status = models.CharField(
         max_length=20,
@@ -111,10 +112,11 @@ class Item(models.Model):
             ("deleted", "deleted"),
         ),
         default="active",
+        editable=False
     )
 
     is_groupable = models.BooleanField(default=False)
-    option_groups = models.JSONField(default=list, blank=True)
+    option_groups = models.JSONField(default=list, blank=True, editable=False)
 
     class Meta:
         ordering = ["-product_clicks"]
