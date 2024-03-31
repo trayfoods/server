@@ -77,10 +77,7 @@ class Item(models.Model):
         editable=False,
     )
     store_menu_name = models.CharField(
-        max_length=30,
-        default="OTHERS",
-        blank=True,
-        editable=False
+        max_length=30, default="OTHERS", blank=True, editable=False
     )
 
     product_categories = models.ManyToManyField(
@@ -112,7 +109,7 @@ class Item(models.Model):
             ("deleted", "deleted"),
         ),
         default="active",
-        editable=False
+        editable=False,
     )
 
     is_groupable = models.BooleanField(default=False)
@@ -877,6 +874,26 @@ class Order(models.Model):
             if str(store_status["storeId"]) == str(store_id):
                 store_status["status"] = status
                 has_updated = True
+                # get all the items related to the store
+                if status == "accepted":
+                    store_items = self.get_store_info(store_id)["items"]
+                    items_with_product_cart_qty = [
+                        {
+                            "product_slug": item.get("product_slug"),
+                            "product_cart_qty": item.get("product_cart_qty"),
+                        }
+                        for item in store_items
+                        if item.get("product_cart_qty")
+                    ]
+                    order_items: list[Item] = self.linked_items.all()
+                    # loop through the order items and minus the product_cart_qty from the product_qty
+                    for order_item in order_items:
+                        for item in items_with_product_cart_qty:
+                            if order_item.product_slug == item["product_slug"]:
+                                order_item.product_qty -= item["product_cart_qty"]
+                                order_item.save()
+                                break
+
                 break
         self.stores_status = stores_status
         self.save()

@@ -80,6 +80,8 @@ class Option:
 class OptionType(Option, graphene.ObjectType):
     item = graphene.Field("product.types.ItemType", default_value=None)
     slug = graphene.String(required=False)
+    id = graphene.String(required=False)
+
 
     def resolve_item(self, info):
         item = None
@@ -98,12 +100,13 @@ class OptionType(Option, graphene.ObjectType):
 
 class OptionInputType(Option, graphene.InputObjectType):
     slug = graphene.String(required=False)
+    id = graphene.String(required=False)
 
 
 class OptionGroup:
     name = graphene.String(required=True)
-    is_multiple = graphene.Boolean(required=True)
-    is_required = graphene.Boolean(required=True)
+    is_multiple = graphene.Boolean(default_value=False)
+    is_required = graphene.Boolean(default_value=False)
 
 
 class OptionGroupType(OptionGroup, graphene.ObjectType):
@@ -115,6 +118,7 @@ class OptionGroupType(OptionGroup, graphene.ObjectType):
 
 
 class OptionGroupInputType(OptionGroup, graphene.InputObjectType):
+    id = graphene.String(required=False)
     options = graphene.List(OptionInputType, required=True)
 
 
@@ -371,10 +375,12 @@ class StoreItem:
 
 class StoreItemType(StoreItem, graphene.ObjectType):
     plates = graphene.List(StoreItemPlateType)
+    option_groups = graphene.List(OptionGroupType)
 
 
 class StoreItemInputType(StoreItem, graphene.InputObjectType):
     plates = graphene.List(StoreItemPlateInputType)
+    option_groups = graphene.List(OptionGroupInputType)
 
 
 class StoreInfo:
