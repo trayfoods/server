@@ -107,6 +107,7 @@ class OptionGroup:
 
 
 class OptionGroupType(OptionGroup, graphene.ObjectType):
+    id = graphene.String(required=True)
     options = graphene.List(OptionType, required=True)
 
     def resolve_options(self, info):
@@ -166,6 +167,7 @@ class ItemType(DjangoObjectType):
         # loop through the option_groups and return the OptionGroupType
         return [
             OptionGroupType(
+                id=f"{self.id}-{option_group['name']}",
                 name=option_group["name"],
                 is_multiple=option_group["is_multiple"],
                 is_required=option_group["is_required"],
