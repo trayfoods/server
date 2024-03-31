@@ -87,7 +87,7 @@ class OptionType(Option, graphene.ObjectType):
             item = Item.objects.filter(product_slug=self.slug).first()
 
         return item
-    
+
     def resolve_is_active(self, info):
         if self.slug:
             item = Item.objects.filter(product_slug=self.slug).first()
@@ -164,25 +164,58 @@ class ItemType(DjangoObjectType):
     def resolve_option_groups(self, info):
         # get self.option_groups [json, list]
         option_groups = self.option_groups
-        # loop through the option_groups and return the OptionGroupType
-        return [
-            OptionGroupType(
-                id=f"{self.id}-{option_group['name']}",
-                name=option_group["name"],
-                is_multiple=option_group["is_multiple"],
-                is_required=option_group["is_required"],
-                options=[
+        looped_option_groups = []
+        index = 0
+
+        def get_group_options_with_ids(options: dict, group_id: str):
+            looped_options = []
+            option_index = 0
+            for option in options:
+                looped_options.append(
                     OptionType(
                         name=option.get("name", None),
                         price=option.get("price", None),
                         is_active=option.get("is_active", False),
-                        slug=option.get("slug", None),
+                        slug=option.get("slug", f"{group_id}-{option_index+1}"),
                     )
-                    for option in option_group["options"]
-                ],
+                )
+                option_index += 1
+            return looped_options
+
+        for option_group in option_groups:
+            gc_id = f"{int(self.id)+index+1}-{option_group['name'].lower().replace(' ', '-')}"
+            looped_option_groups.append(
+                OptionGroupType(
+                    id=gc_id,
+                    name=option_group["name"],
+                    is_multiple=option_group["is_multiple"],
+                    is_required=option_group["is_required"],
+                    options=get_group_options_with_ids(option_group["options"], gc_id),
+                )
             )
-            for option_group in option_groups
-        ]
+            index += 1
+        return looped_option_groups
+
+        # loop through the option_groups and return the OptionGroupType
+        # return [
+        #     OptionGroupType(
+        #         id=f"{self.id}-{option_group['name']}-{get_group_index(index)}",
+        #         name=option_group["name"],
+        #         is_multiple=option_group["is_multiple"],
+        #         is_required=option_group["is_required"],
+        #         options=[
+        #             OptionType(
+        #                 name=option.get("name", None),
+        #                 price=option.get("price", None),
+        #                 is_active=option.get("is_active", False),
+        #                 slug=option.get("slug", None),
+        #             )
+        #             for option in option_group["options"]
+        #         ],
+        #     )
+
+        #     for option_group in option_groups
+        # ]
 
     def resolve_current_user_review(self, info):
         user = info.context.user
