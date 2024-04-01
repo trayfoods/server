@@ -82,7 +82,6 @@ class OptionType(Option, graphene.ObjectType):
     slug = graphene.String(required=False)
     id = graphene.String(required=False)
 
-
     def resolve_item(self, info):
         item = None
         if self.slug:
@@ -114,7 +113,22 @@ class OptionGroupType(OptionGroup, graphene.ObjectType):
     options = graphene.List(OptionType, required=True)
 
     def resolve_options(self, info):
-        return self.options
+        options = []
+        try:
+            options_data = self["options"]
+            for option in options_data:
+                options.append(
+                    OptionType(
+                        name=option["name"],
+                        price=option["price"],
+                        slug=option["slug"],
+                        is_active=option["is_active"],
+                    )
+                )
+        except:
+            options = self.options
+
+        return options
 
 
 class OptionGroupInputType(OptionGroup, graphene.InputObjectType):
