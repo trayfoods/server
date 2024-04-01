@@ -930,7 +930,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             )
 
                         # refund the customer
-                        order.store_refund_customer(store_id)
+                        did_send_refund = order.store_refund_customer(store_id)
+                        if not did_send_refund or did_send_refund["status"] == False:
+                            return MarkOrderAsMutation(
+                                error="An error occured while refunding customer, please try again later"
+                            )
 
                 return MarkOrderAsMutation(
                     success=True,
@@ -999,19 +1003,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     description=f"{store.store_name} cancelled the order",
                 )
 
-                # refund funds from each store that has cancelled the order
-                for store_status in order.stores_status:
-                    if store_status["status"] == "cancelled":
-                        # get the store id
-                        store_id = store_status.get("storeId", None)
-
-                        if store_id is None:
-                            return MarkOrderAsMutation(
-                                error="No store id found for this order, please contact support"
-                            )
-
-                        # refund the customer
-                        order.store_refund_customer(store_id)
+                # refund the customer
+                did_send_refund = order.store_refund_customer(store_id)
+                if not did_send_refund or did_send_refund["status"] == False:
+                    return MarkOrderAsMutation(
+                        error="An error occured while refunding customer, please try again later"
+                    )
+                
 
                 return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
 

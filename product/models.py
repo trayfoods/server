@@ -200,7 +200,7 @@ class Item(models.Model):
             float: The normalized weighted average rating as a percentage.
         """
         # Define the threshold for a bad review
-        bad_review_threshold = 3
+        bad_review_threshold = 2.5
 
         # Get the total number of ratings
         total_ratings = self.get_total_ratings()
@@ -245,9 +245,10 @@ class Item(models.Model):
 
         # Calculate the weighted average rating
         weighted_average_rating = (
-            weight_of_ratings * sum_of_ratings
-            + weight_of_views * total_views
-            + weight_of_clicks * total_clicks
+            weight_of_ratings
+            * sum_of_ratings
+            # + weight_of_views * total_views
+            # + weight_of_clicks * total_clicks
         )
 
         # Normalize the weighted average rating to be a percentage
@@ -257,12 +258,10 @@ class Item(models.Model):
 
         return normalized_weighted_average_rating
 
+    # check if the item has qty and the qty is 0, method name: is_out_of_stock
     @property
-    # check if the current user is the creator of the product
-    def is_creator(self):
-        return self.product_creator and (
-            self.product_creator == self.request.user.profile.store
-        )
+    def is_out_of_stock(self):
+        return self.has_qty and self.product_qty == 0
 
     @property
     # get the creator of the product country
@@ -279,6 +278,11 @@ class Item(models.Model):
             if not self.product_creator.is_approved:
                 return False
         return self.product_status == "active"
+
+    def is_creator(self):
+        return self.product_creator and (
+            self.product_creator == self.request.user.profile.store
+        )
 
 
 class Rating(models.Model):
@@ -530,7 +534,8 @@ class Order(models.Model):
                 ]
             for store_info in stores_infos:
                 store_info["total"]["price"] = 0
-                store_info["total"]["platePrice"] = 0
+                store_info["total"]["plate_price"] = 0
+                store_info["total"]["option_group_price"] = 0
 
                 # set all item price to 0
                 for item in store_info["items"]:
@@ -736,7 +741,7 @@ class Order(models.Model):
         store_status = self.get_store_status(store_id)
         if store_status in ["refunded", "pending-refund"]:
             return {
-                "status": True,
+                "status": False,
                 "message": "The store has already refunded the customer",
             }
 
@@ -874,26 +879,6 @@ class Order(models.Model):
             if str(store_status["storeId"]) == str(store_id):
                 store_status["status"] = status
                 has_updated = True
-                # get all the items related to the store
-                if status == "accepted":
-                    store_items = self.get_store_info(store_id)["items"]
-                    items_with_product_cart_qty = [
-                        {
-                            "product_slug": item.get("product_slug"),
-                            "product_cart_qty": item.get("product_cart_qty"),
-                        }
-                        for item in store_items
-                        if item.get("product_cart_qty")
-                    ]
-                    order_items: list[Item] = self.linked_items.all()
-                    # loop through the order items and minus the product_cart_qty from the product_qty
-                    for order_item in order_items:
-                        for item in items_with_product_cart_qty:
-                            if order_item.product_slug == item["product_slug"]:
-                                order_item.product_qty -= item["product_cart_qty"]
-                                order_item.save()
-                                break
-
                 break
         self.stores_status = stores_status
         self.save()
