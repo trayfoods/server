@@ -1264,8 +1264,7 @@ class HideWalletBalanceMutation(Output, graphene.Mutation):
     @permission_checker([IsAuthenticated])
     def mutate(self, info, is_hidden):
         user = info.context.user
-
-        user_wallet = user.profile.wallet
+        user_wallet = user.profile.get_wallet()
 
         if not user_wallet:
             return HideWalletBalanceMutation(

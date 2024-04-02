@@ -82,9 +82,10 @@ class UserSettingsType(graphene.ObjectType):
     
     def resolve_hide_wallet_balance(self, info):
         user = info.context.user
+        profile_wallet = user.profile.get_wallet()
 
-        if user.is_authenticated and user.profile.wallet:
-            return user.profile.wallet.hide_balance
+        if user.is_authenticated and profile_wallet:
+            return profile_wallet.hide_balance
         
         return False
 
