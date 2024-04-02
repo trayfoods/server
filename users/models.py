@@ -1126,8 +1126,8 @@ class Store(models.Model):
     def orders(self):
         return Order.get_orders_by_store(store=self)
 
-    def deduct_product_qty(product_slug, product_cart_qty):
-        product_qs = Item.objects.filter(slug=product_slug)
+    def deduct_product_qty(self, product_slug, product_cart_qty):
+        product_qs = self.store_products.filter(product_slug=product_slug)
         if not product_qs.exists():
             return False
         product = product_qs.first()

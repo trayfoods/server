@@ -141,7 +141,7 @@ class ProcessPayment:
 
                     overrall_store_price = Decimal(store_total_price) + Decimal(
                         store_plate_price
-                    )
+                    ) + Decimal(store_option_groups_price)
 
                     store.vendor.send_sms(
                         message="New Order of {} {} was made, tap on this link to view the order → {}/checkout/{}".format(
@@ -324,9 +324,11 @@ class ProcessPayment:
             # get the store plate price
             store_plate_price = store_info["total"]["plate_price"]
 
+            store_option_groups_price = store_info["total"]["option_groups_price"]
+
             overrall_store_price = Decimal(store_total_price) + Decimal(
                 store_plate_price
-            )
+            ) + Decimal(store_option_groups_price)
             if store_status == "pending-refund" and overrall_store_price == order_price:
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
@@ -419,9 +421,11 @@ class ProcessPayment:
             # get the store plate price
             store_plate_price = store_info["total"]["plate_price"]
 
+            store_option_groups_price = store_info["total"]["option_groups_price"]
+
             overrall_store_price = Decimal(store_total_price) + Decimal(
                 store_plate_price
-            )
+            ) + Decimal(store_option_groups_price)
 
             # check if the store status is "pending-refund"
             if store_status == "pending-refund" and overrall_store_price == order_price:
