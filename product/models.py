@@ -820,7 +820,18 @@ class Order(models.Model):
     # get the number of active orders linked to a delivery person
     @classmethod
     def get_active_orders_count_by_delivery_person(cls, delivery_person):
-        return cls.objects.filter(linked_delivery_people=delivery_person).count()
+        deliveries = cls.objects.filter(linked_delivery_people=delivery_person)
+        active_deliveries = []
+        for delivery in deliveries:
+            delivery_person_inst = delivery.get_delivery_person(
+                delivery_person_id=delivery_person.id
+            )
+            if delivery_person_inst and delivery_person_inst["status"] in [
+                "pending",
+                "out-for-delivery",
+            ]:
+                active_deliveries.append(delivery)
+        return len(active_deliveries)
 
     # re-generate a order_track_id for the order and update the order_track_id of the order
     def regenerate_order_track_id(self):

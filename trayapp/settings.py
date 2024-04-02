@@ -409,4 +409,10 @@ ALLOWED_STORE_ORDER_STATUS = [
     "failed",
 ]
 
-ALLOWED_DELIVERY_PERSON_ORDER_STATUS = ["out-for-delivery", "pending", "delivered"]
+ALLOWED_DELIVERY_PERSON_ORDER_STATUS = [
+    "out-for-delivery",
+    "pending",
+    "delivered",
+    "returned",
+    "cancelled",
+]
