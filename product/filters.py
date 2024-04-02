@@ -21,6 +21,7 @@ class ItemFilter(FilterSet):
         model = Item
         fields = {
             "product_name": ["icontains"],
+            "store_menu_name": ["exact"],
             "product_slug": ["icontains"],
             "product_price": ["exact", "lt", "gt"],  # lt = less than, gt = greater than
         }

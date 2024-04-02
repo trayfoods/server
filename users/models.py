@@ -26,6 +26,7 @@ from trayapp.utils import get_twilio_client
 from django.contrib.auth.hashers import check_password, make_password
 
 TWILIO_CLIENT = get_twilio_client()
+SMS_ENABLED = settings.SMS_ENABLED
 
 
 def profile_image_directory_path(instance, filename):
@@ -39,9 +40,8 @@ def profile_image_directory_path(instance, filename):
         the final destination path.
     :result str: Directory path.file_extension.
     """
-    username = slugify(instance.user.username)
     _, extension = os.path.splitext(filename)
-    return f"images/users/{username}/{username}{extension}"
+    return f"images/users/{instance.id}/profile/{instance.id}-profile-image{extension}"
 
 
 def store_cover_image_directory_path(instance, filename):
@@ -55,25 +55,8 @@ def store_cover_image_directory_path(instance, filename):
         the final destination path.
     :result str: Directory path.file_extension.
     """
-    username = slugify(instance.vendor.user.username)
     _, extension = os.path.splitext(filename)
-    return f"images/vendors/{username}/{instance.store_nickname}-store-cover{extension}"
-
-
-def school_logo_directory_path(instance, filename):
-    """
-    Create a directory path to upload the School Logo.
-    :param object instance:
-        The instance where the current file is being attached.
-    :param str filename:
-        The filename that was originally given to the file.
-        This may not be taken into account when determining
-        the final destination path.
-    :result str: Directory path.file_extension.
-    """
-    school_name = slugify(instance.name)
-    _, extension = os.path.splitext(filename)
-    return f"images/school-logo/{school_name}/{school_name}{extension}"
+    return f"images/users/{instance.vendor.user.id}/store/{instance.store_nickname}-store-cover{extension}"
 
 
 class UserAccount(AbstractUser, models.Model):
@@ -437,13 +420,13 @@ class Profile(models.Model):
     def send_sms(self, message):
         if (
             self.has_calling_code() and self.phone_number_verified
-        ) and settings.SMS_ENABLED:
+        ) and SMS_ENABLED:
             phone_number = f"{self.calling_code}{self.phone_number}"
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )
             return True
-        if not settings.SMS_ENABLED:
+        if not SMS_ENABLED:
             print("SMS is disabled")
             print(self.has_calling_code() and self.phone_number_verified)
             print(self.phone_number)
@@ -484,7 +467,7 @@ class Profile(models.Model):
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
 
-    def clean_phone_number(self, phone_number):
+    def clean_phone_number(self, phone_number: str):
         phone_number = phone_number.strip()
 
         # replace spaces with empty string
@@ -938,7 +921,7 @@ class Store(models.Model):
     store_type = models.CharField(max_length=20)
     store_categories = models.JSONField(default=list, blank=True, editable=False)
     store_rank = models.FloatField(default=0, editable=False)
-    store_menu = models.JSONField(default=list, blank=True)
+    store_menu: list = models.JSONField(default=list, blank=True)
     has_physical_store = models.BooleanField(default=False)
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
@@ -1112,11 +1095,6 @@ class Store(models.Model):
     def is_school_store(self):
         return True if self.school else False
 
-    # get store's products
-    @property
-    def store_products(self):
-        return Item.get_items_by_store(store=self)
-
     # get store's open hours
     @property
     def store_open_hours(self):
@@ -1126,8 +1104,11 @@ class Store(models.Model):
     def orders(self):
         return Order.get_orders_by_store(store=self)
 
+    def get_store_products(self):
+        return Item.get_items_by_store(store=self)
+
     def deduct_product_qty(self, product_slug, product_cart_qty):
-        product_qs = self.store_products.filter(product_slug=product_slug)
+        product_qs = self.get_store_products().filter(product_slug=product_slug)
         if not product_qs.exists():
             return False
         product = product_qs.first()

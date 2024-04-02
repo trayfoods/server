@@ -1020,7 +1020,7 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
     @staticmethod
     @permission_checker([IsAuthenticated])
     def mutate(self, info, phone, country):
-        profile = info.context.user.profile
+        profile: Profile = info.context.user.profile
         success = False
         error = None
 
@@ -1036,7 +1036,9 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
 
         calling_code = get_country.calling_codes[0]
 
-        if settings.DEBUG:
+        profile.clean_phone_number(phone)
+
+        if settings.DEBUG or not settings.SMS_ENABLED:
             success = True
             return SendPhoneVerificationCodeMutation(success=success, error=error)
 
@@ -1050,7 +1052,6 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
                 error = "Phone number already in use, please try another."
             else:
                 error = "Issue sending the OTP code, please try again."
-            print(e)
 
         return SendPhoneVerificationCodeMutation(success=success, error=error)
 
@@ -1245,7 +1246,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         if len(removed_menu) > 0:
             # check if the menu is in the store_products, if not update the store_products store_menu_name to 'OTHERS'
-            store_products = store.store_products.filter(
+            store_products = store.get_store_products().filter(
                 store_menu_name__in=removed_menu
             )
             if store_products.exists():

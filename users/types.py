@@ -225,7 +225,7 @@ class StoreType(DjangoObjectType):
     store_categories = graphene.List(graphene.String)
     store_image = graphene.String()
     store_cover_image = graphene.String()
-    store_products = graphene.List("product.types.ItemType")
+    store_items = graphene.List("product.types.ItemType")
     store_menu = graphene.List(graphene.String)
     store_open_hours = graphene.List(StoreOpenHours)
     whatsapp_numbers = graphene.List(graphene.String)
@@ -249,8 +249,8 @@ class StoreType(DjangoObjectType):
             return []
         return store_menu
 
-    def resolve_store_products(self, info):
-        return self.store_products.all()
+    def resolve_store_items(self, info):
+        return self.get_store_products()[:11]
 
     def resolve_store_image(self, info):
         vendor = self.vendor
@@ -291,6 +291,9 @@ class StoreNode(StoreType, graphene.ObjectType):
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreFilter
 
+class StoreItmMenuType(graphene.ObjectType):
+    menu = graphene.String()
+    items = graphene.List("product.types.ItemType")
 
 class DeliveryPersonType(DjangoObjectType):
     class Meta:

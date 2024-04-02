@@ -281,7 +281,7 @@ class ItemType(DjangoObjectType):
             store_item = "not_vendor"
             vendor = user.profile
             if not vendor.store is None:
-                is_product_in_store = vendor.store.store_products.filter(
+                is_product_in_store = vendor.store.get_store_products().filter(
                     product_slug=self.product_slug
                 ).first()
                 if not is_product_in_store is None:

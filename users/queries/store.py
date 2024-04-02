@@ -1,15 +1,63 @@
 import graphene
 from graphene_django.filter import DjangoFilterConnectionField
 from users.models import Store
-from users.types import StoreType, StoreNode
+from users.types import StoreType, StoreNode, StoreItmMenuType
+from product.types import ItemNode
+from trayapp.permissions import permission_checker, IsAuthenticated
+from graphql import GraphQLError
 
 
 class StoreQueries(graphene.ObjectType):
     stores = DjangoFilterConnectionField(StoreNode)
+    store_items = DjangoFilterConnectionField(ItemNode)
+    store_itm_menu = graphene.List(StoreItmMenuType)
+    top10_store_items = graphene.List(ItemNode, store_nickname=graphene.String())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
 
     def resolve_stores(self, info, **kwargs):
         return Store.objects.all().exclude(is_approved=False)
+
+    @permission_checker([IsAuthenticated])
+    def resolve_store_items(self, info, **kwargs):
+        user = info.context.user
+        if not "VENDOR" in user.roles:
+            raise GraphQLError("243: You are not a vendor")
+        store: Store = user.profile.store
+        return store.get_store_products()
+
+    @permission_checker([IsAuthenticated])
+    def resolve_store_itm_menu(self, info, **kwargs):
+        user = info.context.user
+        if not "VENDOR" in user.roles:
+            raise GraphQLError("243: You are not a vendor")
+
+        store: Store = user.profile.store
+        store_items = store.get_store_products()
+        store_menu = store.store_menu
+        store_menu_with_items = []
+
+        for menu in store_menu:
+            store_menu_with_items.append(
+                StoreItmMenuType(
+                    menu=menu, items=store_items.filter(store_menu_name=menu)
+                )
+            )
+        return store_menu_with_items
+
+    def resolve_top10_store_items(self, info, store_nickname):
+        top_store_items = []
+        store_qs = Store.objects.filter(store_nickname=store_nickname)
+        if not store_qs.exists():
+            raise GraphQLError(
+                "Store was not found to get top 10 items, please contact support"
+            )
+        store = store_qs.first()
+        # filter store items
+        store_items = store.get_store_products()
+
+        top_store_items = store_items.order_by("-product_views")[:11]
+
+        return top_store_items
 
     def resolve_get_store(self, info, store_nickname):
         user = info.context.user
@@ -25,31 +73,3 @@ class StoreQueries(graphene.ObjectType):
             store.store_rank += 0.5
             store.save()
         return store
-
-    def resolve_get_trending_stores(self, info, page, count=None, page_size=10):
-        from trayapp.utils import paginate_queryset
-
-        """
-        Resolve the get_trending_stores query.
-
-        Args:
-            info: The GraphQL ResolveInfo object.
-            page: The page number for pagination.
-            count: The maximum number of stores to return.
-            page_size: The number of stores to display per page.
-
-        Returns:
-            A paginated queryset of trending stores.
-        """
-        stores_list = Store.objects.all().order_by("-store_rank")
-        # check if each store products are up to 2
-        for store in stores_list:
-            if store.store_products.count() < 2:
-                stores_list = stores_list.exclude(pk=store.pk)
-        if count is not None:
-            if stores_list.count() >= count:
-                stores_list = stores_list[:count]
-        else:
-            stores_list = stores_list
-        paginated_queryset = paginate_queryset(stores_list, page_size, page)
-        return paginated_queryset

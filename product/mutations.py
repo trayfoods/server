@@ -793,12 +793,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="No store info found for this order, please contact support"
                     )
 
+                total = current_store_info["total"]
                 # get the store total normal price
-                store_total_price = current_store_info["total"]["price"]
+                store_total_price = total.get("price", 0)
                 # get the store plate price
-                store_plate_price = current_store_info["total"]["plate_price"]
+                store_plate_price = total.get("plate_price", 0)
                 # get the store option group price
-                store_option_groups_price = current_store_info["total"]["option_groups_price"]
+                store_option_groups_price = total.get("option_groups_price", 0)
 
                 overrall_store_price = Decimal(store_total_price) + Decimal(
                     store_plate_price

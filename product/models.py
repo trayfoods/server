@@ -159,6 +159,11 @@ class Item(models.Model):
         return cls.objects.exclude(product_status="deleted").filter(
             product_creator=store
         )
+    
+    @classmethod
+    def get_items_by_recent_orders(cls):
+        pass
+
 
     def get_total_ratings(self):
         return self.ratings.count()
