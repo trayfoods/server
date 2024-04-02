@@ -341,7 +341,7 @@ class ShippingInputType(graphene.InputObjectType):
 class TotalOrder:
     price = graphene.Int()
     plate_price = graphene.Int()
-    option_group_price = graphene.Int()
+    option_groups_price = graphene.Int()
 
 
 class CountOrder:
@@ -751,8 +751,8 @@ class DeliveryPersonOrderNode(OrderType, DjangoObjectType):
                 ]
             for store_info in stores_infos:
                 store_info["total"]["price"] = 0
-                store_info["total"]["platePrice"] = 0
-                store_info["total"]["optionGroupPrice"] = 0
+                store_info["total"]["plate_price"] = 0
+                store_info["total"]["option_groups_price"] = 0
 
                 # set all item price to 0
                 for item in store_info["items"]:

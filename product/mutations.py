@@ -531,7 +531,7 @@ class CreateOrderMutation(Output, graphene.Mutation):
                     "total": {
                         "price": store_info.total.price,
                         "plate_price": store_info.total.plate_price,
-                        "option_group_price": store_info.total.option_group_price,
+                        "option_groups_price": store_info.total.option_groups_price,
                     },
                     "count": {
                         "items": store_info.count.items,
@@ -798,11 +798,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # get the store plate price
                 store_plate_price = current_store_info["total"]["plate_price"]
                 # get the store option group price
-                store_option_group_price = current_store_info["total"]["option_group_price"]
+                store_option_groups_price = current_store_info["total"]["option_groups_price"]
 
                 overrall_store_price = Decimal(store_total_price) + Decimal(
                     store_plate_price
-                ) + Decimal(store_option_group_price)
+                ) + Decimal(store_option_groups_price)
 
                 store_statuses = get_store_statuses(order, "accepted", store_id)
                 
