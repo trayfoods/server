@@ -153,15 +153,16 @@ class ProcessPayment:
                             overrall_store_price,
                             settings.FRONTEND_URL,
                             order.order_track_id,
-                        )
+                        ),
                     )
 
-            if shipping_address == "pickup":
+            if order.user:
                 # notify the user
                 order.notify_user(
+                    title="Order Placed",
                     message="Order {} has been sent to the store, we will notify you when the store accept the order".format(
                         order.get_order_display_id()
-                    )
+                    ),
                 )
 
         return HttpResponse("Payment successful", status=200)
