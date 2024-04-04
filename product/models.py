@@ -288,6 +288,9 @@ class Item(models.Model):
         return self.product_creator and (
             self.product_creator == self.request.user.profile.store
         )
+    
+    def filter_by_category(self, category):
+        return self.product_categories.filter(slug=category)
 
 
 class Rating(models.Model):

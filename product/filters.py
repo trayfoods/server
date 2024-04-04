@@ -11,11 +11,13 @@ class ItemFilter(FilterSet):
     )
     school = CharFilter(field_name="product_creator__school__slug", lookup_expr="exact")
     country = CharFilter(
-        field_name="product_creator__store_country", lookup_expr="icontains"
+        field_name="product_creator__country", lookup_expr="icontains"
     )
+    campus = CharFilter(field_name="product_creator__campus", lookup_expr="exact")
     location = CharFilter(
         field_name="product_creator__store_address", lookup_expr="icontains"
     )
+    category = CharFilter(method="filter_by_category")
 
     class Meta:
         model = Item
@@ -25,6 +27,16 @@ class ItemFilter(FilterSet):
             "product_slug": ["icontains"],
             "product_price": ["exact", "lt", "gt"],  # lt = less than, gt = greater than
         }
+
+    def filter_by_category(self, queryset, name, value):
+        # filter by product_categories
+        return queryset.filter(
+            id__in=[
+                item.id
+                for item in queryset
+                if item.product_categories.filter(slug=value).exists()
+            ]
+        )
 
 
 class ReviewFilter(FilterSet):
