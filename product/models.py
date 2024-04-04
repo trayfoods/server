@@ -159,11 +159,10 @@ class Item(models.Model):
         return cls.objects.exclude(product_status="deleted").filter(
             product_creator=store
         )
-    
+
     @classmethod
     def get_items_by_recent_orders(cls):
         pass
-
 
     def get_total_ratings(self):
         return self.ratings.count()
@@ -288,7 +287,7 @@ class Item(models.Model):
         return self.product_creator and (
             self.product_creator == self.request.user.profile.store
         )
-    
+
     def filter_by_category(self, category):
         return self.product_categories.filter(slug=category)
 
@@ -692,7 +691,6 @@ class Order(models.Model):
     def notify_delivery_people(self, delivery_people, store_id):
         from users.models import Profile, School
 
-        print("start notify_delivery_people")
         shipping = self.shipping
         if not shipping:
             raise ValueError("Invalid shipping format")
@@ -706,16 +704,14 @@ class Order(models.Model):
             sch = School.objects.get(slug=sch).name
 
         order_address = "{}{}".format(address, f", {sch}" if sch else "")
-        print("delivery_people", delivery_people)
+
         for delivery_person in delivery_people:
             delivery_person_profile: Profile = delivery_person.profile
-            print("delivery_person.profile", delivery_person_profile)
             has_sent_push_notification = delivery_person_profile.send_push_notification(
                 title="New Order",
                 msg="You have a new order to deliver, check your account page for more details.",
             )
             if not has_sent_push_notification:
-                print("has_sent_push_notification", has_sent_push_notification)
                 has_sent_sms = delivery_person_profile.send_sms(
                     "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.\n{}".format(
                         self.get_order_display_id(),

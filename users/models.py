@@ -428,9 +428,8 @@ class Profile(models.Model):
             return True
         if not SMS_ENABLED:
             print("SMS is disabled")
-            print(self.has_calling_code() and self.phone_number_verified)
-            print(self.phone_number)
             print(self.calling_code)
+            print(self.phone_number)
             print(message)
             print("End of SMS is disabled")
             return False if not settings.DEBUG else True
@@ -462,6 +461,11 @@ class Profile(models.Model):
         ).start()
 
         return True
+    
+    # try push notification then sms if push notification fails
+    def notify_me(self, title, msg, data=None):
+        if not self.send_push_notification(title, msg, data):
+            self.send_sms(msg)
 
     @property
     def is_delivery_person(self):

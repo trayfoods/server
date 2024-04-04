@@ -146,8 +146,9 @@ class ProcessPayment:
                         + Decimal(store_option_groups_price)
                     )
 
-                    store.vendor.send_sms(
-                        message="New Order of {} {} was made, tap on this link to view the order → {}/checkout/{}".format(
+                    store.vendor.notify_me(
+                        title="New Order",
+                        msg="New Order of {} {} was made, tap on this link to view the order → {}/checkout/{}".format(
                             order.order_currency,
                             overrall_store_price,
                             settings.FRONTEND_URL,
