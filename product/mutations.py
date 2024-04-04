@@ -368,18 +368,18 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
         if not "VENDOR" in user.roles:
             return UpdateItemMenuMutation(error="You are not a vendor")
 
-        item = Item.get_items().filter(product_slug=slug)
+        store: Store = user.profile.store
+        store_items = store.get_store_products()
+        item = store_items.filter(product_slug=slug)
 
         if not item.exists():
             return UpdateItemMenuMutation(error="Item does not exist")
 
         item = item.first()
-
-        profile = user.profile
-        if item.product_creator != profile.store:
+        if item.product_creator != store:
             return UpdateItemMenuMutation(error="You are not allowed to edit this item")
 
-        if not menu in profile.store.store_menu:
+        if not menu in store.store_menu:
             return UpdateItemMenuMutation(
                 error="'{}' is not part of your menu".format(menu)
             )
@@ -404,8 +404,12 @@ class AddProductClickMutation(Output, graphene.Mutation):
         if not product_creator:
             return AddProductClickMutation(error="Item does not have a creator")
 
-        if not product_creator.is_open():
-            return AddProductClickMutation(error="Item Store has closed")
+        if not product_creator.get_is_open_data()["is_open"]:
+            return AddProductClickMutation(error="Item's Store has closed")
+        
+        if product_creator.get_is_open_data()["open_soon"]:
+            return AddProductClickMutation(error="Item's Store has not opened yet")
+
 
         if info.context.user.is_authenticated:
             # Add the user activity
@@ -499,8 +503,10 @@ class CreateOrderMutation(Output, graphene.Mutation):
                 raise GraphQLError(
                     f"Store with nickname '{storeId}' does not exist or is not approved"
                 )
-            if store.is_open() == False:
+            if not store.get_is_open_data()["is_open"]:
                 raise GraphQLError(f"{store.store_name} has closed")
+            if store.get_is_open_data()["open_soon"]:
+                raise GraphQLError(f"{store.store_name} has not opened yet")
             if store.is_approved == False:
                 raise GraphQLError(f"{store.store_name} has not been approved")
             if store.status != "online":
@@ -657,7 +663,7 @@ class ReOrderMutation(Output, graphene.Mutation):
         
         # check which store is not open
         for store in avaliable_stores:
-            if store.is_open() == False:
+            if store.get_is_open_data()["is_open"] == False:
                 return ReOrderMutation(error=f"{store.store_name} has closed")
                         
         # check if the item is available

@@ -418,9 +418,7 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        if (
-            self.has_calling_code() and self.phone_number_verified
-        ) and SMS_ENABLED:
+        if (self.has_calling_code() and self.phone_number_verified) and SMS_ENABLED:
             phone_number = f"{self.calling_code}{self.phone_number}"
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
@@ -927,6 +925,7 @@ class Store(models.Model):
         upload_to=store_cover_image_directory_path, null=True, blank=True
     )
     store_bio = models.CharField(null=True, blank=True, max_length=150)
+    store_average_preparation_time = models.JSONField(default=dict, blank=True)
 
     # store location
     country = CountryField(blank=True, default="NG")
@@ -975,13 +974,18 @@ class Store(models.Model):
         return f"{self.store_nickname}"
 
     # check if store is open
-
-    def is_open(self):
-        if settings.DEBUG == True:
-            return True
-
+    def get_is_open_data(self):
         import pytz
 
+        # if settings.DEBUG == True:
+        #     return True
+
+        is_open_data = {
+            "is_open": False,
+            "open_soon": False,
+            "close_soon": False,
+            "open_next_day": False,
+        }
         # Get the current time in the store's time zone
         current_datetime = timezone.now()
 
@@ -1007,24 +1011,19 @@ class Store(models.Model):
                 | models.Q(day__exact="")
             ).first()
         except (AttributeError, ValueError):
-            print(
-                "Error: Issue retrieving store open hours. Check the data model and data integrity."
-            )
-            return False
+            return is_open_data
 
         if not store_open_hours:
-            print(
-                "Store open hours not found for this day. Consider adding default hours."
-            )
-            return False
+            return is_open_data
+
+        print(store_open_hours)
 
         # Convert the open and close time to the store's timezone (handle potential errors)
         try:
             open_time = store_open_hours.open_time
             close_time = store_open_hours.close_time
         except (AttributeError, ValueError):
-            print("Error: Invalid open or close time format in store hours data.")
-            return False
+            return is_open_data
 
         if self.timezone:
             try:
@@ -1033,10 +1032,7 @@ class Store(models.Model):
                 open_datetime = open_datetime.astimezone(pytz.timezone(self.timezone))
                 close_datetime = close_datetime.astimezone(pytz.timezone(self.timezone))
             except (pytz.UnknownTimeZoneError, ValueError):
-                print(
-                    f"Error: Error converting time to store timezone. Check timezone settings."
-                )
-                return False
+                return is_open_data
 
         else:
             open_datetime = datetime.combine(datetime.today(), open_time)
@@ -1048,23 +1044,31 @@ class Store(models.Model):
 
         # Handle midnight closure edge case
         if open_time == close_time:
-            print("Store is closed today (open and close times are the same).")
-            return False
+            return is_open_data
 
         # Check if store is open
         if open_time <= current_datetime.time() < close_time:
-            return True
+            is_open_data["is_open"] = True
 
-        # If the current time is not within the open hours, check if it's within the next day's hours
-        if close_time < open_time:
-            next_day_datetime = current_datetime + timedelta(days=1)
-            next_day_open_time = store_open_hours.open_time
-            next_day_close_time = store_open_hours.close_time
+        # check if store will open soon in 30 minutes (remeber the types are datetime.time)
+        if open_time > current_datetime.time():
+            if (open_time.hour - current_datetime.hour) == 1 and (
+                open_time.minute - current_datetime.minute
+            ) <= 30:
+                is_open_data["open_soon"] = True
 
-            if next_day_open_time <= next_day_datetime.time() < next_day_close_time:
-                return True
+        # check if store will close soon in 30 minutes
+        if close_time > current_datetime.time():
+            if (close_time.hour - current_datetime.hour) == 1 and (
+                close_time.minute - current_datetime.minute
+            ) <= 30:
+                is_open_data["close_soon"] = True
 
-        return False
+        # check if store will open next day
+        if open_time > current_datetime.time() and current_day_abbrev != "Sun":
+            is_open_data["open_next_day"] = True
+            
+        return is_open_data
 
     class Meta:
         ordering = ["-store_rank"]
@@ -1082,6 +1086,13 @@ class Store(models.Model):
             if not self.store_nickname:
                 self.store_nickname = slugify(self.store_name)
                 self.save()
+
+        if self.store_average_preparation_time:
+            is_average_preparation_time_valid = (
+                self.validate_store_average_preparation_time()
+            )
+            if not is_average_preparation_time_valid:
+                raise Exception("Invalid Store Average Preparation Time")
 
         super().save(*args, **kwargs)
 
@@ -1114,6 +1125,19 @@ class Store(models.Model):
         product = product_qs.first()
         product.product_qty -= product_cart_qty
         product.save()
+
+    def validate_store_average_preparation_time(self):
+        if not isinstance(
+            self.store_average_preparation_time["min"], int
+        ) or not isinstance(self.store_average_preparation_time["max"], int):
+            return False
+        if (
+            self.store_average_preparation_time["min"] < 0
+            or self.store_average_preparation_time["max"] < 0
+        ):
+            return False
+
+        return True
 
 
 class Hostel(models.Model):
