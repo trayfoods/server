@@ -315,7 +315,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
 
         if event_type == "CREATE":
             # check if store average preparation time is valid
-            if not store_average_preparation_time:
+            if not Store.validate_store_average_preparation_time(store_average_preparation_time):
                 return CreateUpdateStoreMutation(
                     error="Store Average Preparation Time is required, please try again"
                 )

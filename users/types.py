@@ -223,9 +223,6 @@ class AveragePreparationTimeInput(AveragePreparationTime, graphene.InputObjectTy
     pass
 
 
-
-
-
 # store open hours input
 class StoreOpenHoursInput(graphene.InputObjectType):
     day = graphene.String()

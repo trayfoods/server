@@ -3,6 +3,8 @@ import os
 import time
 
 import uuid
+import pytz
+
 from django.utils import timezone
 
 from django.db import models
@@ -975,7 +977,6 @@ class Store(models.Model):
 
     # check if store is open
     def get_is_open_data(self):
-        import pytz
 
         # if settings.DEBUG == True:
         #     return True
@@ -1067,7 +1068,7 @@ class Store(models.Model):
         # check if store will open next day
         if open_time > current_datetime.time() and current_day_abbrev != "Sun":
             is_open_data["open_next_day"] = True
-            
+
         return is_open_data
 
     class Meta:
@@ -1089,7 +1090,7 @@ class Store(models.Model):
 
         if self.store_average_preparation_time:
             is_average_preparation_time_valid = (
-                self.validate_store_average_preparation_time()
+                self.validate_store_average_preparation_time(self.store_average_preparation_time)
             )
             if not is_average_preparation_time_valid:
                 raise Exception("Invalid Store Average Preparation Time")
@@ -1126,14 +1127,14 @@ class Store(models.Model):
         product.product_qty -= product_cart_qty
         product.save()
 
-    def validate_store_average_preparation_time(self):
+    def validate_store_average_preparation_time(store_average_preparation_time: dict):
         if not isinstance(
-            self.store_average_preparation_time["min"], int
-        ) or not isinstance(self.store_average_preparation_time["max"], int):
+            store_average_preparation_time.store_average_preparation_time["min"], int
+        ) or not isinstance(store_average_preparation_time.store_average_preparation_time["max"], int):
             return False
         if (
-            self.store_average_preparation_time["min"] < 0
-            or self.store_average_preparation_time["max"] < 0
+            store_average_preparation_time.store_average_preparation_time["min"] < 0
+            or store_average_preparation_time.store_average_preparation_time["max"] < 0
         ):
             return False
 
