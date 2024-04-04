@@ -212,6 +212,19 @@ class StoreOpenHours(graphene.ObjectType):
     open_time = graphene.String()
     close_time = graphene.String()
 
+class AveragePreparationTime:
+    min = graphene.Int()
+    max = graphene.Int()
+
+class AveragePreparationTimeType(AveragePreparationTime, graphene.ObjectType):
+    pass
+
+class AveragePreparationTimeInput(AveragePreparationTime, graphene.InputObjectType):
+    pass
+
+
+
+
 
 # store open hours input
 class StoreOpenHoursInput(graphene.InputObjectType):
@@ -228,6 +241,7 @@ class StoreType(DjangoObjectType):
     store_items = graphene.List("product.types.ItemType")
     store_menu = graphene.List(graphene.String)
     store_open_hours = graphene.List(StoreOpenHours)
+    store_average_preparation_time = graphene.Field(AveragePreparationTimeType)
     whatsapp_numbers = graphene.List(graphene.String)
 
     country = graphene.String()
@@ -274,6 +288,9 @@ class StoreType(DjangoObjectType):
 
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
+    
+    def resolve_store_average_preparation_time(self, info):
+        return self.store_average_preparation_time
 
     def resolve_whatsapp_numbers(self, info):
         return self.whatsapp_numbers

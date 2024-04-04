@@ -13,7 +13,7 @@ from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
-from .types import UserNodeType, StoreOpenHoursInput
+from .types import UserNodeType, StoreOpenHoursInput, AveragePreparationTimeInput
 from .models import (
     Transaction,
     Store,
@@ -163,6 +163,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         facebook_handle = graphene.String()
 
         store_open_hours = graphene.List(StoreOpenHoursInput)
+        store_average_preparation_time = graphene.Field(AveragePreparationTimeInput)
 
     user = graphene.Field(UserNodeType)
 
@@ -187,6 +188,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
             "store_cover_image",
             "has_physical_store",
             "country",
+            "store_average_preparation_time",
         ]
         address_fields = [
             "state",
@@ -214,6 +216,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         store_cover_image = kwargs.get("store_cover_image")
         store_bio = kwargs.get("store_bio")
         has_physical_store = kwargs.get("has_physical_store")
+        store_average_preparation_time = kwargs.get("store_average_preparation_time", None)
         country = kwargs.get("country")
 
         state = kwargs.get("state")
@@ -311,6 +314,11 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 )
 
         if event_type == "CREATE":
+            # check if store average preparation time is valid
+            if not store_average_preparation_time:
+                return CreateUpdateStoreMutation(
+                    error="Store Average Preparation Time is required, please try again"
+                )
             store = Store.objects.create(
                 vendor=user.profile,
                 # store details
@@ -321,6 +329,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store_cover_image=store_cover_image,
                 store_bio=store_bio,
                 has_physical_store=has_physical_store,
+                store_average_preparation_time=store_average_preparation_time,
                 # store location
                 country=country,
                 city=city,
@@ -355,6 +364,8 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store.store_bio = store_bio
             if has_physical_store:
                 store.has_physical_store = has_physical_store
+            if store_average_preparation_time:
+                store.store_average_preparation_time = store_average_preparation_time
             # update the store location
             if country:
                 store.country = country
@@ -407,46 +418,47 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
 
         # get all admin users email and send them a plain text email
         # to verify the store
-        try:
-            admin_users = User.objects.filter(is_superuser=True)
-            for admin_user in admin_users:
-                if async_email_func:
-                    async_email_func(
-                        subject="New Store Created",
-                        message="""A new store has been created, please verify it.
-                                Store Name: {}
-                                Store Nickname: {}
-                                Store Type: {}
-                                Store Country: {}
-                                Link to store: https://api.trayfoods.com/admin/users/store/{}/
-                                """.format(
-                            store.store_name,
-                            store.store_nickname,
-                            store.store_type,
-                            store.country.code,
-                            store.pk,
-                        ),
-                        recipient_list=[admin_user.email],
-                    )
-                else:
-                    admin_user.email_user(
-                        subject="New Store Created",
-                        message="""A new store has been created, please verify it.
-                                Store Name: {}
-                                Store Nickname: {}
-                                Store Type: {}
-                                Store Country: {}
-                                Link to store: https://api.trayfoods.com/admin/users/store/{}/
-                                """.format(
-                            store.store_name,
-                            store.store_nickname,
-                            store.store_type,
-                            store.country.code,
-                            store.pk,
-                        ),
-                    )
-        except Exception as e:
-            print(e)
+        if event_type == "CREATE":
+            try:
+                admin_users = User.objects.filter(is_superuser=True)
+                for admin_user in admin_users:
+                    if async_email_func:
+                        async_email_func(
+                            subject="New Store Created",
+                            message="""A new store has been created, please verify it.
+                                    Store Name: {}
+                                    Store Nickname: {}
+                                    Store Type: {}
+                                    Store Country: {}
+                                    Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                    """.format(
+                                store.store_name,
+                                store.store_nickname,
+                                store.store_type,
+                                store.country.code,
+                                store.pk,
+                            ),
+                            recipient_list=[admin_user.email],
+                        )
+                    else:
+                        admin_user.email_user(
+                            subject="New Store Created",
+                            message="""A new store has been created, please verify it.
+                                    Store Name: {}
+                                    Store Nickname: {}
+                                    Store Type: {}
+                                    Store Country: {}
+                                    Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                    """.format(
+                                store.store_name,
+                                store.store_nickname,
+                                store.store_type,
+                                store.country.code,
+                                store.pk,
+                            ),
+                        )
+            except Exception as e:
+                print(e)
 
         # return the vendor and user
         return CreateUpdateStoreMutation(success=True, user=info.context.user)
