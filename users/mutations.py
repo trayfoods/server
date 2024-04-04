@@ -163,7 +163,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         facebook_handle = graphene.String()
 
         store_open_hours = graphene.List(StoreOpenHoursInput)
-        store_average_preparation_time = graphene.Field(AveragePreparationTimeInput)
+        store_average_preparation_time = graphene.Argument(AveragePreparationTimeInput)
 
     user = graphene.Field(UserNodeType)
 
