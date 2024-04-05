@@ -338,8 +338,6 @@ class Profile(models.Model):
 
             if not self.primary_address:
                 required_fields.append("primaryAddress")
-            if not self.street_name:
-                required_fields.append("streetName")
             if not self.primary_address_lat:
                 required_fields.append("primaryAddressLat")
             if not self.primary_address_lng:
