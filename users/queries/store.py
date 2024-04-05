@@ -95,8 +95,8 @@ class StoreQueries(graphene.ObjectType):
                 "Store was not found to get top 10 items, please contact support"
             )
         store = store_qs.first()
-        # filter store items
-        store_items = store.get_store_products()
+        # filter store items and exclude packages
+        store_items = store.get_store_products().exclude(product_type__slug__icontains="package")
 
         top_store_items = store_items.order_by("-product_views")[:11]
 
