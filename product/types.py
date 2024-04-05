@@ -14,6 +14,10 @@ from .filters import (
 )
 from decimal import Decimal
 
+class CategoryType(graphene.ObjectType):
+    name = graphene.String()
+    slug = graphene.String()
+    img = graphene.String()
 
 class ItemImageType(DjangoObjectType):
     product_image = graphene.String()
