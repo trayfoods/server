@@ -418,7 +418,7 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        if (self.has_calling_code() and self.phone_number_verified) and SMS_ENABLED:
+        if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
             phone_number = f"{self.calling_code}{self.phone_number}"
             TWILIO_CLIENT.messages.create(
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
