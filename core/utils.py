@@ -51,6 +51,7 @@ class ProcessPayment:
             order_payment_method = "unknown"
 
         order_price = self.event_data["amount"]
+        order_gateway_fee = self.event_data.get("fees", 0)
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
@@ -67,6 +68,8 @@ class ProcessPayment:
         order.order_payment_method = order_payment_method
         delivery_fee = Decimal(order.delivery_fee)
         overall_price = Decimal(order.overall_price)
+        # calulate the payment gateway charges
+
 
         order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
@@ -90,6 +93,7 @@ class ProcessPayment:
             order.order_payment_method = order_payment_method
             order.delivery_fee_percentage = delivery_fee_percentage
             order.delivery_fee = new_delivery_fee
+            order.order_gateway_fee = order_gateway_fee
             order.order_status = "processing"
             order.save()
 
@@ -130,7 +134,7 @@ class ProcessPayment:
                         product_slug = item.get("product_slug")
                         product_cart_qty = item.get("product_cart_qty")
                         if product_slug and product_cart_qty:
-                            store.deduct_product_qty(product_slug, product_cart_qty)
+                            store.update_product_qty(product_slug, product_cart_qty, "remove")
 
                     total = store_info["total"]
                     # get the store total normal price
@@ -337,6 +341,7 @@ class ProcessPayment:
                 + Decimal(store_option_groups_price)
             )
             if store_status == "pending-refund" and overrall_store_price == order_price:
+                order.funds_refunded += order_price 
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
@@ -344,7 +349,7 @@ class ProcessPayment:
 
                     store.wallet.deduct_balance(
                         amount=overrall_store_price,
-                        desc="Refund for order {}".format(order.get_order_display_id()),
+                        desc="Refund for Order {}".format(order.get_order_display_id()),
                         order=order,
                     )
 
@@ -368,6 +373,7 @@ class ProcessPayment:
             order.save()
             # notify the user
             order.notify_user(
+                title="Order Refunded",
                 message="Order {} has been refunded".format(
                     order.get_order_display_id()
                 )
@@ -380,6 +386,7 @@ class ProcessPayment:
             order.save()
             # notify the user
             order.notify_user(
+                title="Order Refunded",
                 message="Order {} has been partially refunded".format(
                     order.get_order_display_id()
                 )

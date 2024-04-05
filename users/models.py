@@ -1123,13 +1123,20 @@ class Store(models.Model):
     def get_store_products(self):
         return Item.get_items_by_store(store=self)
 
-    def deduct_product_qty(self, product_slug, product_cart_qty):
+    def update_product_qty(self, product_slug, product_cart_qty, action):
         product_qs = self.get_store_products().filter(product_slug=product_slug)
         if not product_qs.exists():
             return False
         product = product_qs.first()
-        product.product_qty -= product_cart_qty
-        product.save()
+        if action == "add":
+            product.product_qty += product_cart_qty
+        elif action == "remove":
+            product.product_qty -= product_cart_qty
+            product.save()
+        else:
+            raise Exception("Invalid action")
+
+        return True
 
     def validate_store_average_preparation_time(store_average_preparation_time: dict):
         if not isinstance(

@@ -744,20 +744,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 return MarkOrderAsMutation(
                     error="You are not authorized to interact with this order"
                 )
-            
-            # if action == "cancelled":
-            #     if order_status != "not-started" and not order.order_payment_status:
-            #         return MarkOrderAsMutation(
-            #             error="You cannot cancel this order because it has been marked as {}".format(
-            #                 order_status.replace("-", " ").capitalize()
-            #             )
-            #         )
-            #     order.order_status = "cancelled"
-            #     order.save()
-            #     return MarkOrderAsMutation(
-            #         success=True,
-            #         success_msg=f"Order {order.get_order_display_id()} has been cancelled",
-            #     )
+
 
         # handle vendor actions
         if "VENDOR" in view_as:
@@ -779,11 +766,22 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         action.capitalize()
                     )
                 )
-
-
-
-            # accept order if it is pending
+            
+            # handle order accepted
             if action == "accepted":
+                # check of the order was rejected or cancelled
+                if order_status in ["rejected", "cancelled"]:
+                    return MarkOrderAsMutation(
+                        error="You cannot accept this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
+                if order_status != "pending":
+                    return MarkOrderAsMutation(
+                        error="You cannot mark this order has accepted it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
                 # calculate store balance
                 stores_infos = order.stores_infos
                 # find the current store info by store id
@@ -880,6 +878,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # reject order if it is pending
             if action == "rejected":
+                if order_status != "pending":
+                    return MarkOrderAsMutation(
+                        error="You cannot reject this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
                 store_statuses = get_store_statuses(order, "rejected", store_id)
 
                 # remove status that are not pending or rejected
@@ -887,40 +891,36 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     status for status in store_statuses if status in ["pending", "rejected"]
                 ]
 
-
+                is_single_reject = False
                 # check if all stores has rejected the order
                 if all(status == "rejected" for status in store_statuses):
                     # update the order status to rejected
                     order.order_status = "rejected"
                     order.save()
-
-                    # notify the user that all stores has rejected the order
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been rejected",
-                    )
+                    is_single_reject = True
 
                 # check if some stores has rejected the order
                 elif any(status == "rejected" for status in store_statuses):
                     # update the order status to partially rejected
                     order.order_status = "partially-rejected"
                     order.save()
-                    # get the stores names that rejected the order
-                    store_names = get_store_name_from_store_status(order)
-
-                    store_names_with_comma = ", ".join(store_names)
-                    # remove the last comma
-                    store_names_with_comma = store_names_with_comma[:-2]
-
-                    # notify the user that some stores has rejected the order
-                    order.notify_user(
-                        message=f"The items from your order {order.get_order_display_id()} provided by {store_names_with_comma} have been rejected.",
-                    )
 
                 did_update = order.update_store_status(store_id, "rejected")
                 if not did_update:
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                if is_single_reject:
+                    order.notify_user(
+                        title="Order Rejected",
+                        message=f"Order {order.get_order_display_id()} has been rejected",
+                    )
+                else:
+                    order.notify_user(
+                            title="Order Rejected",
+                            message=f"{store.store_name} rejected items in Order {order.get_order_display_id()}",
+                        )
                 
                 order.log_activity(
                     title="Order Rejected",

@@ -389,6 +389,9 @@ class Order(models.Model):
     service_fee = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
+    funds_refunded = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
     delivery_fee_percentage = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.0, editable=False
     )
@@ -415,6 +418,9 @@ class Order(models.Model):
     order_currency = models.CharField(max_length=20, default="NGN")
     order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_url = models.CharField(max_length=200, editable=False, blank=True)
+    order_gateway_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0, editable=False
+    )
     order_payment_status = models.CharField(
         max_length=25,
         editable=False,
