@@ -216,7 +216,9 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         store_cover_image = kwargs.get("store_cover_image")
         store_bio = kwargs.get("store_bio")
         has_physical_store = kwargs.get("has_physical_store")
-        store_average_preparation_time = kwargs.get("store_average_preparation_time", None)
+        store_average_preparation_time = kwargs.get(
+            "store_average_preparation_time", None
+        )
         country = kwargs.get("country")
 
         state = kwargs.get("state")
@@ -314,11 +316,6 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 )
 
         if event_type == "CREATE":
-            # check if store average preparation time is valid
-            if not Store.validate_store_average_preparation_time(store_average_preparation_time):
-                return CreateUpdateStoreMutation(
-                    error="Store Average Preparation Time is required, please try again"
-                )
             store = Store.objects.create(
                 vendor=user.profile,
                 # store details

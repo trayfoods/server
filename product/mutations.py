@@ -706,6 +706,8 @@ def get_store_statuses(current_order: Order, new_status, store_id: int=None):
             store_status["status"] = new_status
         store_statuses.append(store_status["status"])
     return store_statuses
+
+
 class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
         order_id = graphene.String(required=True)
@@ -910,6 +912,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                store_info = order.get_store_info(store_id)
+                store_items = store_info.get("items", [])
+                for item in store_items:
+                    product_slug = item.get("product_slug")
+                    product_cart_qty = item.get("product_cart_qty")
+                    if product_slug and product_cart_qty:
+                        store.update_product_qty(product_slug, product_cart_qty, "add")
+
                 
                 if is_single_reject:
                     order.notify_user(

@@ -102,25 +102,6 @@ class ProcessPayment:
 
             # notify all stores that are involved in the order
             stores_infos = order.stores_infos
-            # get all the items related to the store
-            # if status == "accepted":
-            #     store_items = self.get_store_info(store_id)["items"]
-            #     items_with_product_cart_qty = [
-            #         {
-            #             "product_slug": item.get("product_slug"),
-            #             "product_cart_qty": item.get("product_cart_qty"),
-            #         }
-            #         for item in store_items
-            #         if item.get("product_cart_qty")
-            #     ]
-            #     order_items: list[Item] = self.linked_items.all()
-            #     # loop through the order items and minus the product_cart_qty from the product_qty
-            #     for order_item in order_items:
-            #         for item in items_with_product_cart_qty:
-            #             if order_item.product_slug == item["product_slug"]:
-            #                 order_item.product_qty -= item["product_cart_qty"]
-            #                 order_item.save()
-            #                 break
             for store_info in stores_infos:
                 store_id = store_info.get("storeId")
                 if not store_id:

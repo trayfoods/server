@@ -461,7 +461,7 @@ class Profile(models.Model):
         ).start()
 
         return True
-    
+
     # try push notification then sms if push notification fails
     def notify_me(self, title, msg, data=None):
         if not self.send_push_notification(title, msg, data):
@@ -1094,7 +1094,7 @@ class Store(models.Model):
 
         if self.store_average_preparation_time:
             is_average_preparation_time_valid = (
-                self.validate_store_average_preparation_time(self.store_average_preparation_time)
+                self.validate_store_average_preparation_time()
             )
             if not is_average_preparation_time_valid:
                 raise Exception("Invalid Store Average Preparation Time")
@@ -1138,15 +1138,21 @@ class Store(models.Model):
 
         return True
 
-    def validate_store_average_preparation_time(store_average_preparation_time: dict):
-        if not isinstance(
-            store_average_preparation_time.store_average_preparation_time["min"], int
-        ) or not isinstance(store_average_preparation_time.store_average_preparation_time["max"], int):
+    def validate_store_average_preparation_time(self):
+        store_average_preparation_time = self.store_average_preparation_time
+        if not isinstance(store_average_preparation_time, dict):
             return False
-        if (
-            store_average_preparation_time.store_average_preparation_time["min"] < 0
-            or store_average_preparation_time.store_average_preparation_time["max"] < 0
-        ):
+        # get min and max
+        min = store_average_preparation_time.get("min")
+        max = store_average_preparation_time.get("max")
+
+        if not isinstance(min, int) or not isinstance(max, int):
+            return False
+        if min < 0 or max < 0:
+            return False
+
+        # check if min is greater than max
+        if min > max:
             return False
 
         return True
