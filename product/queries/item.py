@@ -2,6 +2,7 @@ import graphene
 from graphql import GraphQLError
 
 from ..models import Item
+from users.models import Store
 from ..types import ItemNode, ItemType, ReviewNode
 from users.models import UserActivity
 from graphene_django.filter import DjangoFilterConnectionField
@@ -16,9 +17,30 @@ class ItemQueries(graphene.ObjectType):
     )
     hero_data = graphene.List(ItemType)
 
-    item_reviews = DjangoFilterConnectionField(ReviewNode, item_slug=graphene.String(required=True))
+    item_reviews = DjangoFilterConnectionField(
+        ReviewNode, item_slug=graphene.String(required=True)
+    )
 
     def resolve_items(self, info, **kwargs):
+        user = info.context.user
+        store_nickname = kwargs.get("store_nickname", None)
+
+        # check if store_nickname is provided
+        store_instance = None
+        if store_nickname:
+            # get the store querysets
+            store_qs = Store.objects.filter(store_nickname=store_nickname)
+            if store_qs.exists():
+                store_instance = store_qs.first()
+
+        # check if the user is authenticated and is a vendor and store_nickname is provided
+        if (
+            user.is_authenticated
+            and "VENDOR" in user.roles
+            and store_instance == user.profile.store
+        ):
+            return Item.get_items_by_store(store_instance)
+
         return Item.get_items().exclude(product_creator__is_approved=False)
 
     def resolve_hero_data(self, info):

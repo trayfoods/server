@@ -6,13 +6,9 @@ from product.models import Item, Order, Rating
 class ItemFilter(FilterSet):
     type = CharFilter(field_name="product_type__slug", lookup_expr="exact")
 
-    store_nickname = CharFilter(
-        field_name="product_creator__store_nickname", lookup_expr="exact"
-    )
+    store_nickname = CharFilter(method="filter_by_store_nickname")
     school = CharFilter(field_name="product_creator__school__slug", lookup_expr="exact")
-    country = CharFilter(
-        field_name="product_creator__country", lookup_expr="icontains"
-    )
+    country = CharFilter(field_name="product_creator__country", lookup_expr="icontains")
     campus = CharFilter(field_name="product_creator__campus", lookup_expr="exact")
     location = CharFilter(
         field_name="product_creator__store_address", lookup_expr="icontains"
@@ -35,6 +31,15 @@ class ItemFilter(FilterSet):
                 item.id
                 for item in queryset
                 if item.product_categories.filter(slug=value).exists()
+            ]
+        )
+
+    def filter_by_store_nickname(self, queryset, name, value):
+        return queryset.filter(
+            id__in=[
+                item.id
+                for item in queryset
+                if item.product_creator.store_nickname == value
             ]
         )
 
