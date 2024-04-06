@@ -14,7 +14,7 @@ from users.models import (
     Transaction,
     UserDevice,
     HostelField,
-    Delivery
+    Delivery,
 )
 from .forms import HostelForm, StudentForm, StoreForm
 
@@ -82,7 +82,10 @@ class UserInline(admin.TabularInline):
 
 class ProfileAdmin(admin.ModelAdmin):
     inlines = [StoreInline]
-    list_display = ("__str__", "phone_number",)
+    list_display = (
+        "__str__",
+        "phone_number",
+    )
     list_filter = (RolesFilter,)
     readonly_fields = ("user",)
 
@@ -94,7 +97,14 @@ class ProfileAdmin(admin.ModelAdmin):
 class TransactionInline(admin.TabularInline):
     model = Transaction
     extra = 0
-    readonly_fields = ("wallet", "amount", "transaction_id", "_type", "created_at")
+    readonly_fields = (
+        "wallet",
+        "amount",
+        "transaction_id",
+        "transfer_fee",
+        "_type",
+        "created_at",
+    )
 
 
 class WalletAdmin(admin.ModelAdmin):
@@ -161,6 +171,7 @@ class TransactionAdmin(admin.ModelAdmin):
     readonly_fields = (
         "wallet",
         "amount",
+        "transfer_fee",
         "transaction_id",
         "gateway_transfer_id",
         "_type",
@@ -190,9 +201,11 @@ class StudentAdmin(admin.ModelAdmin):
     class Media:
         js = (f"{STATIC_URL}js/custom-admin.js",)
 
+
 class StoreOpenHoursInline(admin.TabularInline):
     model = StoreOpenHours
     extra = 0
+
 
 class StoreAdmin(admin.ModelAdmin):
     inlines = [StoreOpenHoursInline]

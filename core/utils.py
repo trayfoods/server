@@ -70,7 +70,6 @@ class ProcessPayment:
         overall_price = Decimal(order.overall_price)
         # calulate the payment gateway charges
 
-
         order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
         if overall_price > order_price:
@@ -115,7 +114,9 @@ class ProcessPayment:
                         product_slug = item.get("product_slug")
                         product_cart_qty = item.get("product_cart_qty")
                         if product_slug and product_cart_qty:
-                            store.update_product_qty(product_slug, product_cart_qty, "remove")
+                            store.update_product_qty(
+                                product_slug, product_cart_qty, "remove"
+                            )
 
                     total = store_info["total"]
                     # get the store total normal price
@@ -157,10 +158,6 @@ class ProcessPayment:
         transaction_id = self.event_data["reference"]
         gateway_transfer_id = self.event_data["id"]
         transfer_status = self.event_data["status"]
-        failures = self.event_data["failures"]
-
-        if failures:
-            return HttpResponse("Transfer failed", status=400)
 
         # get transaction from the database
         transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
@@ -180,6 +177,10 @@ class ProcessPayment:
         if transaction.status == "success":
             return HttpResponse("Transfer already successful", status=200)
 
+        # check if the transaction is not pending
+        if transaction.status != "pending":
+            return HttpResponse("Transfer already processed", status=200)
+
         if "success" == transfer_status:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
@@ -192,8 +193,6 @@ class ProcessPayment:
             }
             transaction.wallet.deduct_balance(**kwargs)
 
-            if not transaction:
-                return HttpResponse("Transfer failed", status=400)
             # update the transaction status
             transaction.status = "success"
             transaction.gateway_transfer_id = gateway_transfer_id
@@ -322,7 +321,7 @@ class ProcessPayment:
                 + Decimal(store_option_groups_price)
             )
             if store_status == "pending-refund" and overrall_store_price == order_price:
-                order.funds_refunded += order_price 
+                order.funds_refunded += order_price
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
@@ -357,7 +356,7 @@ class ProcessPayment:
                 title="Order Refunded",
                 message="Order {} has been refunded".format(
                     order.get_order_display_id()
-                )
+                ),
             )
 
         # check if some stores has refunded to the user
@@ -370,7 +369,7 @@ class ProcessPayment:
                 title="Order Refunded",
                 message="Order {} has been partially refunded".format(
                     order.get_order_display_id()
-                )
+                ),
             )
 
         return HttpResponse("Refund successful", status=200)

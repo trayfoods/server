@@ -403,11 +403,13 @@ class AddProductClickMutation(Output, graphene.Mutation):
         product_creator: Store = item.product_creator
         if not product_creator:
             return AddProductClickMutation(error="Item does not have a creator")
+        
+        is_open_data = product_creator.get_is_open_data()
 
-        if not product_creator.get_is_open_data()["is_open"]:
+        if not is_open_data["is_open"]:
             return AddProductClickMutation(error="Item's Store has closed")
         
-        if product_creator.get_is_open_data()["open_soon"]:
+        if is_open_data["open_soon"]:
             return AddProductClickMutation(error="Item's Store has not opened yet")
 
 
@@ -698,7 +700,6 @@ class ReOrderMutation(Output, graphene.Mutation):
         return ReOrderMutation(order_id=new_order.order_track_id, success=True)
     
 def get_store_statuses(current_order: Order, new_status, store_id: int=None):
-    print(store_id, new_status)
     store_statuses = []
     for store_status in current_order.stores_status:
         # remove the current store status and append the new status
@@ -881,6 +882,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # reject order if it is pending
             if action == "rejected":
                 if order_status != "pending":
+                    order.set_profiles_seen(value=user.profile.id, action="add")
                     return MarkOrderAsMutation(
                         error="You cannot reject this order because it has been marked as {}".format(
                             order_status.replace("-", " ").capitalize()
@@ -892,6 +894,27 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store_statuses = [
                     status for status in store_statuses if status in ["pending", "rejected"]
                 ]
+
+                # refund funds from each store that has rejected the order
+                for store_status in order.stores_status:
+                    if store_status["storeId"] == store_id:
+                        # get the store id
+                        store_id = store_status.get("storeId", None)
+
+                        if store_id is None:
+                            order.set_profiles_seen(value=user.profile.id, action="add")
+                            return MarkOrderAsMutation(
+                                error="No store id found for this order, please contact support"
+                            )
+
+                        # refund the customer
+                        did_send_refund = order.store_refund_customer(store_id)
+                        if not did_send_refund or did_send_refund["status"] == False:
+                            order.set_profiles_seen(value=user.profile.id, action="add")
+                            return MarkOrderAsMutation(
+                                error="An error occured while refunding customer, please try again later"
+                            )
+                        break
 
                 is_single_reject = False
                 # check if all stores has rejected the order
@@ -909,9 +932,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 did_update = order.update_store_status(store_id, "rejected")
                 if not did_update:
+                    order.set_profiles_seen(value=user.profile.id, action="add")
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
                 store_info = order.get_store_info(store_id)
                 store_items = store_info.get("items", [])
                 for item in store_items:
@@ -938,24 +963,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     description=f"{store.store_name} rejected the order",
                 )
 
-                # refund funds from each store that has rejected the order
-                for store_status in order.stores_status:
-                    if store_status["status"] == "rejected":
-                        # get the store id
-                        store_id = store_status.get("storeId", None)
-
-                        if store_id is None:
-                            return MarkOrderAsMutation(
-                                error="No store id found for this order, please contact support"
-                            )
-
-                        # refund the customer
-                        did_send_refund = order.store_refund_customer(store_id)
-                        if not did_send_refund or did_send_refund["status"] == False:
-                            return MarkOrderAsMutation(
-                                error="An error occured while refunding customer, please try again later"
-                            )
-
                 return MarkOrderAsMutation(
                     success=True,
                     success_msg=f"Order {order.get_order_display_id()} has been rejected",
@@ -976,6 +983,25 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store_statuses = [
                     status for status in store_statuses if status in ["accepted", "cancelled"]
                     ]
+                
+                # refund funds from each store that has rejected the order
+                for store_status in order.stores_status:
+                    if store_status["storeId"] == store_id:
+                        # get the store id
+                        store_id = store_status.get("storeId", None)
+
+                        if store_id is None:
+                            return MarkOrderAsMutation(
+                                error="No store id found for this order, please contact support"
+                            )
+
+                        # refund the customer
+                        did_send_refund = order.store_refund_customer(store_id)
+                        if not did_send_refund or did_send_refund["status"] == False:
+                            return MarkOrderAsMutation(
+                                error="An error occured while refunding customer, please try again later"
+                            )
+                        break
 
 
                 # check if all stores has cancelled the order
@@ -999,36 +1025,25 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-cancelled"
                     order.save()
 
-                    # get the stores names that cancelled the order
-                    store_names = get_store_name_from_store_status(order)
-
-                    store_names_with_comma = ", ".join(store_names)
-                    # remove the last comma
-                    store_names_with_comma = store_names_with_comma[:-2]
-
-                    # notify the user that some stores has cancelled the order
-                    order.notify_user(
-                        message=f"The items from your Order {order.get_order_display_id()} provided by {store_names_with_comma} have been cancelled.",
-                    )
-
                 did_update = order.update_store_status(store_id, "cancelled")
                 if not did_update:
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
                 
+                store_info = order.get_store_info(store_id)
+                store_items = store_info.get("items", [])
+                for item in store_items:
+                    product_slug = item.get("product_slug")
+                    product_cart_qty = item.get("product_cart_qty")
+                    if product_slug and product_cart_qty:
+                        store.update_product_qty(product_slug, product_cart_qty, "add")
+                
                 order.log_activity(
                     title="Order Cancelled",
                     activity_type="order_cancelled",
                     description=f"{store.store_name} cancelled the order",
                 )
-
-                # refund the customer
-                did_send_refund = order.store_refund_customer(store_id)
-                if not did_send_refund or did_send_refund["status"] == False:
-                    return MarkOrderAsMutation(
-                        error="An error occured while refunding customer, please try again later"
-                    )
                 
 
                 return MarkOrderAsMutation(success=True, success_msg="Order cancelled")

@@ -739,7 +739,7 @@ class Wallet(models.Model):
             raise Exception("Insufficient funds")
 
         # check if transaction exists
-        transaction = self.get_transactions().objects.get(
+        transaction = self.get_transactions().get(
             transaction_id=transaction_id, _type="debit"
         )
 
@@ -769,15 +769,18 @@ class Wallet(models.Model):
         transaction_id = kwargs.get("transaction_id", None)
 
         transaction = (
-            self.get_transactions()
-            .objects.filter(transaction_id=transaction_id)
-            .first()
+            self.get_transactions().filter(transaction_id=transaction_id).first()
         )
 
         amount = Decimal(amount)
 
-        self.balance += amount
-        self.save()
+        # check if the transaction was successful
+        if (
+            transaction.status in ["success", "settled"]
+            and transaction.amount == amount
+        ):
+            self.balance += amount
+            self.save()
 
         if transaction is None:
             # create a transaction
@@ -804,11 +807,9 @@ class Wallet(models.Model):
         transaction: Transaction = None
 
         if transaction_id:
-            transaction = self.get_transactions().objects.get(
-                transaction_id=transaction_id
-            )
+            transaction = self.get_transactions().get(transaction_id=transaction_id)
         elif order:
-            transaction = self.get_transactions().objects.get(order=order)
+            transaction = self.get_transactions().get(order=order)
 
         # check if transaction is settled or successfull
         if transaction.status in ["settled", "success"]:
@@ -1128,6 +1129,7 @@ class Store(models.Model):
         product = product_qs.first()
         if action == "add":
             product.product_qty += product_cart_qty
+            product.save()
         elif action == "remove":
             product.product_qty -= product_cart_qty
             product.save()
