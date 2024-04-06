@@ -523,6 +523,7 @@ class Transaction(models.Model):
             ("reversed", "reversed"),
             ("unsettled", "unsettled"),
             ("settled", "settled"),
+            ("on-hold", "on-hold"),
         ),
         default="pending",
     )
@@ -799,27 +800,34 @@ class Wallet(models.Model):
         return transaction
 
     # put transaction on hold
-    def put_transaction_on_hold(self, transaction_id: str = None, order=None):
+    def put_transaction_on_hold(self, transaction_id: str = None, order: Order=None):
         # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
 
         transaction: Transaction = None
-
+        desc="Transaction is on hold, please contact support"
         if transaction_id:
             transaction = self.get_transactions().get(transaction_id=transaction_id)
+            desc = f"Transaction #{transaction_id} is on hold, please contact support"
         elif order:
             transaction = self.get_transactions().get(order=order)
+            desc = f"Transaction for Order {order.get_order_display_id()} is on hold, please contact support"
 
         # check if transaction is settled or successfull
         if transaction.status in ["settled", "success"]:
             # deduct the wallet
-            self.balance -= transaction.amount
-            self.save()
+            self.deduct_balance(
+                amount=transaction.amount,
+                title="Transaction on Hold",
+                desc=desc,
+                transaction_id=transaction.transaction_id,
+                status="on-hold",
+            )
 
         # update the transaction
         transaction.status = "on-hold"
-        transaction.desc = "Transaction is on hold, please contact support"
+        transaction.desc = desc
         transaction.save()
 
         return transaction

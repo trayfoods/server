@@ -362,6 +362,8 @@ class Order(models.Model):
             ("out-for-delivery", "out-for-delivery"),
             ("partially-delivered", "partially-delivered"),
             ("partially-picked-up", "partially-picked-up"),
+            ("partially-refunded", "partially-refunded"),
+            ("partially-failed-refund", "partially-failed-refund"),
             ("picked-up", "picked-up"),
             ("delivered", "delivered"),
             ("partially-cancelled", "partially-cancelled"),
