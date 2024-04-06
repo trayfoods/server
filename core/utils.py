@@ -277,7 +277,6 @@ class ProcessPayment:
         return HttpResponse("Transfer Process Failed", status=400)
 
     def refund_processed(self):
-        print("refund_processed", self.event_data)
         """
         Refund has successfully been processed by the processor.
         """
@@ -293,20 +292,13 @@ class ProcessPayment:
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
-        order_qs = Order.objects.filter(
-            order_track_id=order_id, order_payment_status="pending-refund"
-        )
+        order_qs = Order.objects.filter(order_track_id=order_id)
 
         if not order_qs.exists():
-            print("order_qs", order_qs)
             return HttpResponse("Order does not exist", status=404)
 
         # get the order from the database
-        order = Order.objects.get(
-            order_track_id=order_id, order_payment_status="pending-refund"
-        )
-
-        print("order", order)
+        order = order_qs.first()
 
         # deduct the amount from all stores that are involved in the order
         stores_infos = order.stores_infos
@@ -326,28 +318,38 @@ class ProcessPayment:
             # get the store option groups price
             store_option_groups_price = total.get("option_groups_price", 0)
 
+            # get store delivery fee by dividing the delivery fee by the number of stores
+            store_delivery_fee = order.delivery_fee / len(stores_infos)
+
             overrall_store_price = (
                 Decimal(store_total_price)
                 + Decimal(store_plate_price)
                 + Decimal(store_option_groups_price)
+                + Decimal(store_delivery_fee)
             )
             if store_status == "pending-refund" and overrall_store_price == order_price:
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
-                    store.wallet.deduct_balance(
-                        amount=overrall_store_price,
-                        _type="refund",
-                        desc="Refund for Order {}".format(order.get_order_display_id()),
-                        order=order,
+                    order_transaction = (
+                        store.wallet.get_transactions().filter(order=order).first()
                     )
+                    if order_transaction:
+                        store.wallet.deduct_balance(
+                            amount=overrall_store_price,
+                            _type="refund",
+                            desc="Refund for Order {}".format(
+                                order.get_order_display_id()
+                            ),
+                            order=order,
+                        )
 
                     order.update_store_status(store_id=store.id, status="refunded")
                     order.funds_refunded += order_price
                     order.save()
                     refund_store_id = store.id
                     refund_store_name = store.store_name
-                break # break the loop when one store has been refunded
+                break  # break the loop when one store has been refunded
 
         if refund_store_id is None:
             return HttpResponse("Refund failed", status=400)
@@ -377,7 +379,7 @@ class ProcessPayment:
 
         order.log_activity(
             title="Refund from {}".format(refund_store_name),
-            message="Order {} has been refunded by {}".format(
+            description="Order {} has been refunded by {}".format(
                 order.get_order_display_id(), refund_store_name
             ),
             activity_type="refund",
