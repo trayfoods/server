@@ -971,6 +971,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # handle order cancelled
             if action == "cancelled":
                 if order_status != "accepted":
+                    order.set_profiles_seen(value=user.profile.id, action="add")
                     return MarkOrderAsMutation(
                         error="You cannot cancel this order because it has been marked as {}".format(
                             order_status.replace("-", " ").capitalize()
@@ -991,6 +992,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         store_id = store_status.get("storeId", None)
 
                         if store_id is None:
+                            order.set_profiles_seen(value=user.profile.id, action="add")
                             return MarkOrderAsMutation(
                                 error="No store id found for this order, please contact support"
                             )
@@ -998,26 +1000,20 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         # refund the customer
                         did_send_refund = order.store_refund_customer(store_id)
                         if not did_send_refund or did_send_refund["status"] == False:
+                            order.set_profiles_seen(value=user.profile.id, action="add")
+                            message = did_send_refund.get("message", "An error occured while refunding customer, please try again later")
                             return MarkOrderAsMutation(
-                                error="An error occured while refunding customer, please try again later"
+                                error=message
                             )
                         break
 
-
+                is_single_cancel = False
                 # check if all stores has cancelled the order
                 if all(status == "cancelled" for status in store_statuses):
                     # update the order status to cancelled
                     order.order_status = "cancelled"
                     order.save()
-
-                    # notify the user that all stores has cancelled the order
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been cancelled",
-                    )
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
+                    is_single_cancel = True
 
                 # check if some stores has cancelled the order
                 elif any(status == "cancelled" for status in store_statuses):
@@ -1038,6 +1034,17 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     product_cart_qty = item.get("product_cart_qty")
                     if product_slug and product_cart_qty:
                         store.update_product_qty(product_slug, product_cart_qty, "add")
+
+                if is_single_cancel:
+                    order.notify_user(
+                        title="Order Cancelled",
+                        message=f"Order {order.get_order_display_id()} has been cancelled",
+                    )
+                else:
+                    order.notify_user(
+                            title="Order Cancelled",
+                            message=f"{store.store_name} cancelled items in Order {order.get_order_display_id()}",
+                        )
                 
                 order.log_activity(
                     title="Order Cancelled",
@@ -1045,7 +1052,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     description=f"{store.store_name} cancelled the order",
                 )
                 
-
                 return MarkOrderAsMutation(success=True, success_msg="Order cancelled")
 
             # handle order ready for delivery

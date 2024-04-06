@@ -51,9 +51,18 @@ class ProcessPayment:
             order_payment_method = "unknown"
 
         order_price = self.event_data["amount"]
-        order_gateway_fee = self.event_data.get("fees", 0)
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
+
+        def caluate_gateway_fee(order_price):
+            gateway_fee = 0
+            if order_price <= 2500:
+                gateway_fee = 100
+            elif order_price > 2500:
+                gateway_fee = order_price * Decimal(0.025) + 100
+            return gateway_fee
+
+        order_gateway_fee = caluate_gateway_fee(order_price)
 
         # get the order from the database
         order_qs = Order.objects.filter(order_track_id=order_id).exclude(
@@ -316,7 +325,6 @@ class ProcessPayment:
             # get the store option groups price
             store_option_groups_price = total.get("option_groups_price", 0)
 
-
             overrall_store_price = (
                 Decimal(store_total_price)
                 + Decimal(store_plate_price)
@@ -419,7 +427,6 @@ class ProcessPayment:
             store_plate_price = total.get("plate_price", 0)
             # get the store option groups price
             store_option_groups_price = total.get("option_groups_price", 0)
-            
 
             overrall_store_price = (
                 Decimal(store_total_price)
