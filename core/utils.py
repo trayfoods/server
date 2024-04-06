@@ -308,12 +308,14 @@ class ProcessPayment:
                 continue
 
             store_status = order.get_store_status(store_id)
+            total = store_info["total"]
             # get the store total normal price
-            store_total_price = store_info["total"]["price"]
+            store_total_price = total.get("price", 0)
             # get the store plate price
-            store_plate_price = store_info["total"]["plate_price"]
+            store_plate_price = total.get("plate_price", 0)
+            # get the store option groups price
+            store_option_groups_price = total.get("option_groups_price", 0)
 
-            store_option_groups_price = store_info["total"]["option_groups_price"]
 
             overrall_store_price = (
                 Decimal(store_total_price)
@@ -410,12 +412,14 @@ class ProcessPayment:
                 continue
 
             store_status = order.get_store_status(store_id)
+            total = store_info["total"]
             # get the store total normal price
-            store_total_price = store_info["total"]["price"]
+            store_total_price = total.get("price", 0)
             # get the store plate price
-            store_plate_price = store_info["total"]["plate_price"]
-
-            store_option_groups_price = store_info["total"]["option_groups_price"]
+            store_plate_price = total.get("plate_price", 0)
+            # get the store option groups price
+            store_option_groups_price = total.get("option_groups_price", 0)
+            
 
             overrall_store_price = (
                 Decimal(store_total_price)

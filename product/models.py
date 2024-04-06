@@ -757,10 +757,13 @@ class Order(models.Model):
 
         # get store amount from the stores_infos json
         current_store_info = self.get_store_info(store_id)
+        total = current_store_info["total"]
         # get the store total normal price
-        store_total_price = current_store_info["total"]["price"]
+        store_total_price = total.get("price", 0)
         # get the store plate price
-        store_plate_price = current_store_info["total"]["plate_price"]
+        store_plate_price = total.get("plate_price", 0)
+        # get the store option groups price
+        store_option_groups_price = total.get("option_groups_price")
 
         # get len of stores linked to this order
         store_count = len(self.linked_stores.all())
@@ -771,6 +774,7 @@ class Order(models.Model):
         amount = (
             Decimal(store_total_price)
             + Decimal(store_plate_price)
+            + Decimal(store_option_groups_price)
             + Decimal(delivery_fee)
         )
 
@@ -787,6 +791,8 @@ class Order(models.Model):
 
         response = requests.post(url, data=data, headers=headers)
         response = response.json()
+
+        print(response)
 
         if response["status"] == True:
             self.update_store_status(store_id, "pending-refund")
