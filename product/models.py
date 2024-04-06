@@ -64,12 +64,13 @@ class ItemImage(models.Model):
 
 class Item(models.Model):
     product_name = models.CharField(max_length=100)
-    product_qty = models.IntegerField(default=0)
+    product_qty = models.PositiveBigIntegerField(default=0, help_text="Quantity of the product")
+    product_init_qty = models.PositiveBigIntegerField(default=0, help_text="Initial quantity of the product")
     has_qty = models.BooleanField(default=False, editable=False)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     product_calories = models.FloatField(default=0.0)
-    product_desc = models.CharField(max_length=200, blank=True, null=True)
+    product_desc = models.CharField(max_length=200, blank=True, null=True, help_text="Product Description")
     product_share_visibility = models.CharField(
         max_length=20,
         choices=(("private", "private"), ("public", "public")),
@@ -77,7 +78,7 @@ class Item(models.Model):
         editable=False,
     )
     store_menu_name = models.CharField(
-        max_length=30, default="OTHERS", blank=True, editable=False
+        max_length=30, default="OTHERS", blank=True, editable=False, help_text="Menu Name From Product Creator Store Menu"
     )
 
     product_categories = models.ManyToManyField(
@@ -93,7 +94,7 @@ class Item(models.Model):
         null=True,
     )
     product_creator = models.ForeignKey(
-        "users.Store", null=True, on_delete=models.CASCADE, blank=True, editable=False
+        "users.Store", null=True, on_delete=models.CASCADE, blank=True, editable=False,
     )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
@@ -130,8 +131,11 @@ class Item(models.Model):
         if not self.product_creator:
             self.product_creator = self.request.user.profile.store
 
-        if self.product_qty > 0:
+        if self.product_qty > 0 or self.product_init_qty > 0:
             self.has_qty = True
+
+        if self.product_init_qty == 0 and self.product_qty > 0:
+            self.product_init_qty = self.product_qty
         return super().save(*args, **kwargs)
 
     @property

@@ -103,7 +103,7 @@ class AddProductMutation(Output, graphene.Mutation):
             return AddProductMutation(error="Invalid Menu Name")
 
         product = (
-            Item.get_items()
+            Item.objects
             .filter(
                 product_slug=product_slug.strip(), product_name=product_name.strip()
             )
@@ -134,7 +134,7 @@ class AddProductMutation(Output, graphene.Mutation):
 
                     # Checking if slug already exists
                     if (
-                        not Item.get_items()
+                        not Item.objects
                         .filter(product_slug=product_slug.strip())
                         .exists()
                     ):
