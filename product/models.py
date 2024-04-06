@@ -791,7 +791,7 @@ class Order(models.Model):
 
         response = requests.post(url, data=data, headers=headers)
         response = response.json()
-
+        print(response)
         if response["status"] == True:
             self.update_store_status(store_id, "pending-refund")
             self.order_payment_status = "pending-refund"

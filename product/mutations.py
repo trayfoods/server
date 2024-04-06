@@ -896,6 +896,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 ]
 
                 # refund funds from each store that has rejected the order
+                is_refund_initiated = False
+                did_update = order.update_store_status(store_id, "rejected")
+                if not did_update:
+                    order.set_profiles_seen(value=user.profile.id, action="add")
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
                 for store_status in order.stores_status:
                     if store_status["storeId"] == store_id:
                         # get the store id
@@ -914,7 +921,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             return MarkOrderAsMutation(
                                 error="An error occured while refunding customer, please try again later"
                             )
-                        break
+                        is_refund_initiated = True
+                    break
+
+                if not is_refund_initiated:
+                    order.set_profiles_seen(value=user.profile.id, action="add")
+                    return MarkOrderAsMutation(
+                        error="An error occured while refunding customer, please try again later"
+                    )
 
                 is_single_reject = False
                 # check if all stores has rejected the order
@@ -930,12 +944,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-rejected"
                     order.save()
 
-                did_update = order.update_store_status(store_id, "rejected")
-                if not did_update:
-                    order.set_profiles_seen(value=user.profile.id, action="add")
-                    return MarkOrderAsMutation(
-                        error="An error occured while updating order status, please try again later"
-                    )
                 
                 store_info = order.get_store_info(store_id)
                 store_items = store_info.get("items", [])
@@ -986,6 +994,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     ]
                 
                 # refund funds from each store that has rejected the order
+                is_refund_initiated = False
+                did_update = order.update_store_status(store_id, "cancelled")
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
                 for store_status in order.stores_status:
                     if store_status["storeId"] == store_id:
                         # get the store id
@@ -1005,7 +1019,14 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                             return MarkOrderAsMutation(
                                 error=message
                             )
-                        break
+                        is_refund_initiated = True
+                    break
+
+                if not is_refund_initiated:
+                    order.set_profiles_seen(value=user.profile.id, action="add")
+                    return MarkOrderAsMutation(
+                        error="An error occured while refunding customer, please try again later"
+                    )
 
                 is_single_cancel = False
                 # check if all stores has cancelled the order
@@ -1021,11 +1042,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.order_status = "partially-cancelled"
                     order.save()
 
-                did_update = order.update_store_status(store_id, "cancelled")
-                if not did_update:
-                    return MarkOrderAsMutation(
-                        error="An error occured while updating order status, please try again later"
-                    )
+            
                 
                 store_info = order.get_store_info(store_id)
                 store_items = store_info.get("items", [])

@@ -310,7 +310,8 @@ class ProcessPayment:
 
         # deduct the amount from all stores that are involved in the order
         stores_infos = order.stores_infos
-        affected_stores = []
+        refund_store_id = None
+        refund_store_name = None
         for store_info in stores_infos:
             store_id = store_info.get("storeId")
             if not store_id:
@@ -331,56 +332,56 @@ class ProcessPayment:
                 + Decimal(store_option_groups_price)
             )
             if store_status == "pending-refund" and overrall_store_price == order_price:
-                order.funds_refunded += order_price
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
                 if store:
-                    affected_stores.append(str(store.id))
-
                     store.wallet.deduct_balance(
                         amount=overrall_store_price,
+                        _type="refund",
                         desc="Refund for Order {}".format(order.get_order_display_id()),
                         order=order,
                     )
 
                     order.update_store_status(store_id=store.id, status="refunded")
-                    # break the loop when one store has been refunded
-                    break
+                    order.funds_refunded += order_price
+                    order.save()
+                    refund_store_id = store.id
+                    refund_store_name = store.store_name
+                break # break the loop when one store has been refunded
 
-        store_statuses = []
-        # get all order store status
-        for status in order.stores_status:
-            # replace affected stores status with refunded
-            if str(status["storeId"]) in affected_stores:
-                status["status"] = "refunded"
-                store_statuses.append(status)
-            store_statuses.append(status["status"])
+        if refund_store_id is None:
+            return HttpResponse("Refund failed", status=400)
+
+        store_statuses = order.stores_status
+        store_statuses = [status.get("status", None) for status in store_statuses]
 
         # check if all the stores has refunded to the user
         if all(status == "refunded" for status in store_statuses):
             # update the order payment status
             order.order_payment_status = "refunded"
             order.save()
-            # notify the user
-            order.notify_user(
-                title="Order Refunded",
-                message="Order {} has been refunded".format(
-                    order.get_order_display_id()
-                ),
-            )
-
         # check if some stores has refunded to the user
         if any(status == "refunded" for status in store_statuses):
             # update the order payment status
             order.order_payment_status = "partially-refunded"
             order.save()
-            # notify the user
-            order.notify_user(
-                title="Order Refunded",
-                message="Order {} has been partially refunded".format(
-                    order.get_order_display_id()
-                ),
-            )
+
+        # notify the user
+        order.notify_user(
+            title="Refund from {}".format(refund_store_name),
+            message="Order {} has been refunded by {}".format(
+                order.get_order_display_id(),
+                refund_store_name,
+            ),
+        )
+
+        order.log_activity(
+            title="Refund from {}".format(refund_store_name),
+            message="Order {} has been refunded by {}".format(
+                order.get_order_display_id(), refund_store_name
+            ),
+            activity_type="refund",
+        )
 
         return HttpResponse("Refund successful", status=200)
 

@@ -486,6 +486,7 @@ class Transaction(models.Model):
         ("credit", "credit"),
         ("debit", "debit"),
         ("transfer", "transfer"),
+        ("refund", "refund"),
     )
 
     transaction_id = models.UUIDField(
@@ -695,6 +696,7 @@ class Wallet(models.Model):
         transaction_id = kwargs.get("transaction_id", None)
         order = kwargs.get("order", None)
         status = kwargs.get("status", "pending")
+        _type = kwargs.get("_type", "debit")
         transaction = None
         amount = Decimal(amount)
         transfer_fee = Decimal(transfer_fee)
@@ -703,6 +705,9 @@ class Wallet(models.Model):
 
         if not amount:
             raise Exception("Amount is required")
+        
+        if not transaction_id and not order:
+            raise Exception("Transaction ID is required, or Order is required")
 
         if order:
             # handle order refund logic
@@ -716,19 +721,14 @@ class Wallet(models.Model):
                 self.balance -= total_amount
                 self.save()
 
-                # update the order transaction
-                order_transaction.amount = total_amount
-                order_transaction.status = "success"
-                order_transaction._type = "debit"
-                order_transaction.save()
+            # update the order transaction
+            order_transaction.amount = total_amount
+            order_transaction.status = "success"
+            order_transaction._type = _type
+            order_transaction.save()
 
-                return order_transaction
+            return order_transaction
 
-            else:
-                order_transaction.delete()
-
-        if not transaction_id and not order:
-            raise Exception("Transaction ID is required, or Order is required")
 
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
