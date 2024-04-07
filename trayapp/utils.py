@@ -15,7 +15,7 @@ from azure.storage.queue import QueueClient
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
-AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=cdn4trayfoods;AccountKey=n55V4vAJLnWFS3JeX21AgZBjoq/rbn4HSSqNNchkoazK6f2ftUVNTFxebztUgwl2jVqdaRsr+aeo+AStwMY27A==;EndpointSuffix=core.windows.net"
+AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 load_dotenv(BASE_DIR / ".env")
 
 
