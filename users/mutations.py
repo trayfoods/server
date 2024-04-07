@@ -775,7 +775,7 @@ class CreateTransferRecipient(Output, graphene.Mutation):
         success = False
         error = None
         user = info.context.user
-        if "VENDOR" in user.roles:
+        if user.profile.wallet:
             url = "https://api.paystack.co/transferrecipient"
             headers = {
                 "Authorization": "Bearer " + PAYSTACK_SECRET_KEY,
@@ -798,7 +798,7 @@ class CreateTransferRecipient(Output, graphene.Mutation):
                 else:
                     error = response["message"]
         else:  # the vendor does not exist
-            error = "Vendor do not exist"
+            error = "You do not have a wallet, please contact support if you have any issues"
         return CreateTransferRecipient(
             success=success, error=error, recipient_code=recipient_code
         )
