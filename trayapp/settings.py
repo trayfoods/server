@@ -72,6 +72,8 @@ TWILIO_PHONE_NUMBER = os.environ.get("TWILIO_PHONE_NUMBER", "test")
 
 X_CSCAPI_KEY = os.environ.get("X_CSCAPI_KEY", "1234")
 
+AZURE_STORAGE_CONNECTION_STRING = os.environ.get("AZURE_STORAGE_CONNECTION_STRING")
+
 VALID_DELIVERY_TYPES = [
     {
         "name": "pickup",

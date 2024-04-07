@@ -14,7 +14,7 @@ from users.models import (
     Transaction,
     UserDevice,
     HostelField,
-    Delivery,
+    DeliveryNotification,
 )
 from .forms import HostelForm, StudentForm, StoreForm
 
@@ -180,9 +180,9 @@ class TransactionAdmin(admin.ModelAdmin):
 
 
 class DeliveryInline(admin.TabularInline):
-    model = Delivery
+    model = DeliveryNotification
     extra = 0
-    readonly_fields = ("store", "delivery_person", "status", "timestamp")
+    readonly_fields = ("store", "delivery_person", "status", "created_at")
 
 
 class DeliveryPersonAdmin(admin.ModelAdmin):

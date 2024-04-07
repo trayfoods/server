@@ -6,10 +6,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from django.conf import settings
+import json
+
+# Azure Queue Storage
+from azure.storage.queue import QueueClient
+
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
+AZURE_STORAGE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=cdn4trayfoods;AccountKey=n55V4vAJLnWFS3JeX21AgZBjoq/rbn4HSSqNNchkoazK6f2ftUVNTFxebztUgwl2jVqdaRsr+aeo+AStwMY27A==;EndpointSuffix=core.windows.net"
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -20,7 +26,9 @@ def calculate_payment_gateway_fee(amount: Decimal, currency: str = "NGN") -> Dec
         fixed_fee = 100  # N100
 
         # Calculate the transaction fee
-        gateway_fee = Decimal(amount) * Decimal(transaction_fee_percentage) + Decimal(fixed_fee)
+        gateway_fee = Decimal(amount) * Decimal(transaction_fee_percentage) + Decimal(
+            fixed_fee
+        )
 
         return gateway_fee
 
@@ -327,3 +335,37 @@ def chunked_queryset(queryset, chunk_size=10000):
 
     # Yield the last chunk of the queryset that includes all objects with a pk greater than or equal to the final start_pk
     yield queryset.filter(pk__gte=start_pk)
+
+
+def send_notification_to_queue(notification_data, queue_name):
+    """
+    Sends notification data to a specified Azure Queue Storage queue.
+
+    Args:
+        notification_data (dict): Dictionary containing notification details.
+        queue_name (str): Name of the Azure Queue Storage queue.
+    """
+
+    has_error = False
+
+    try:
+        # Create Queue Client
+        queue_client = QueueClient.from_connection_string(
+            AZURE_STORAGE_CONNECTION_STRING, queue_name
+        )
+
+        # Serialize data (if JSON needed)
+        if isinstance(notification_data, dict):
+            serialized_data = json.dumps(notification_data)
+        else:
+            serialized_data = notification_data  # Assuming data is already serialized
+
+        # Send message to queue
+        queue_client.send_message(serialized_data)
+        print(f"Sent notification data to {queue_name} queue.")
+
+    except Exception as e:
+        has_error = True
+        print(f"Error sending message to queue: {e}")
+
+    return has_error

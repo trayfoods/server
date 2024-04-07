@@ -380,6 +380,12 @@ class Order(models.Model):
     #     "storeId": store.id,
     #     "status": "processing",
     # }]
+    notifications_statuses = models.JSONField(default=list, blank=True)
+    # the notifications_statuses json format is as follows
+    # [{
+    #     "storeId": store.id,
+    #     "status": "sent",
+    # }]
 
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
@@ -721,7 +727,8 @@ class Order(models.Model):
             delivery_person_profile: Profile = delivery_person.profile
             has_sent_push_notification = delivery_person_profile.send_push_notification(
                 title="New Order",
-                msg="You have a new order to deliver, check your account page for more details.",
+                msg="You have a new order to deliver, click to view the order",
+                data={"order_id": self.order_track_id, "type": "new_delivery_order"},
             )
             if not has_sent_push_notification:
                 has_sent_sms = delivery_person_profile.send_sms(

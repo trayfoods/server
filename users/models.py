@@ -21,10 +21,10 @@ from trayapp.utils import image_resized, image_exists
 
 from product.models import Item, Order
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.conf import settings
 
-from trayapp.utils import get_twilio_client
+from trayapp.utils import get_twilio_client, send_notification_to_queue
 from django.contrib.auth.hashers import check_password, make_password
 
 TWILIO_CLIENT = get_twilio_client()
@@ -706,7 +706,7 @@ class Wallet(models.Model):
 
         if not amount:
             raise Exception("Amount is required")
-        
+
         if not transaction_id and not order:
             raise Exception("Transaction ID is required, or Order is required")
 
@@ -729,7 +729,6 @@ class Wallet(models.Model):
             order_transaction.save()
 
             return order_transaction
-
 
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
@@ -800,13 +799,13 @@ class Wallet(models.Model):
         return transaction
 
     # put transaction on hold
-    def put_transaction_on_hold(self, transaction_id: str = None, order: Order=None):
+    def put_transaction_on_hold(self, transaction_id: str = None, order: Order = None):
         # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
 
         transaction: Transaction = None
-        desc="Transaction is on hold, please contact support"
+        desc = "Transaction is on hold, please contact support"
         if transaction_id:
             transaction = self.get_transactions().get(transaction_id=transaction_id)
             desc = f"Transaction #{transaction_id} is on hold, please contact support"
@@ -1363,13 +1362,24 @@ class DeliveryPerson(models.Model):
                 print("check 11")
                 return False
 
+        # check of delivery person has had any delivery notification with the order
+        delivery_notifications = DeliveryNotification.objects.filter(
+            order=order, delivery_person=self
+        )
+        if delivery_notifications.exists():
+            return False
+
         return True
 
     # method to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
+        order_user: Profile = order.user
         delivery_people = DeliveryPerson.objects.filter(
-            status="online", is_on_delivery=False, is_approved=True
+            status="online",
+            is_on_delivery=False,
+            is_approved=True,
+            profile__country=order_user.country,
         )
         delivery_people_that_can_deliver = []
         for delivery_person in delivery_people:
@@ -1377,23 +1387,55 @@ class DeliveryPerson(models.Model):
                 delivery_people_that_can_deliver.append(delivery_person)
         return delivery_people_that_can_deliver
 
+    # send delivery request to delivery person
+    @staticmethod
+    def send_delivery(order: Order, store: Store):
+        order_user: Profile = order.user
+        delivery_people = DeliveryPerson.objects.filter(
+            status="online",
+            is_on_delivery=False,
+            is_approved=True,
+            profile__country=order_user.country,
+        )
+        did_complete = False
+        for delivery_person in delivery_people:
+            # check if the delivery person has rejected the order before
+            if delivery_person and delivery_person.can_deliver(order):
+                # send new delivery request to queue
+                notification_data = {
+                    "order_id": order.order_track_id,
+                    "delivery_person_id": delivery_person.id,
+                }
+                new_delivery_notification = DeliveryNotification.objects.create(
+                    order=order,
+                    store=store,
+                    delivery_person=delivery_person,
+                    status="pending",
+                )
+                new_delivery_notification.save()
+                # send notification to queue
+                had_error = send_notification_to_queue(
+                    notification_data, "new-delivery-request"
+                )
+                did_complete = had_error == False
+                break  # break the loop if a delivery person is found
+        return did_complete
 
-class Delivery(models.Model):
+
+class DeliveryNotification(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    store = models.ForeignKey(Store, on_delete=models.CASCADE, null=True, blank=True)
+    store = models.ForeignKey(Store, on_delete=models.CASCADE)
     delivery_person = models.ForeignKey(DeliveryPerson, on_delete=models.CASCADE)
     status = models.CharField(
-        max_length=30,
+        max_length=20,
         choices=(
             ("pending", "pending"),
+            ("sent", "sent"),
             ("accepted", "accepted"),
             ("rejected", "rejected"),
-            ("out-for-delivery", "out-for-delivery"),
-            ("delivered", "delivered"),
         ),
-        default="pending",
     )
-    timestamp = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 class UserActivity(models.Model):
@@ -1421,34 +1463,6 @@ class UserActivity(models.Model):
     @property
     def item_idx(self):
         return self.item.id
-
-
-def handle_delivery_queue():
-    while True:
-        # Get a pending delivery from the waiting queue
-        delivery = Delivery.objects.filter(status="pending").first()
-        print("delivery", delivery)
-        if delivery:
-            # Send a notification to the delivery person
-            delivery_person_profile = delivery.delivery_person.profile
-            delivery_person_profile.send_push_notification(
-                title="New Delivery Request",
-                msg="You have a new delivery request. Please respond to it.",
-                data={
-                    "type": "delivery_request",
-                    "order_id": delivery.order.order_track_id,
-                    "shipping_address": delivery.order.shipping,
-                    "delivery_id": delivery.pk,
-                },
-            )
-            # Wait for the delivery person to respond
-            time.sleep(60)
-            # If the delivery person hasn't responded, move to the next delivery person
-            if delivery.status == "pending":
-                delivery.status = "rejected"
-                delivery.save()
-            else:
-                break
 
 
 # Signals
@@ -1490,19 +1504,3 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
         instance.image.delete(save=False)
     except:
         pass
-
-
-# handle delivery queue
-# @receiver(post_save, sender=Delivery)
-# def delivery_updated_handler(sender, instance, created, **kwargs):
-#     # when a delivery is created, start the delivery queue
-#     if created:
-#         # Start the delivery queue
-#         handle_delivery_queue()
-#     else:
-#         # If the delivery status changes to 'accepted', notify the user
-#         if instance.status == 'accepted':
-#             instance.order.notify_user(
-#                 title="Delivery Accepted",
-#                 msg="Your delivery request has been accepted. Your delivery is on the way.",
-#             )

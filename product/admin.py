@@ -3,6 +3,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.utils.safestring import mark_safe
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating
+from users.admin import DeliveryInline
 
 
 class ItemImageInlineAdmin(admin.TabularInline):
@@ -78,6 +79,7 @@ class RatingAdmin(admin.ModelAdmin):
 
 
 class OrderAdmin(admin.ModelAdmin):
+    inlines = [DeliveryInline]
     list_display = (
         "__str__",
         "order_status",

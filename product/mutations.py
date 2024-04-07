@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, Profile, DeliveryPerson, Delivery
+from users.models import UserActivity, Store, Profile, DeliveryPerson
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
@@ -569,11 +569,7 @@ class CreateOrderMutation(Output, graphene.Mutation):
             # create a delivery for the order
             people_who_can_deliver = DeliveryPerson.get_delivery_people_that_can_deliver(new_order)
             # check if there are people who can deliver the order
-            if people_who_can_deliver and len(people_who_can_deliver) > 0:
-                for delivery_person in people_who_can_deliver:
-                    Delivery.objects.create(order=new_order, delivery_person=delivery_person, status='pending')
-
-            else: # if there are no people who can deliver the order
+            if people_who_can_deliver and len(people_who_can_deliver) < 1:
                 for store_id in new_order.linked_stores.all():
                     new_order.update_store_status(store_id=store_id, status="no-delivery-person")
                 new_order.order_status = "no-delivery-people"
@@ -583,7 +579,6 @@ class CreateOrderMutation(Output, graphene.Mutation):
                     title="No Delivery People",
                 )
                 return CreateOrderMutation(order_id=new_order.order_track_id, success=True, error="There are no delivery people available to deliver your order. Please try again later.")
-        
 
         return CreateOrderMutation(order_id=new_order.order_track_id, success=True)
 
@@ -1092,10 +1087,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="No delivery person found for this order"
                     )
-                has_sent_notifications = order.notify_delivery_people(
-                    delivery_people, store_id
+                has_start_notification_requesting = DeliveryPerson.send_delivery(
+                    order=order,
+                    store=store,
                 )
-                if not has_sent_notifications:
+                if not has_start_notification_requesting:
                     return MarkOrderAsMutation(
                         error="An error occured while notifying delivery people, please try again later"
                     )
