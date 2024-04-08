@@ -124,3 +124,4 @@ whitenoise==6.6.0
 yarl==1.9.4
 zope.interface==6.1
 azure-storage-queue==12.9.0
+azure-identity==1.15.0
