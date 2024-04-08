@@ -10,12 +10,12 @@ import json
 
 # Azure Queue Storage
 from azure.storage.queue import QueueClient
+from azure.identity import DefaultAzureCredential
 
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
 PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY_LIVE")
-AZURE_STORAGE_CONNECTION_STRING = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
 load_dotenv(BASE_DIR / ".env")
 
 
@@ -349,9 +349,14 @@ def send_notification_to_queue(notification_data, queue_name):
     has_error = False
 
     try:
-        # Create Queue Client
-        queue_client = QueueClient.from_connection_string(
-            AZURE_STORAGE_CONNECTION_STRING, queue_name
+        # Create Queue Client (using DefaultAzureCredential for authentication)
+        account_url = f"https://{settings.AZURE_ACCOUNT_NAME}.queue.core.windows.net"
+        default_credential = DefaultAzureCredential()
+
+        queue_client = QueueClient(
+            account_url=account_url,
+            queue_name=queue_name,
+            credential=default_credential,
         )
 
         # Serialize data (if JSON needed)

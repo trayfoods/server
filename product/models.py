@@ -64,13 +64,19 @@ class ItemImage(models.Model):
 
 class Item(models.Model):
     product_name = models.CharField(max_length=100)
-    product_qty = models.PositiveBigIntegerField(default=0, help_text="Quantity of the product")
-    product_init_qty = models.PositiveBigIntegerField(default=0, help_text="Initial quantity of the product")
+    product_qty = models.PositiveBigIntegerField(
+        default=0, help_text="Quantity of the product"
+    )
+    product_init_qty = models.PositiveBigIntegerField(
+        default=0, help_text="Initial quantity of the product"
+    )
     has_qty = models.BooleanField(default=False, editable=False)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
     product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     product_calories = models.FloatField(default=0.0)
-    product_desc = models.CharField(max_length=200, blank=True, null=True, help_text="Product Description")
+    product_desc = models.CharField(
+        max_length=200, blank=True, null=True, help_text="Product Description"
+    )
     product_share_visibility = models.CharField(
         max_length=20,
         choices=(("private", "private"), ("public", "public")),
@@ -78,7 +84,11 @@ class Item(models.Model):
         editable=False,
     )
     store_menu_name = models.CharField(
-        max_length=30, default="OTHERS", blank=True, editable=False, help_text="Menu Name From Product Creator Store Menu"
+        max_length=30,
+        default="OTHERS",
+        blank=True,
+        editable=False,
+        help_text="Menu Name From Product Creator Store Menu",
     )
 
     product_categories = models.ManyToManyField(
@@ -94,7 +104,11 @@ class Item(models.Model):
         null=True,
     )
     product_creator = models.ForeignKey(
-        "users.Store", null=True, on_delete=models.CASCADE, blank=True, editable=False,
+        "users.Store",
+        null=True,
+        on_delete=models.CASCADE,
+        blank=True,
+        editable=False,
     )
     product_created_on = models.DateTimeField(auto_now_add=True)
     product_clicks = models.IntegerField(default=0)
@@ -340,6 +354,7 @@ ALLOWED_DELIVERY_PERSON_ORDER_STATUS = settings.ALLOWED_DELIVERY_PERSON_ORDER_ST
 
 
 class Order(models.Model):
+
     order_track_id = models.CharField(
         max_length=24,
         unique=True,
@@ -976,6 +991,16 @@ class Order(models.Model):
         self.save()
 
         return has_updated
+
+
+    def get_delivery_notification(
+        self, delivery_person_id: str
+    ):
+        from users.models import DeliveryNotification
+
+        return DeliveryNotification.objects.filter(
+            order=self, delivery_person_id=delivery_person_id
+        ).first()
 
     # create a payment link for the order
     def create_payment_link(self):

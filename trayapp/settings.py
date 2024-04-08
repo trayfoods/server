@@ -131,6 +131,7 @@ INSTALLED_APPS = [
     "users",
     "product",
     "core",
+    "worker",
     "storages",
     "graphene_django",
     "graphql_auth",
@@ -314,9 +315,9 @@ USE_TZ = True
 # Amazon S3 settings
 AWS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION")
 
+AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
 if USE_S3:
     # Static files (CSS, JavaScript, Images)
-    AZURE_ACCOUNT_NAME = os.getenv("AZURE_ACCOUNT_NAME")
     AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
 
     CUSTOM_DOMAIN = "cdn4trayfoods.blob.core.windows.net"
