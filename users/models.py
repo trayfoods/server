@@ -1,6 +1,6 @@
 from decimal import Decimal
 import os
-import time
+import logging
 
 import uuid
 import pytz
@@ -1402,7 +1402,7 @@ class DeliveryPerson(models.Model):
             # check if the delivery person has rejected the order before
             if delivery_person and delivery_person.can_deliver(order):
                 # send new delivery request to queue
-                notification_data = {
+                queue_data = {
                     "order_id": order.order_track_id,
                     "delivery_person_id": delivery_person.id,
                 }
@@ -1415,7 +1415,7 @@ class DeliveryPerson(models.Model):
                 new_delivery_notification.save()
                 # send notification to queue
                 had_error = send_notification_to_queue(
-                    notification_data, "new-delivery-request"
+                    message=queue_data, queue_name="new-delivery-request"
                 )
                 did_complete = had_error == False
                 break  # break the loop if a delivery person is found
@@ -1430,9 +1430,11 @@ class DeliveryNotification(models.Model):
         max_length=20,
         choices=(
             ("pending", "pending"),
+            ("processing", "processing"),
             ("sent", "sent"),
             ("accepted", "accepted"),
             ("rejected", "rejected"),
+            ("expired", "expired"),
         ),
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1504,3 +1506,49 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
         instance.image.delete(save=False)
     except:
         pass
+
+
+# SIGNAL to send delivery when delivery notification is rejected or expired and store does not have a delivery person order.store_delivery_person(store_id) == None
+@receiver(post_save, sender=DeliveryNotification)
+def send_delivery_when_rejected_or_expired(
+    sender, instance: DeliveryNotification, created, **kwargs
+):
+    if not created:
+        return
+    if instance.status in ["rejected", "expired"]:
+        order = instance.order
+        store = instance.store
+        # check if store has a delivery person
+        does_store_have_delivery_person = (
+            order.store_delivery_person(store_id=store.id) != None
+        )
+        if not does_store_have_delivery_person:
+            # check if there are more delivery people for the order
+            delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
+                order=order
+            )  # get delivery people that can deliver the order
+            if delivery_people and len(delivery_people) > 0:
+                # send new delivery request to queue
+                DeliveryPerson.send_delivery(order=order, store=store)
+            else:  # if there are no delivery people that can deliver the order
+                # update the store status to no delivery person
+                order.update_store_status(
+                    store_id=store.id, status="no-delivery-person"
+                )
+                # TODO send push notification to user and store
+                user: Profile = order.user
+
+                user.notify_me(
+                    title="No Delivery Person",
+                    message="No delivery person available to deliver your order from {}, kindly call the store".format(
+                        store.store_name
+                    ),
+                    notification_type="error",
+                )
+
+                store.vendor.notify_me(
+                    title="No Delivery Person",
+                    message="No delivery person available to deliver order {}".format(
+                        order.get_order_display_id()
+                    ),
+                )

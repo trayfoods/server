@@ -9,7 +9,7 @@ from django.conf import settings
 import json
 
 # Azure Queue Storage
-from azure.storage.queue import QueueClient
+from azure.storage.queue import (QueueClient, BinaryBase64EncodePolicy, BinaryBase64DecodePolicy)
 from azure.identity import DefaultAzureCredential
 
 
@@ -337,12 +337,12 @@ def chunked_queryset(queryset, chunk_size=10000):
     yield queryset.filter(pk__gte=start_pk)
 
 
-def send_notification_to_queue(notification_data, queue_name):
+def send_notification_to_queue(message, queue_name):
     """
     Sends notification data to a specified Azure Queue Storage queue.
 
     Args:
-        notification_data (dict): Dictionary containing notification details.
+        message (dict): Dictionary containing notification details.
         queue_name (str): Name of the Azure Queue Storage queue.
     """
 
@@ -359,14 +359,19 @@ def send_notification_to_queue(notification_data, queue_name):
             credential=default_credential,
         )
 
-        # Serialize data (if JSON needed)
-        if isinstance(notification_data, dict):
-            serialized_data = json.dumps(notification_data)
-        else:
-            serialized_data = notification_data  # Assuming data is already serialized
+        if not isinstance(message, dict):
+            raise ValueError("message must be a dictionary.")
 
-        # Send message to queue
-        queue_client.send_message(serialized_data)
+        # Setup Base64 encoding and decoding functions
+        queue_client.message_encode_policy = BinaryBase64EncodePolicy()
+        queue_client.message_decode_policy = BinaryBase64DecodePolicy()
+
+        # Encode and send message to queue
+        message_string = json.dumps(message)
+        message_bytes = message_string.encode("utf-8")
+        queue_client.send_message(
+            queue_client.message_encode_policy.encode(content=message_bytes)
+        )
         print(f"Sent notification data to {queue_name} queue.")
 
     except Exception as e:

@@ -1001,6 +1001,16 @@ class Order(models.Model):
         return DeliveryNotification.objects.filter(
             order=self, delivery_person_id=delivery_person_id
         ).first()
+    
+    def store_delivery_person(
+        self, store_id: int
+    ):
+        delivery_people = self.delivery_people
+        for delivery_person in delivery_people:
+            if str(delivery_person["storeId"]) == str(store_id):
+                return delivery_person
+        return None
+
 
     # create a payment link for the order
     def create_payment_link(self):

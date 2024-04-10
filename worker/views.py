@@ -13,14 +13,19 @@ def process_delivery_notification(request):
         data = request.POST
         order_id = data.get("order_id")
         delivery_person_id = data.get("delivery_person_id")
-        order_qs = Order.objects.filter(id=order_id)
+        print(data, flush=True)
+        order_qs = Order.objects.filter(order_track_id=order_id)
         if not order_qs.exists():
             return JsonResponse({"error": "Order does not exist", "status": False})
 
         order = order_qs.first()
-        delivery_notification = order.get_delivery_notification(
-            order_id, delivery_person_id
-        )
+        try:
+            delivery_notification = order.get_delivery_notification(delivery_person_id)
+        except:
+            delivery_notification = order.get_delivery_notification(
+                delivery_person_id[0]
+            )
+
         if delivery_notification:
             store: Store = delivery_notification.store
             store_name = store.store_name
@@ -31,19 +36,23 @@ def process_delivery_notification(request):
                     {"error": "delivery person not found", "success": False}
                 )
             delivery_person = delivery_person_qs.first()
-            device_ids = delivery_person.profile.user.devices.all().values_list(
-                "device_id", flat=True
+            device_tokens = delivery_person.profile.user.devices.all().values_list(
+                "device_token", flat=True
             )
+            # check when the token are empty
+            if not device_tokens:
+                return JsonResponse(
+                    {"error": "delivery person device token not found", "success": False}
+                )
 
             delivery_notification.status = "processing"
             delivery_notification.save()
-            return JsonResponse(
-                {
-                    "success": True,
-                    "device_ids": device_ids,
-                    "store_name": store_name,
-                    "store_id": store_id,
-                }
-                , safe=False
-            )
+            data = {
+                "success": True,
+                "device_tokens": list(device_tokens),
+                "store_name": store_name,
+                "store_id": store_id,
+            }
+            print(data, flush=True)
+            return JsonResponse(data=data, safe=False)
     return JsonResponse({"error": "Invalid request"})
