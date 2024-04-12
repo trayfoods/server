@@ -1,8 +1,8 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from users.models import DeliveryPerson, Store
 from product.models import Order
 from django.views.decorators.csrf import csrf_exempt
+from trayapp.utils import send_message_to_queue_bus
 
 
 # Process delivery request
@@ -42,7 +42,10 @@ def process_delivery_notification(request):
             # check when the token are empty
             if not device_tokens:
                 return JsonResponse(
-                    {"error": "delivery person device token not found", "success": False}
+                    {
+                        "error": "delivery person device token not found",
+                        "success": False,
+                    }
                 )
 
             delivery_notification.status = "processing"
@@ -52,6 +55,48 @@ def process_delivery_notification(request):
                 "device_tokens": list(device_tokens),
                 "store_name": store_name,
                 "store_id": store_id,
+            }
+            return JsonResponse(data=data, safe=False)
+    return JsonResponse({"error": "Invalid request"})
+
+
+@csrf_exempt
+def process_delivery_notification_sent(request):
+    if request.method == "POST":
+        data = request.POST
+        order_id = data.get("order_id")
+        delivery_person_id = data.get("delivery_person_id")
+        order_qs = Order.objects.filter(order_track_id=order_id)
+        if not order_qs.exists():
+            return JsonResponse({"error": "Order does not exist", "status": False})
+
+        order = order_qs.first()
+        try:
+            delivery_notification = order.get_delivery_notification(delivery_person_id)
+        except:
+            delivery_notification = order.get_delivery_notification(
+                delivery_person_id[0]
+            )
+
+        if delivery_notification:
+            delivery_person_qs = DeliveryPerson.objects.filter(id=delivery_person_id)
+            if not delivery_person_qs.exists():
+                return JsonResponse(
+                    {"error": "delivery person not found", "success": False}
+                )
+            delivery_notification.status = "sent"
+            delivery_notification.save()
+            message = {
+                "order_id": data.get("order_id"),
+                "delivery_person_id": data.get("delivery_person_id"),
+            }
+            # send message to queue bus with 30 seconds ttl in milliseconds
+            send_message_to_queue_bus(
+                message_dict=message, queue_name="sent-delivery-request", ttl=30000
+            )
+
+            data = {
+                "success": True,
             }
             print(data, flush=True)
             return JsonResponse(data=data, safe=False)

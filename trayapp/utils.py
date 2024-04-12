@@ -1,7 +1,7 @@
 from decimal import Decimal
 import os
 import requests
-
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -9,7 +9,12 @@ from django.conf import settings
 import json
 
 # Azure Queue Storage
-from azure.storage.queue import (QueueClient, BinaryBase64EncodePolicy, BinaryBase64DecodePolicy)
+from azure.storage.queue import (
+    QueueClient,
+    BinaryBase64EncodePolicy,
+    BinaryBase64DecodePolicy,
+)
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from azure.identity import DefaultAzureCredential
 
 
@@ -372,10 +377,28 @@ def send_notification_to_queue(message, queue_name):
         queue_client.send_message(
             queue_client.message_encode_policy.encode(content=message_bytes)
         )
-        print(f"Sent notification data to {queue_name} queue.")
 
     except Exception as e:
         has_error = True
-        print(f"Error sending message to queue: {e}")
+        logging.error(f"Error sending message to queue: {e}")
 
     return has_error
+
+
+def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
+    credential = DefaultAzureCredential()
+    service_bus_client = ServiceBusClient(
+        credential=credential,
+        fully_qualified_namespace="trayfoods.servicebus.windows.net",
+        queue_name=queue_name,
+    )
+    # convert the dictionary to a json string
+    message_json = json.dumps(message_dict)
+    message_obj = ServiceBusMessage(message_json)
+
+    if ttl:
+        message_obj.time_to_live = ttl
+
+    with service_bus_client:
+        sender = service_bus_client.get_queue_sender(queue_name)
+        sender.send_messages(message_obj)
