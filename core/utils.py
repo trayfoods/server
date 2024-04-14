@@ -2,7 +2,7 @@ import json
 
 from django.http import HttpResponse
 from product.models import Order
-from users.models import Store, Transaction, DeliveryPerson
+from users.models import Store, Transaction, Profile
 from trayapp.decorators import get_time_complexity
 from decimal import Decimal
 
@@ -86,6 +86,7 @@ class ProcessPayment:
             order.order_status = "failed"
             order.save()
             order.notify_user(
+                title="Payment Failed",
                 message="Payment for Order {} has failed, kindly contact support for your refund".format(
                     order.get_order_display_id()
                 )
@@ -103,10 +104,12 @@ class ProcessPayment:
             order.delivery_fee = new_delivery_fee
             order.order_gateway_fee = order_gateway_fee
             order.order_status = "processing"
-            order.save()
+            
 
             shipping_address = order.shipping
             shipping_address = shipping_address.get("address", None)
+
+            order_user: Profile = order.user
 
             # notify all stores that are involved in the order
             stores_infos = order.stores_infos
@@ -143,9 +146,10 @@ class ProcessPayment:
 
                     store.vendor.notify_me(
                         title="New Order",
-                        msg="New Order of {} {} was made, tap on this link to view the order → {}/checkout/{}".format(
+                        msg="New Order of {} {} was made by {}, tap on this link to view the order → {}/checkout/{}".format(
                             order.order_currency,
                             overrall_store_price,
+                            order_user.user.username,
                             settings.FRONTEND_URL,
                             order.order_track_id,
                         ),
@@ -155,10 +159,12 @@ class ProcessPayment:
                 # notify the user
                 order.notify_user(
                     title="Order Placed",
-                    message="Order {} has been sent to the store, we will notify you when the store accept the order".format(
+                    message="Your Order {} has been placed, we will notify you when it has been accepted".format(
                         order.get_order_display_id()
                     ),
                 )
+
+            order.save()
 
         return HttpResponse("Payment successful", status=200)
 
@@ -371,7 +377,7 @@ class ProcessPayment:
         # notify the user
         order.notify_user(
             title="Refund from {}".format(refund_store_name),
-            message="Order {} has been refunded by {}".format(
+            message="Your Order {} has been refunded by {}".format(
                 order.get_order_display_id(),
                 refund_store_name,
             ),

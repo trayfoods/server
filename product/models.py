@@ -354,7 +354,6 @@ ALLOWED_DELIVERY_PERSON_ORDER_STATUS = settings.ALLOWED_DELIVERY_PERSON_ORDER_ST
 
 
 class Order(models.Model):
-
     order_track_id = models.CharField(
         max_length=24,
         unique=True,
@@ -715,7 +714,7 @@ class Order(models.Model):
             self.save()
         return self.order_confirm_pin
 
-    def is_pickup(self):
+    def is_pickup(self) -> bool:
         shipping = self.shipping
         return (
             shipping and shipping["address"] and shipping["address"].lower() == "pickup"
@@ -758,16 +757,15 @@ class Order(models.Model):
                     return False
         return True
 
-    def notify_user(self, message: str, title: str = "Order Status"):
-        has_sent_push_notification = self.user.send_push_notification(
-            title=title,
-            msg=message,
-        )
-        if not has_sent_push_notification:
-            has_sent_sms = self.user.send_sms(message)
-            if not has_sent_sms:
-                return False
-        return True
+    def notify_user(self, message: str, title: str = "Order Status", data=None):
+        from users.models import Profile
+
+        profile: Profile = self.user
+        if not data:
+            data = {
+                "link": f"{FRONTEND_URL}/checkout/{self.order_track_id}"
+            }  # default link
+        return profile.notify_me(title=title, msg=message, data=data)
 
     def store_refund_customer(self, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
@@ -838,7 +836,7 @@ class Order(models.Model):
 
             # notify the user that a refund has been initiated
             self.notify_user(
-                message=f"Your refund of {self.order_currency} {amount} has been initiated. The refund will be processed within 7-12 working days.",
+                message=f"Your refund of {self.order_currency} {amount} has been initiated by {store_name}. The refund will be processed instantly or within 7-12 working days.",
                 title="Refund Initiated",
             )
 
@@ -992,25 +990,19 @@ class Order(models.Model):
 
         return has_updated
 
-
-    def get_delivery_notification(
-        self, delivery_person_id: str
-    ):
+    def get_delivery_notification(self, delivery_person_id: str):
         from users.models import DeliveryNotification
 
         return DeliveryNotification.objects.filter(
             order=self, delivery_person_id=delivery_person_id
         ).first()
-    
-    def store_delivery_person(
-        self, store_id: int
-    ):
+
+    def store_delivery_person(self, store_id: int):
         delivery_people = self.delivery_people
         for delivery_person in delivery_people:
             if str(delivery_person["storeId"]) == str(store_id):
                 return delivery_person
         return None
-
 
     # create a payment link for the order
     def create_payment_link(self):

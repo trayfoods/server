@@ -575,8 +575,8 @@ class CreateOrderMutation(Output, graphene.Mutation):
                 new_order.order_status = "no-delivery-people"
                 # notify the user that there are no delivery people
                 new_order.notify_user(
-                    message="There are no delivery people available to deliver your order. Please try again later.",
-                    title="No Delivery People",
+                    message="Sorry, we're unable to process your order right now as all our delivery personnel are currently busy. Please try placing your order again later. We appreciate your understanding.",
+                    title="Delivery Unavailable",
                 )
                 return CreateOrderMutation(order_id=new_order.order_track_id, success=True, error="There are no delivery people available to deliver your order. Please try again later.")
 
@@ -814,39 +814,19 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     status for status in store_statuses if status in ["pending", "accepted"]
                 ]
 
-
                 # check if all stores has accepted the order
                 is_order_pickup = order.is_pickup()
                 if all(status == "accepted" for status in store_statuses):
                     # update the order status to accepted
                     order.order_status = "accepted"
                     order.save()
-
-                    # notify the user that all stores has accepted the order
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been accepted, {"we will notify you when it's ready for pickup" if is_order_pickup else "we will notify you when it has been picked up by a delivery person"}",
-                    )
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
+                    is_single_accept = True
 
                 # check if some stores has accepted the order
                 elif any(status == "accepted" for status in store_statuses):
                     # update the order status to partially accepted
                     order.order_status = "partially-accepted"
                     order.save()
-
-                    store_names = get_store_name_from_store_status(order, "accepted")
-
-                    store_names_with_comma = ", ".join(store_names)
-                    # remove the last comma
-                    store_names_with_comma = store_names_with_comma[:-2]
-
-                    # notify the user that some stores has accepted the order
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} has been accepted by {store_names_with_comma}, {"we will notify you when some items are ready for pickup" if is_order_pickup else "we will notify you when some items has been picked up by delivery people"}",
-                    )
 
                 # add the store total price to the store balance
                 store.wallet.add_balance(
@@ -862,6 +842,13 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+
+                # notify the user that store has accepted the order
+                order.notify_user(
+                    title="Order Accepted",
+                    message=f"Your Order {order.get_order_display_id()} has been accepted by {store.store_name}, {"we will notify you when it's ready for pickup" if is_order_pickup else "we will notify you when it's ready for delivery"}",
+                )
+                    
                 
                 order.log_activity(
                     title="Order Accepted",
@@ -952,12 +939,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 if is_single_reject:
                     order.notify_user(
                         title="Order Rejected",
-                        message=f"Order {order.get_order_display_id()} has been rejected",
+                        message=f"{store.store_name} rejected your Order {order.get_order_display_id()}",
                     )
                 else:
                     order.notify_user(
                             title="Order Rejected",
-                            message=f"{store.store_name} rejected items in Order {order.get_order_display_id()}",
+                            message=f"{store.store_name} rejected their items in Order {order.get_order_display_id()}",
                         )
                 
                 order.log_activity(
@@ -1050,12 +1037,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 if is_single_cancel:
                     order.notify_user(
                         title="Order Cancelled",
-                        message=f"Order {order.get_order_display_id()} has been cancelled",
+                        message=f"{store.store_name} cancelled your Order {order.get_order_display_id()}",
                     )
                 else:
                     order.notify_user(
                             title="Order Cancelled",
-                            message=f"{store.store_name} cancelled items in Order {order.get_order_display_id()}",
+                            message=f"{store.store_name} cancelled their items in Order {order.get_order_display_id()}",
                         )
                 
                 order.log_activity(
@@ -1119,6 +1106,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="An error occured while updating order status, please try again later"
                     )
                 
+                # notify user that the order is ready for delivery
+                order.notify_user(
+                    title="Order Ready For Delivery",
+                    message=f"Your Order {order.get_order_display_id()} is ready for delivery from {store.store_name}, we will notify you when the delivery person has picked it up",
+                )
+                
                 order.log_activity(
                     title="Order Ready For Delivery",
                     activity_type="order_ready_for_delivery",
@@ -1147,46 +1140,30 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 store_statuses = [
                     status for status in store_statuses if status in ["accepted", "ready-for-pickup"]
                     ]
-
-
+                
                 # check if all stores has marked the order as ready for pickup
                 if all(status == "ready-for-pickup" for status in store_statuses):
                     # update the order status to ready for pickup
                     order.order_status = "ready-for-pickup"
                     order.save()
-
-                    # notify the user that all stores has marked the order as ready for pickup
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} is ready for pickup, you can now pick up your order",
-                    )
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
-
+                    
                 # check if some stores has marked the order as ready for pickup
                 elif any(status == "ready-for-pickup" for status in store_statuses):
                     # update the order status to partially ready for pickup
                     order.order_status = "partially-ready-for-pickup"
                     order.save()
 
-                    # get the stores names that marked the order as ready for pickup
-                    store_names = get_store_name_from_store_status(order)
-
-                    store_names_with_comma = ", ".join(store_names)
-                    # remove the last comma
-                    store_names_with_comma = store_names_with_comma[:-2]
-
-                    # notify the user that some stores has marked the order as ready for pickup
-                    has_notified_user = order.notify_user(
-                        message=f"Some items from your order {order.get_order_display_id()} are now ready for pickup.",
-                    )
-
                 did_update = order.update_store_status(store_id, "ready-for-pickup")
                 if not did_update:
                     return MarkOrderAsMutation(
                         error="An error occured while updating order status, please try again later"
                     )
+                
+                # notify user that the order is ready for pickup
+                order.notify_user(
+                    title="Order Ready For Pickup",
+                    message=f"Your Order {order.get_order_display_id()} is ready for pickup at {store.store_name}",
+                )
                 
                 order.log_activity(
                     title="Order Ready For Pickup",
@@ -1282,14 +1259,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     
 
                     # notify the user that the order has been picked up
-                    has_notified_user = order.notify_user(
-                        message=f"Order {order.get_order_display_id()} from {store.store_name} is now being delivered by {delivery_person.profile.user.get_full_name()}. It's on its way!"
+                    order.notify_user(
+                        title="Order Picked Up",
+                        message=f"Order {order.get_order_display_id()} from {store.store_name} is now being delivered by {delivery_person.profile.user.get_full_name()}, it's on its way!"
                     )
-
-                    if not has_notified_user:
-                        return MarkOrderAsMutation(
-                            error="An error occured while notifying customer, please try again later"
-                        )
                     
                     order.log_activity(
                         title="Order In-Transit",

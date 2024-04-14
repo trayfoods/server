@@ -424,6 +424,7 @@ class Profile(models.Model):
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )
             return True
+        
         if not SMS_ENABLED:
             print("SMS is disabled")
             print(self.calling_code)
@@ -431,6 +432,8 @@ class Profile(models.Model):
             print(message)
             print("End of SMS is disabled")
             return False if not settings.DEBUG else True
+        
+        return False
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
@@ -463,7 +466,7 @@ class Profile(models.Model):
     # try push notification then sms if push notification fails
     def notify_me(self, title, msg, data=None):
         if not self.send_push_notification(title, msg, data):
-            self.send_sms(msg)
+            return self.send_sms(msg)
 
     @property
     def is_delivery_person(self):
