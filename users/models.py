@@ -1,6 +1,8 @@
 from decimal import Decimal
 import os
-import logging
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import get_template
+from django.template import Context
 
 import uuid
 import pytz
@@ -424,7 +426,7 @@ class Profile(models.Model):
                 body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
             )
             return True
-        
+
         if not SMS_ENABLED:
             print("SMS is disabled")
             print(self.calling_code)
@@ -432,7 +434,7 @@ class Profile(models.Model):
             print(message)
             print("End of SMS is disabled")
             return False if not settings.DEBUG else True
-        
+
         return False
 
     def send_push_notification(self, title, msg, data=None):
@@ -467,6 +469,19 @@ class Profile(models.Model):
     def notify_me(self, title, msg, data=None):
         if not self.send_push_notification(title, msg, data):
             return self.send_sms(msg)
+
+    def send_email(self, subject, from_email, text_content, template=None, **context):
+        try:
+            subject, from_email, to = subject, from_email, self.user.email
+            msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
+            if template:
+                html_content = get_template(template).render(Context(context))
+
+                msg.attach_alternative(html_content, "text/html")
+            msg.send()
+            return True
+        except:
+            return False
 
     @property
     def is_delivery_person(self):

@@ -765,6 +765,18 @@ class Order(models.Model):
             data = {
                 "link": f"{FRONTEND_URL}/checkout/{self.order_track_id}"
             }  # default link
+            
+        profile.send_email(
+            subject=title,
+            from_email="orders@trayfoods.com",
+            text_content=message,
+            template="email/order_notification_email.html",
+            context={
+                "title": title,
+                "message": message,
+                "order_id": self.order_track_id,
+            },
+        )
         return profile.notify_me(title=title, msg=message, data=data)
 
     def store_refund_customer(self, store_id: int):
