@@ -63,6 +63,9 @@ class RegisterMixin(Output):
                 if f.is_valid():
                     email = kwargs.get(UserAccount.EMAIL_FIELD, False)
                     UserStatus.clean_email(email)
+                    # check if the email is already in use by ignoring the char after the plus sign
+                    if UserAccount.objects.filter(email__iregex=r'^'+email.split('@')[0]+'(\+[^@]*)?@'+email.split('@')[1]+'$').exists():
+                        raise EmailAlreadyInUse
                     user = f.save()
                     send_activation = (
                         app_settings.SEND_ACTIVATION_EMAIL is True and email
