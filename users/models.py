@@ -475,7 +475,7 @@ class Profile(models.Model):
             subject, from_email, to = subject, from_email, self.user.email
             msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
             if template:
-                html_content = get_template(template).render(Context(context))
+                html_content = get_template(template).render(context=context)
 
                 msg.attach_alternative(html_content, "text/html")
             msg.send()
