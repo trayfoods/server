@@ -147,7 +147,8 @@ INSTALLED_APPS = [
 USE_MAILERSEND = "True" == os.environ.get("USE_MAILERSEND", "False")
 
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = "TrayFoods Account <{}>".format(os.getenv("EMAIL_HOST_USER"))
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+DEFAULT_FROM_EMAIL = "TrayFoods Accounts <{}>".format(EMAIL_HOST_USER)
 
 # MailerSend settings
 if USE_MAILERSEND:
@@ -161,7 +162,6 @@ else:
     # EMAIL_INFOS
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.gmail.com"
-    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
     EMAIL_PORT = 587
 
