@@ -765,10 +765,10 @@ class Order(models.Model):
             data = {
                 "link": f"{FRONTEND_URL}/checkout/{self.order_track_id}"
             }  # default link
-            
+
         profile.send_email(
             subject=title,
-            from_email="orders@trayfoods.com",
+            from_email="Your Trayfoods Order <orders@trayfoods.com>",
             text_content=message,
             template="email/order_notification_email.html",
             context={

@@ -147,7 +147,7 @@ INSTALLED_APPS = [
 USE_MAILERSEND = "True" == os.environ.get("USE_MAILERSEND", "False")
 
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = os.getenv("EMAIL_HOST_USER")
+DEFAULT_FROM_EMAIL = "TrayFoods Account <{}>".format(os.getenv("EMAIL_HOST_USER"))
 
 # MailerSend settings
 if USE_MAILERSEND:
