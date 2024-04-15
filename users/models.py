@@ -2,7 +2,6 @@ from decimal import Decimal
 import os
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
-from django.template import Context
 
 import uuid
 import pytz
@@ -470,13 +469,19 @@ class Profile(models.Model):
         if not self.send_push_notification(title, msg, data):
             return self.send_sms(msg)
 
-    def send_email(self, subject, from_email, text_content, template=None, **context):
+    def send_email(
+        self, subject, from_email, text_content, template=None, context=None
+    ):
         try:
             subject, from_email, to = subject, from_email, self.user.email
             msg = EmailMultiAlternatives(subject, text_content, from_email, [to])
             if template:
                 html_content = get_template(template).render(
-                    Context(context, autoescape=False)
+                    {
+                        "order_id": context.get("order_id"),
+                        "title": context.get("title"),
+                        "message": context.get("message"),
+                    },
                 )
 
                 msg.attach_alternative(html_content, "text/html")
