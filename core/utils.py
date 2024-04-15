@@ -82,7 +82,7 @@ class ProcessPayment:
         order_price = order_price - delivery_fee - Decimal(order.service_fee)
 
         if overall_price > order_price:
-            order.order_payment_status = "pending-refund"
+            order.order_payment_status = "awaiting-refund-action"
             order.order_status = "failed"
             order.save()
             order.notify_user(

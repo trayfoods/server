@@ -457,6 +457,7 @@ class Order(models.Model):
             ("failed", "failed"),
             ("pending", "pending"),
             ("pending-refund", "pending-refund"),
+            ("awaiting-refund-action", "awaiting-refund-action"),
             ("partially-refunded", "partially-refunded"),
             ("refunded", "refunded"),
             ("partially-failed-refund", "partially-failed-refund"),
