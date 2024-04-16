@@ -12,9 +12,9 @@ class AzureMediaStorage(AzureStorage):
     def url(self, name):
         blob_url = super(AzureMediaStorage, self).url(name)
         imagekit_url = re.sub(
-            r"https://[a-z.0-9A-Z]*", settings.MEDIA_URL, blob_url.replace("media/", "").replace("media//", "media/")
+            r"https://[a-z.0-9A-Z]*", settings.MEDIA_URL, blob_url.replace("media/", "")
         )
-        return imagekit_url
+        return imagekit_url.replace("media//", "media/")
 
 
 class AzureStaticStorage(AzureStorage):
