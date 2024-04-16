@@ -63,6 +63,7 @@ class DefaultOrderFilter(FilterSet):
 
 
 class OrderFilter(DefaultOrderFilter, FilterSet):
+
     class Meta:
         model = Order
         fields = {"order_status": ["exact"]}
@@ -70,6 +71,7 @@ class OrderFilter(DefaultOrderFilter, FilterSet):
 
 class StoreOrderFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
+    shipping_address = CharFilter(method="filter_by_shipping_address")
 
     def filter_by_order_status(self, queryset, name, value):
         if value == "READY":
@@ -105,7 +107,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
             ]
         )
     
-    def filter_by_icontain_shipping_address(self, queryset: list[Order], name, value):
+    def filter_by_shipping_address(self, queryset: list[Order], name, value):
         return queryset.filter(
             id__in=[
                 order.id
