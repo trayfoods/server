@@ -534,6 +534,21 @@ class Order(models.Model):
         order_track_id = self.order_track_id
         formatteed_order_track_id = order_track_id.replace("order_", "")
         return f"#{formatteed_order_track_id}".upper()
+    
+    def get_display_shipping_address(self):
+        from users.models import School
+        shipping = self.shipping
+        if not shipping:
+            return "No Address"
+        address = shipping.get("address")
+        sch = shipping.get("sch", None)
+
+        if sch:
+            sch = str(sch).strip()
+            # get the school name
+            sch = School.objects.get(slug=sch).name
+
+        return "{}{}".format(address, f", {sch}" if sch else "")
 
     def get_current_store_infos(self, current_user_profile):
         stores_infos = self.stores_infos

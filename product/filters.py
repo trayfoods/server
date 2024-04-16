@@ -104,10 +104,19 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                 == value.upper()
             ]
         )
+    
+    def filter_by_icontain_shipping_address(self, queryset: list[Order], name, value):
+        return queryset.filter(
+            id__in=[
+                order.id
+                for order in queryset
+                if order.get_display_shipping_address().lower().contains(value.lower())
+            ]
+        )
 
     class Meta:
         model = Order
-        fields = {"order_status": ["exact"]}
+        fields = {"order_status": ["exact"], "order_track_id": ["icontains"]}
 
 
 class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
