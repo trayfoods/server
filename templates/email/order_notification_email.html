@@ -1502,7 +1502,7 @@
                                                                                           </table>
                                                                                         <![endif]-->
                                                                                         <!--[if !mso
-                                                                                        ]><!--><a
+                                                                                        ]><!--><
                                                                                           href="https://trayfoods.com/checkout/{{order_id}}"
                                                                                           style="
                                                                                             display: inline-block;
@@ -1533,7 +1533,7 @@
                                                                                           "
                                                                                           target="_blank"
                                                                                           >View
-                                                                                          Your
+                                                                                          {% if is_customer %}Your{% endif %}
                                                                                           Order</a
                                                                                         >
                                                                                         <!--<![endif]-->
@@ -1542,6 +1542,7 @@
                                                                                   </table>
                                                                                 </td>
                                                                               </tr>
+                                                                              {% if is_customer %}
                                                                               <tr>
                                                                                 <td
                                                                                   align="center"
@@ -1609,14 +1610,17 @@
                                                                                                     be
                                                                                                     refundable
                                                                                                     when
-                                                                                                    an
+                                                                                                    {% if is_multiple_store_order %}
+                                                                                                    any of the stores has accepted your order
+                                                                                                    {% else %}
+                                                                                                    the
                                                                                                     order
                                                                                                     has
                                                                                                     been
                                                                                                     accepted
                                                                                                     by
-                                                                                                    a
-                                                                                                    store</span
+                                                                                                    {{store_name}}
+                                                                                                    {% endif %}</span
                                                                                                   >
                                                                                                 </div>
                                                                                               </div>
@@ -1628,6 +1632,7 @@
                                                                                   </table>
                                                                                 </td>
                                                                               </tr>
+                                                                              {% endif %}
                                                                             </table>
                                                                           </td>
                                                                         </tr>
@@ -1740,7 +1745,8 @@
                                                     >If you want to file a
                                                     dispute, email
                                                     dispute@trayfoods.com before
-                                                    the next 24 hours with your </span
+                                                    the next 24 hours with 
+                                                    {% if is_customer %}your{% else %}the{% endif %} </span
                                                   ><a
                                                     href="https://trayfoods.com/checkout/{{order_id}}"
                                                     style="

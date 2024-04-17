@@ -419,55 +419,68 @@ class Profile(models.Model):
         return success
 
     def send_sms(self, message):
-        if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
-            phone_number = f"{self.calling_code}{self.phone_number}"
-            TWILIO_CLIENT.messages.create(
-                body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
-            )
-            return True
+        try:
+            if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
+                phone_number = f"{self.calling_code}{self.phone_number}"
+                TWILIO_CLIENT.messages.create(
+                    body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
+                )
+                return True
 
-        if not SMS_ENABLED:
-            print("SMS is disabled")
-            print(self.calling_code)
-            print(self.phone_number)
-            print(message)
-            print("End of SMS is disabled")
-            return False if not settings.DEBUG else True
-
-        return False
+            if not SMS_ENABLED:
+                print("SMS is disabled")
+                print(self.calling_code)
+                print(self.phone_number)
+                print(message)
+                print("End of SMS is disabled")
+                return False if not settings.DEBUG else True
+        except:
+            return False
 
     def send_push_notification(self, title, msg, data=None):
         user = self.user
         if not user.has_token_device:
-            return None
-
-        from .threads import FCMThread
+            return False
 
         user_devices = UserDevice.objects.filter(user=user, is_active=True).values_list(
             "device_token", flat=True
         )
         device_tokens = list(user_devices)
+        try:
+            from .threads import FCMThread
 
-        FCMThread(
-            title=title,
-            msg=msg,
-            tokens=device_tokens,
-            data=(
-                data
-                if data
-                else {
-                    "priority": "high",
-                    "sound": "default",
-                }
-            ),
-        ).start()
+            FCMThread(
+                title=title,
+                msg=msg,
+                tokens=device_tokens,
+                data=(
+                    data
+                    if data
+                    else {
+                        "priority": "high",
+                        "sound": "default",
+                    }
+                ),
+            ).start()
+            return True
+        except:
+            return False
 
-        return True
-
-    # try push notification then sms if push notification fails
-    def notify_me(self, title, msg, data=None):
+    def notify_me(self, title, msg, data=None, skip_email=False):
         if not self.send_push_notification(title, msg, data):
-            return self.send_sms(msg)
+            from_email = settings.DEFAULT_FROM_EMAIL
+            template = None
+            if data:
+                from_email = data.get("from_email", None) or from_email
+                template = data.get("template", None)
+            if skip_email or not self.send_email(
+                subject=title,
+                from_email=from_email,
+                text_content=msg,
+                template=template,
+                context=data,
+            ):
+                return self.send_sms(message=msg)
 
     def send_email(
         self, subject, from_email, text_content, template=None, context=None
@@ -479,8 +492,8 @@ class Profile(models.Model):
                 html_content = get_template(template).render(
                     {
                         "order_id": context.get("order_id"),
-                        "title": context.get("title"),
-                        "message": context.get("message"),
+                        "title": context.get("title") or subject,
+                        "message": context.get("message") or text_content,
                     },
                 )
 

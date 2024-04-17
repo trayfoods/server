@@ -1361,6 +1361,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 raise GraphQLError("An error occured while getting store names, please contact support")
             
             store_name = store_qs.store_name
+            # notify the store that the delivery person has delivered the order
+            order.notify_store(
+                store_id=delivery_person_store_id,
+                message=f"{current_delivery_person.profile.user.get_full_name()} has delivered Order {order.get_order_display_id()} to {order.user.user.username}",
+                title="Order Delivered",
+            )
             order.log_activity(
                 title="Order Delivered",
                 activity_type="order_delivered",

@@ -534,9 +534,10 @@ class Order(models.Model):
         order_track_id = self.order_track_id
         formatteed_order_track_id = order_track_id.replace("order_", "")
         return f"#{formatteed_order_track_id}".upper()
-    
+
     def get_display_shipping_address(self):
         from users.models import School
+
         shipping = self.shipping
         if not shipping:
             return "No Address"
@@ -736,43 +737,6 @@ class Order(models.Model):
             shipping and shipping["address"] and shipping["address"].lower() == "pickup"
         )
 
-    def notify_delivery_people(self, delivery_people, store_id):
-        from users.models import Profile, School
-
-        shipping = self.shipping
-        if not shipping:
-            raise ValueError("Invalid shipping format")
-
-        address = shipping.get("address")
-        sch = shipping.get("sch", None)
-
-        if sch:
-            sch = str(sch).strip()
-            # get the school name
-            sch = School.objects.get(slug=sch).name
-
-        order_address = "{}{}".format(address, f", {sch}" if sch else "")
-
-        for delivery_person in delivery_people:
-            delivery_person_profile: Profile = delivery_person.profile
-            has_sent_push_notification = delivery_person_profile.send_push_notification(
-                title="New Order",
-                msg="You have a new order to deliver, click to view the order",
-                data={"order_id": self.order_track_id, "type": "new_delivery_order"},
-            )
-            if not has_sent_push_notification:
-                has_sent_sms = delivery_person_profile.send_sms(
-                    "You have a new order to deliver.\nOrder ID: {}\nOrder Address: {}\nClick on the link below to accept the order.\n{}".format(
-                        self.get_order_display_id(),
-                        order_address.strip(),
-                        f"{FRONTEND_URL}/order/{self.order_track_id}/accept-delivery",
-                    )
-                )
-                if not has_sent_sms:
-                    self.update_store_status(store_id, "no-delivery-person")
-                    return False
-        return True
-
     def notify_user(self, message: str, title: str = "Order Status", data=None):
         from users.models import Profile
 
@@ -781,19 +745,40 @@ class Order(models.Model):
             data = {
                 "link": f"{FRONTEND_URL}/checkout/{self.order_track_id}"
             }  # default link
+        if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
+            view_as = self.view_as(profile)
+            return profile.send_email(
+                subject=title,
+                from_email="Your Trayfoods Order <orders@trayfoods.com>",
+                text_content=message,
+                template="email/order_notification_email.html",
+                context={
+                    "title": title,
+                    "message": message,
+                    "order_id": self.order_track_id,
+                    "is_multi_store_order": self.linked_stores.count() > 1,
+                    "store_name": self.linked_stores.first().store_name,
+                    "is_customer": True,
+                },
+            )
 
-        profile.send_email(
-            subject=title,
-            from_email="Your Trayfoods Order <orders@trayfoods.com>",
-            text_content=message,
-            template="email/order_notification_email.html",
-            context={
-                "title": title,
-                "message": message,
-                "order_id": self.order_track_id,
-            },
-        )
-        return profile.notify_me(title=title, msg=message, data=data)
+    def notify_store(self, store_id: int, message: str, title: str = "Order Status"):
+        from users.models import Store
+
+        store: Store = self.linked_stores.filter(id=store_id).first()
+        if store:
+            return store.vendor.notify_me(
+                title=title,
+                message=message,
+                data={
+                    "link": f"{settings.FRONTEND_URL}/checkout/{self.order_track_id}",
+                    "from_email": f"Update on Order {self.get_order_display_id()} <orders@trayfoods.com>",
+                    "template": "email/order_notification_email.html",
+                    "is_customer": False,
+                    "order_id": self.order_track_id,
+                },
+            )
+        return False
 
     def store_refund_customer(self, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
@@ -845,7 +830,7 @@ class Order(models.Model):
 
         response = requests.post(url, data=data, headers=headers)
         response = response.json()
-        print(response)
+        
         if response["status"] == True:
             self.update_store_status(store_id, "pending-refund")
             self.order_payment_status = "pending-refund"
@@ -897,6 +882,7 @@ class Order(models.Model):
             if delivery_person_inst and delivery_person_inst["status"] in [
                 "pending",
                 "out-for-delivery",
+                "returned",
             ]:
                 active_deliveries.append(delivery)
         return len(active_deliveries)

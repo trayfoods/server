@@ -6,9 +6,7 @@ from graphql import GraphQLError
 from graphene_file_upload.scalars import Upload
 from django.utils.module_loading import import_string
 
-from graphql_auth.mixins import UpdateAccountMixin
 from graphql_auth.models import UserStatus
-from graphql_auth.decorators import verification_required
 from trayapp.utils import calculate_tranfer_fee
 from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
@@ -26,6 +24,7 @@ from .models import (
     Wallet,
     DeliveryPerson,
     Profile,
+    DeliveryNotification,
 )
 from .inputs import StudentHostelFieldInput
 from product.models import Order
@@ -1176,10 +1175,15 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
                     break
 
             # check if delivery person can deliver to the order
-            if not has_accepted or not delivery_person.can_deliver(order):
+            delivery_request_qs = DeliveryNotification.objects.filter(
+                order=order, delivery_person=delivery_person, status="sent"
+            )
+            if not has_accepted or not delivery_request_qs.exists():
                 return AcceptDeliveryMutation(
                     error="You did not meet the requirements to deliver this order"
                 )
+
+            delivery_request = delivery_request_qs.first()
 
             # check if delivery person has more than 5 active orders
             active_orders_count = order.get_active_orders_count_by_delivery_person(
@@ -1194,27 +1198,32 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
                     error="You have reached the maximum number of orders you can deliver, complete current deliveries to accept more orders"
                 )
 
-            # add the delivery person to the order
+            # add the delivery person to the order linked_delivery_people
             order.linked_delivery_people.add(delivery_person)
-            # get the stores that have not been taken
-            stores = order.linked_stores.exclude(
-                id__in=[
-                    order_delivery_person["storeId"]
-                    for order_delivery_person in order_delivery_people
-                ]
-            )
-            # get the first store
-            store = stores.first()
+
             # add the delivery person to the order_delivery_people
             order_delivery_people.append(
                 {
                     "id": delivery_person.id,
                     "status": "pending",
-                    "storeId": store.id,
+                    "storeId": delivery_request.store.id,
                 }
             )
             order.delivery_people = order_delivery_people
             order.save()
+
+            # update the delivery request status to accepted
+            delivery_request.status = "accepted"
+            delivery_request.save()
+
+            # notify the store that the delivery person has accepted the order
+            store_id = delivery_request.store.id
+            
+            order.notify_store(
+                store_id=store_id,
+                title=f"Delivery Person Found For {order.user.user.username} Order",
+                desc=f"{delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.order_track_id}",
+            )
 
             return AcceptDeliveryMutation(success=True)
         else:
