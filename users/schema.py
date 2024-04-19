@@ -23,6 +23,7 @@ from .mutations import (
     UpdateSchoolInfoMutation,
     UpdateOnlineStatusMutation,
     HideWalletBalanceMutation,
+    RequestAccountDeletionMutation,
 )
 from .models import Student
 from .types import (
@@ -84,6 +85,7 @@ class AuthMutation(graphene.ObjectType):
     send_password_reset_email = mutations.SendPasswordResetEmail.Field()
     password_reset = mutations.PasswordReset.Field()
     password_change = mutations.PasswordChange.Field()
+    request_account_deletion = RequestAccountDeletionMutation.Field()
 
     # django-graphql-jwt inheritances
     token_auth = LoginMutation.Field()

@@ -1,6 +1,6 @@
 import requests
 import json
-
+import logging
 import graphene
 from graphql import GraphQLError
 from graphene_file_upload.scalars import Upload
@@ -1218,7 +1218,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
             # notify the store that the delivery person has accepted the order
             store_id = delivery_request.store.id
-            
+
             order.notify_store(
                 store_id=store_id,
                 title=f"Delivery Person Found For {order.user.user.username} Order",
@@ -1293,3 +1293,45 @@ class HideWalletBalanceMutation(Output, graphene.Mutation):
         user_wallet.hide_balance = is_hidden
         user_wallet.save()
         return HideWalletBalanceMutation(success=True)
+
+
+class RequestAccountDeletionMutation(Output, graphene.Mutation):
+    class Arguments:
+        reason = graphene.String(required=True)
+        password = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    # send admin email that user wants to delete account
+    def mutate(self, info, reason, password):
+        user = info.context.user
+        if not user.check_password(password):
+            return RequestAccountDeletionMutation(error="Password is incorrect")
+        # send email to admin users@trayfoods.com
+        try:
+            from django.core.mail import send_mail
+
+            send_mail(
+                subject="User Account Deletion Request",
+                message=f"{user.email} has requested to delete their account. Reason: {reason}",
+                from_email="Users Admin <users@trayfoods.com>",
+                recipient_list=["dev@trayfoods.com", "coo@trayfoods.com"],
+                fail_silently=False,
+            )
+
+            # notify the user that the request has been sent
+            # send email to user
+            send_mail(
+                subject="Account Deletion Request",
+                message="Your account deletion request has been sent to the admin. Please wait for a response",
+                from_email="TrayFoods Accounts <accounts@trayfoods.com>",
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+            return RequestAccountDeletionMutation(success=True)
+
+        except Exception as e:
+            logging.error(e)
+            return RequestAccountDeletionMutation(
+                error="Error sending email, please try again"
+            )

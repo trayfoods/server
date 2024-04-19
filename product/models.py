@@ -830,7 +830,7 @@ class Order(models.Model):
 
         response = requests.post(url, data=data, headers=headers)
         response = response.json()
-        
+
         if response["status"] == True:
             self.update_store_status(store_id, "pending-refund")
             self.order_payment_status = "pending-refund"
@@ -838,7 +838,7 @@ class Order(models.Model):
 
             store_qs = self.linked_stores.filter(id=int(store_id)).first()
 
-            store_name = store_qs.store_name if store_qs else "The store"
+            store_name = store_qs.store_name if store_qs else "A store"
 
             # log the activity
             self.log_activity(
