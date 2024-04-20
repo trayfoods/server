@@ -1176,7 +1176,8 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
             # check if delivery person can deliver to the order
             delivery_request_qs = DeliveryNotification.objects.filter(
-                order=order, delivery_person=delivery_person, status="sent"
+                order=order, delivery_person=delivery_person
+                # , status="sent"
             )
             if not has_accepted or not delivery_request_qs.exists():
                 return AcceptDeliveryMutation(
@@ -1222,7 +1223,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             order.notify_store(
                 store_id=store_id,
                 title=f"Delivery Person Found For {order.user.user.username} Order",
-                desc=f"{delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.order_track_id}",
+                message=f"{delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.order_track_id}",
             )
 
             return AcceptDeliveryMutation(success=True)
