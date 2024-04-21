@@ -1,6 +1,7 @@
 import graphene
 from graphql import GraphQLError
 from product.models import Order
+from users.models import DeliveryNotification
 from trayapp.permissions import IsAuthenticated, permission_checker
 from graphene_django.filter import DjangoFilterConnectionField
 from ..types import (
@@ -42,15 +43,26 @@ class OrderQueries(graphene.ObjectType):
         is_allowed_view_as_roles = any(
             role in user.roles for role in allowed_view_as_roles
         )
+
         if is_allowed_view_as_roles:
             current_user_profile = user.profile
             order_qs = Order.objects.filter(order_track_id=order_id).first()
             if order_qs is None:
                 raise GraphQLError("Order Not Found")
 
+            delivery_person = user.profile.get_delivery_person()
+            delivery_person_id = (
+                user.profile.get_delivery_person().id if delivery_person else None
+            )
+
             is_delivery_person = order_qs.linked_delivery_people.filter(
                 profile=current_user_profile
-            ).exists()
+            ).exists() or (
+                delivery_person_id
+                and DeliveryNotification.objects.filter(
+                    order=order, delivery_person__id=delivery_person_id
+                ).exists()
+            )
             is_vendor = order_qs.linked_stores.filter(
                 vendor=current_user_profile
             ).exists()

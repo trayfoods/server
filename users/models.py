@@ -1476,6 +1476,19 @@ class DeliveryNotification(models.Model):
         ),
     )
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # has_expired: this will check if the status is sent and the updated_at and the current time is greater than 1 minute
+    @property
+    def has_expired(self):
+        if self.status == "sent":
+            now = timezone.now()
+            if now > self.updated_at + timezone.timedelta(minutes=1):
+                # update status to expired
+                self.status = "expired"
+                self.save()
+                return True
+        return False
 
 
 class UserActivity(models.Model):
@@ -1576,17 +1589,11 @@ def send_delivery_when_rejected_or_expired(
                 # TODO send push notification to user and store
                 user: Profile = order.user
 
-                user.notify_me(
+                order.notify_store(
+                    store_id=store.id,
                     title="No Delivery Person",
-                    message="No delivery person available to deliver your order from {}, kindly call the store".format(
-                        store.store_name
-                    ),
-                    notification_type="error",
-                )
-
-                store.vendor.notify_me(
-                    title="No Delivery Person",
-                    message="No delivery person available to deliver order {}".format(
+                    message="No delivery person was found available to deliver {}'s order {}, please notify the customer about this".format(
+                        user.user.username,
                         order.get_order_display_id()
                     ),
                 )
