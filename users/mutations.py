@@ -1176,7 +1176,8 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
             # check if delivery person can deliver to the order
             delivery_request_qs = DeliveryNotification.objects.filter(
-                order=order, delivery_person=delivery_person
+                order=order,
+                delivery_person=delivery_person,
                 # , status="sent"
             )
             if not has_accepted or not delivery_request_qs.exists():
@@ -1229,6 +1230,41 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
             return AcceptDeliveryMutation(success=True)
         else:
             return AcceptDeliveryMutation(error="This order was taken")
+
+
+class FindDeliveryPersonMutation(Output, graphene.Mutation):
+    class Arguments:
+        order_id = graphene.String(required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, order_id):
+        user: UserAccount = info.context.user
+        # check if the user is not a vendor
+        if not "VENDOR" in user.roles:
+            return FindDeliveryPersonMutation(error="You are not a vendor")
+
+        # Check if the order exists
+        order = Order.objects.filter(order_track_id=order_id).first()
+        if not order:
+            return FindDeliveryPersonMutation(error="Order does not exist")
+
+        # check if the vendor's store is linked to the order
+        store = user.profile.store
+        if not order.linked_stores.filter(id=store.id).exists():
+            return FindDeliveryPersonMutation(error="You are not linked to this order")
+
+        # update store status to ready-for-delivery
+        order.update_store_status(store.id, "ready-for-delivery")
+
+        # send delivery request
+        delivery_requested = DeliveryPerson.send_delivery(order=order, store=store)
+
+        if delivery_requested:
+            return FindDeliveryPersonMutation(success=True)
+        else:
+            return FindDeliveryPersonMutation(
+                error="No delivery person found, please try again later"
+            )
 
 
 class UpdateStoreMenuMutation(Output, graphene.Mutation):

@@ -24,6 +24,7 @@ from .mutations import (
     UpdateOnlineStatusMutation,
     HideWalletBalanceMutation,
     RequestAccountDeletionMutation,
+    FindDeliveryPersonMutation,
 )
 from .models import Student
 from .types import (
@@ -107,6 +108,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     hide_wallet_balance = HideWalletBalanceMutation.Field()
     change_pin = ChangePinMutation.Field()
     accept_delivery = AcceptDeliveryMutation.Field()
+    find_delivery_person = FindDeliveryPersonMutation.Field()
 
     create_update_store = CreateUpdateStoreMutation.Field()
     update_store_menu = UpdateStoreMenuMutation.Field()
