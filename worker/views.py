@@ -2,7 +2,6 @@ from django.http import JsonResponse
 from users.models import DeliveryPerson, Store
 from product.models import Order
 from django.views.decorators.csrf import csrf_exempt
-from trayapp.utils import send_message_to_queue_bus
 
 
 # Process delivery request
@@ -86,18 +85,17 @@ def process_delivery_notification_sent(request):
                 )
             delivery_notification.status = "sent"
             delivery_notification.save()
-            message = {
-                "order_id": data.get("order_id"),
-                "delivery_person_id": data.get("delivery_person_id"),
-            }
-            # send message to queue bus with 30 seconds ttl in milliseconds
-            send_message_to_queue_bus(
-                message_dict=message, queue_name="sent-delivery-request", ttl=30000
-            )
+            # message = {
+            #     "order_id": data.get("order_id"),
+            #     "delivery_person_id": data.get("delivery_person_id"),
+            # }
+            # # send message to queue bus with 30 seconds ttl in milliseconds
+            # send_message_to_queue_bus(
+            #     message_dict=message, queue_name="sent-delivery-request", ttl=30000
+            # )
 
             data = {
                 "success": True,
             }
-            print(data, flush=True)
             return JsonResponse(data=data, safe=False)
     return JsonResponse({"error": "Invalid request"})
