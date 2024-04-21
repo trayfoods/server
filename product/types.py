@@ -14,10 +14,12 @@ from .filters import (
 )
 from decimal import Decimal
 
+
 class CategoryType(graphene.ObjectType):
     name = graphene.String()
     slug = graphene.String()
     img = graphene.String()
+
 
 class ItemImageType(DjangoObjectType):
     product_image = graphene.String()
@@ -285,9 +287,11 @@ class ItemType(DjangoObjectType):
             store_item = "not_vendor"
             vendor = user.profile
             if not vendor.store is None:
-                is_product_in_store = vendor.store.get_store_products().filter(
-                    product_slug=self.product_slug
-                ).first()
+                is_product_in_store = (
+                    vendor.store.get_store_products()
+                    .filter(product_slug=self.product_slug)
+                    .first()
+                )
                 if not is_product_in_store is None:
                     store_item = "1"
                 else:
@@ -448,6 +452,7 @@ class StoreNoteInputType(StoreNote, graphene.InputObjectType):
 class OrderUserType(graphene.ObjectType):
     image = graphene.String(default_value=None)
     full_name = graphene.String()
+    username = graphene.String()
     calling_code = graphene.String()
     phone_number = graphene.String()
 
@@ -464,6 +469,9 @@ class OrderUserType(graphene.ObjectType):
 
     def resolve_full_name(self, info):
         return self.full_name
+
+    def resolve_username(self, info):
+        return self.username
 
 
 class OrderDeliveryPersonType(OrderUserType, graphene.ObjectType):
@@ -563,6 +571,7 @@ class OrderType(DjangoObjectType):
             return OrderUserType(
                 image=customer_profile.image,
                 full_name=customer_profile.user.get_full_name(),
+                username=customer_profile.user.username,
                 calling_code=customer_profile.calling_code,
                 phone_number=customer_profile.phone_number,
             )
