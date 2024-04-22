@@ -967,7 +967,7 @@ class Store(models.Model):
     store_name = models.CharField(max_length=100)
     store_nickname = models.CharField(max_length=50)
     store_type = models.CharField(max_length=20)
-    store_categories = models.JSONField(default=list, blank=True, editable=False)
+    store_categories = models.JSONField(default=list, blank=True)
     store_rank = models.FloatField(default=0, editable=False)
     store_menu: list = models.JSONField(default=list, blank=True)
     has_physical_store = models.BooleanField(default=False)

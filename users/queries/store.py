@@ -18,7 +18,15 @@ class StoreQueries(graphene.ObjectType):
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
 
     def resolve_stores(self, info, **kwargs):
-        return Store.objects.all().exclude(is_approved=False)
+        stores = Store.objects.all().exclude(is_approved=False)
+
+        user = info.context.user
+        if user.is_authenticated:
+            user_gender = user.profile.gender
+            stores = stores.filter(gender_preference=user_gender) | stores.filter(
+                gender_preference__isnull=True
+            )
+        return stores
 
     @permission_checker([IsAuthenticated])
     def resolve_store_items(self, info, **kwargs):
@@ -111,8 +119,11 @@ class StoreQueries(graphene.ObjectType):
             if store.vendor == user.profile:
                 return store
 
-        if store.gender_preference and user.profile.gender != store.gender_preference:
-            return None
+            if (
+                store.gender_preference
+                and user.profile.gender != store.gender_preference
+            ):
+                return None
 
         if not store.is_approved:
             return None

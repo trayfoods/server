@@ -209,7 +209,13 @@ class StoreOpenHoursInline(admin.TabularInline):
 
 class StoreAdmin(admin.ModelAdmin):
     inlines = [StoreOpenHoursInline]
-    list_display = ("store_name", "__str__", "has_physical_store", "country")
+    list_display = (
+        "store_name",
+        "__str__",
+        "has_physical_store",
+        "country",
+        "gender_preference",
+    )
     search_fields = (
         "vendor__user__user__username",
         "vendor__user__user__email",
@@ -217,7 +223,7 @@ class StoreAdmin(admin.ModelAdmin):
         "store_nickname",
     )
     list_filter = ("school", "campus")
-    readonly_fields = ("vendor",)
+    readonly_fields = ("vendor", "store_menu")
     form = StoreForm
 
     class Media:

@@ -32,7 +32,6 @@ class StoreFilter(FilterSet):
     school = CharFilter(field_name="school__slug", lookup_expr="exact")
     state = CharFilter(field_name="vendor__state__slug", lookup_expr="exact")
     search_name = CharFilter(method="filter_by_name_nickname")
-    gender_preference = CharFilter(method="filter_by_gender_preference")
 
     class Meta:
         model = Store
@@ -44,12 +43,6 @@ class StoreFilter(FilterSet):
             "state": ["exact"],
             "campus": ["exact"],
         }
-
-    def filter_by_gender_preference(self, queryset, name, value):
-        # filter stores with gender_preference and still add the ones that does not have the gender preference set
-        return queryset.filter(gender_preference__name=value.upper()) | queryset.filter(
-            gender_preference__isnull=True
-        )
 
     def filter_by_name_nickname(self, queryset, name, value):
         return queryset.filter(

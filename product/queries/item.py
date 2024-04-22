@@ -34,14 +34,20 @@ class ItemQueries(graphene.ObjectType):
                 store_instance = store_qs.first()
 
         # check if the user is authenticated and is a vendor and store_nickname is provided
+        items = Item.get_items().exclude(product_creator__is_approved=False)
         if (
             user.is_authenticated
             and "VENDOR" in user.roles
             and store_instance == user.profile.store
         ):
-            return Item.get_items_by_store(store_instance)
+            items = Item.get_items_by_store(store_instance)
 
-        return Item.get_items().exclude(product_creator__is_approved=False)
+        # filter items by store's gender preference is equal to user profile gender
+        if user.is_authenticated:
+            user_gender = user.profile.gender
+            items = items.filter(
+                product_creator__gender_preference=user_gender
+            ) | items.filter(product_creator__gender_preference__isnull=True)
 
     def resolve_hero_data(self, info):
         items = (
@@ -51,6 +57,14 @@ class ItemQueries(graphene.ObjectType):
             .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]
         )
+
+        # filter items by store's gender preference is equal to user profile gender
+        user = info.context.user
+        if user.is_authenticated:
+            user_gender = user.profile.gender
+            items = items.filter(
+                product_creator__gender_preference=user_gender
+            ) | items.filter(product_creator__gender_preference__isnull=True)
         return items
 
     def resolve_item(self, info, item_slug):

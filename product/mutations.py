@@ -404,6 +404,9 @@ class AddProductClickMutation(Output, graphene.Mutation):
         if not product_creator:
             return AddProductClickMutation(error="Item does not have a creator")
         
+        if product_creator.gender_preference and info.context.user.profile.gender != product_creator.gender_preference:
+            return AddProductClickMutation(error="Item's Store does not serve your gender")
+        
         is_open_data = product_creator.get_is_open_data()
 
         if not is_open_data["is_open"]:
@@ -458,6 +461,7 @@ class CreateOrderMutation(Output, graphene.Mutation):
         stores_infos: list[StoreInfoInputType],
         **kwargs,
     ):
+        profile = info.context.user.profile
         overall_price = kwargs.get("overall_price", 0.00)
         delivery_fee = kwargs.get("delivery_fee", 0.00)
         shipping = kwargs.get("shipping")
@@ -503,8 +507,12 @@ class CreateOrderMutation(Output, graphene.Mutation):
             ).first()
             if store is None:
                 raise GraphQLError(
-                    f"Store with nickname '{storeId}' does not exist or is not approved"
+                    f"Store with id '{storeId}' does not exist or is not approved"
                 )
+            if store.gender_preference and profile.gender != store.gender_preference:
+                raise GraphQLError(
+                    f"{store.store_name} does not serve your gender")
+            
             if not store.get_is_open_data()["is_open"]:
                 raise GraphQLError(f"{store.store_name} has closed")
             if store.get_is_open_data()["open_soon"]:
