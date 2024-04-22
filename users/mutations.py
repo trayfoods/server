@@ -140,6 +140,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         store_bio = graphene.String()
         store_cover_image = Upload()
         has_physical_store = graphene.Boolean()
+        gender_preference = graphene.String()
 
         # store location
         country = graphene.String()
@@ -214,7 +215,8 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
         store_categories = kwargs.get("store_categories")
         store_cover_image = kwargs.get("store_cover_image")
         store_bio = kwargs.get("store_bio")
-        has_physical_store = kwargs.get("has_physical_store")
+        has_physical_store = kwargs.get("has_physical_store", False)
+        gender_preference = kwargs.get("gender_preference", None)
         store_average_preparation_time = kwargs.get(
             "store_average_preparation_time", None
         )
@@ -325,6 +327,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store_cover_image=store_cover_image,
                 store_bio=store_bio,
                 has_physical_store=has_physical_store,
+                gender_preference=gender_preference,
                 store_average_preparation_time=store_average_preparation_time,
                 # store location
                 country=country,
@@ -358,8 +361,8 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                 store.store_cover_image = store_cover_image
             if store_bio:
                 store.store_bio = store_bio
-            if has_physical_store:
-                store.has_physical_store = has_physical_store
+            store.has_physical_store = has_physical_store
+            store.gender_preference = gender_preference
             if store_average_preparation_time:
                 store.store_average_preparation_time = store_average_preparation_time
             # update the store location

@@ -151,7 +151,7 @@ class ItemType(DjangoObjectType):
     reviews_count = graphene.Int()
     current_user_review = graphene.Field(ReviewType)
     is_avaliable_for_store = graphene.String()
-
+    is_only_pickup = graphene.Boolean()
     rating_percentage = graphene.Float()
 
     class Meta:
@@ -219,27 +219,6 @@ class ItemType(DjangoObjectType):
             )
             index += 1
         return looped_option_groups
-
-        # loop through the option_groups and return the OptionGroupType
-        # return [
-        #     OptionGroupType(
-        #         id=f"{self.id}-{option_group['name']}-{get_group_index(index)}",
-        #         name=option_group["name"],
-        #         is_multiple=option_group["is_multiple"],
-        #         is_required=option_group["is_required"],
-        #         options=[
-        #             OptionType(
-        #                 name=option.get("name", None),
-        #                 price=option.get("price", None),
-        #                 is_active=option.get("is_active", False),
-        #                 slug=option.get("slug", None),
-        #             )
-        #             for option in option_group["options"]
-        #         ],
-        #     )
-
-        #     for option_group in option_groups
-        # ]
 
     def resolve_current_user_review(self, info):
         user = info.context.user
@@ -316,6 +295,10 @@ class ItemType(DjangoObjectType):
 
     def resolve_is_avaliable(self, info):
         return self.is_avaliable
+    
+    def resolve_is_only_pickup(self, info):
+        store: Store = self.product_creator
+        return store.has_physical_store == False
 
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()

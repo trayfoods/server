@@ -988,6 +988,9 @@ class Store(models.Model):
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     timezone = models.CharField(max_length=50, null=True, blank=True)
+    gender_preference = models.ForeignKey(
+        Gender, on_delete=models.SET_NULL, null=True, blank=True
+    )
 
     # contact details
     whatsapp_numbers = models.JSONField(
