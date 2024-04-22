@@ -743,7 +743,7 @@ class Order(models.Model):
         profile: Profile = self.user
         if not data:
             data = {
-                "link": f"{FRONTEND_URL}/checkout/{self.order_track_id}"
+                "link": f"/checkout/{self.order_track_id}"
             }  # default link
         if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
             return profile.send_email(
@@ -770,7 +770,7 @@ class Order(models.Model):
                 title=title,
                 msg=message,
                 data={
-                    "link": f"{settings.FRONTEND_URL}/checkout/{self.order_track_id}",
+                    "link": f"/checkout/{self.order_track_id}",
                     "from_email": f"Update on Order {self.get_order_display_id()} <orders@trayfoods.com>",
                     "template": "email/order_notification_email.html",
                     "is_customer": False,
