@@ -742,9 +742,7 @@ class Order(models.Model):
 
         profile: Profile = self.user
         if not data:
-            data = {
-                "link": f"/checkout/{self.order_track_id}"
-            }  # default link
+            data = {"link": f"/checkout/{self.order_track_id}"}  # default link
         if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
             return profile.send_email(
                 subject=title,
@@ -793,6 +791,10 @@ class Order(models.Model):
                 "message": "The store has already refunded the customer",
             }
 
+        # check if it's only one store that is linked to the order, if yes, then fully the customer
+        if self.linked_stores.count() == 1:
+            return self.refund_customer()
+
         # get store amount from the stores_infos json
         current_store_info = self.get_store_info(store_id)
         total = current_store_info["total"]
@@ -804,7 +806,7 @@ class Order(models.Model):
         store_option_groups_price = total.get("option_groups_price", 0)
 
         # get len of stores linked to this order
-        store_count = len(self.linked_stores.all())
+        store_count = self.linked_stores.count()
 
         # divide the delivery fee by the number of stores linked to the order to get the delivery fee for each store
         delivery_fee = self.delivery_fee / store_count
@@ -849,6 +851,46 @@ class Order(models.Model):
             # notify the user that a refund has been initiated
             self.notify_user(
                 message=f"Your refund of {self.order_currency} {amount} has been initiated by {store_name}. The refund will be processed instantly or within 7-12 working days.",
+                title="Refund Initiated",
+            )
+
+        return response
+
+    # full refund the customer
+    def refund_customer(self):
+        PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
+
+        url = "https://api.paystack.co/refund"
+
+        # check if the order status is refunded
+        if self.order_payment_status in ["refunded", "pending-refund"]:
+            return {"status": False, "message": "The order has already been refunded"}
+
+        data = {
+            "transaction": self.order_track_id,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {PAYSTACK_SECRET_KEY}",
+        }
+
+        response = requests.post(url, data=data, headers=headers)
+        response = response.json()
+
+        if response["status"] == True:
+            self.order_payment_status = "pending-refund"
+            self.save()
+
+            # log the activity
+            self.log_activity(
+                title="Refund Initiated",
+                description=f"A full refund for Order {self.get_order_display_id()} has been initiated",
+                activity_type="refund_initiated",
+            )
+
+            # notify the user that a refund has been initiated
+            self.notify_user(
+                message=f"A full refund for Order {self.get_order_display_id()} has been initiated. The refund will be processed instantly or within 7-12 working days.",
                 title="Refund Initiated",
             )
 

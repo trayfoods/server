@@ -750,6 +750,44 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 return MarkOrderAsMutation(
                     error="You are not authorized to interact with this order"
                 )
+            
+            # allow user to cancel order when no store has accepted or rejected the order
+            # then only process a full refund if the order has not been accepted or has been rejected (when the stores count is 1)
+            if action == "cancelled":
+                if order_status != "processing":
+                    return MarkOrderAsMutation(
+                        error="You cannot cancel this order because it has been marked as {}".format(
+                            order_status.replace("-", " ").capitalize()
+                        )
+                    )
+
+                # refund the user
+                did_send_refund = order.refund_customer()
+                if not did_send_refund or did_send_refund["status"] == False:
+                    return MarkOrderAsMutation(
+                        error="An error occured while refunding customer, please try again later"
+                    )
+
+                # update the order status to cancelled
+                order.order_status = "cancelled"
+                order.save()
+
+                # notify the user that the order has been cancelled
+                order.notify_user(
+                    title="Order Cancelled",
+                    message="Your Order has been cancelled and a refund has been initiated",
+                )
+
+                order.log_activity(
+                    title="Order Cancelled",
+                    activity_type="order_cancelled",
+                    description="Order has been cancelled by the user",
+                )
+
+                return MarkOrderAsMutation(
+                    success=True,
+                    success_msg="Order has been cancelled and a refund has been initiated"
+                )
 
 
         # handle vendor actions
