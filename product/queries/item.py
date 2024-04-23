@@ -50,21 +50,22 @@ class ItemQueries(graphene.ObjectType):
             ) | items.filter(product_creator__gender_preference__isnull=True)
 
     def resolve_hero_data(self, info):
+        # filter items by store's gender preference is equal to user profile gender
+        user = info.context.user
+        if user.is_authenticated:
+            user_gender = user.profile.gender
+            items = Item.get_items().filter(
+                product_creator__gender_preference=user_gender
+            ) | Item.get_items().filter(product_creator__gender_preference__isnull=True)
+
         items = (
-            Item.get_items()
+            items
             .exclude(product_creator__is_approved=False)
             .filter(product_type__slug__icontains="food")
             .exclude(product_type__slug__icontains="not")
             .order_by("-product_clicks")[:4]
         )
 
-        # filter items by store's gender preference is equal to user profile gender
-        user = info.context.user
-        if user.is_authenticated:
-            user_gender = user.profile.gender
-            items = items.filter(
-                product_creator__gender_preference=user_gender
-            ) | items.filter(product_creator__gender_preference__isnull=True)
         return items
 
     def resolve_item(self, info, item_slug):
