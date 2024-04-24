@@ -57,9 +57,7 @@ def recommend_items(user_id, n=10, min_interactions=5):
     ratings_df = load_data(
         Rating, {"user_id": user_id}, ["user_id", "item__id", "stars"]
     )
-
-    print(ratings_df)
-
+    
     # Check if ratings_df has more than one unique user
     if ratings_df.empty or ratings_df["user_id"].nunique() <= 1:
         print("Not enough data to make recommendations.")

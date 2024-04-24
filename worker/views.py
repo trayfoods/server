@@ -12,7 +12,6 @@ def process_delivery_notification(request):
         data = request.POST
         order_id = data.get("order_id")
         delivery_person_id = data.get("delivery_person_id")
-        print(data, flush=True)
         order_qs = Order.objects.filter(order_track_id=order_id)
         if not order_qs.exists():
             return JsonResponse({"error": "Order does not exist", "status": False})

@@ -466,7 +466,6 @@ class ProcessPayment:
 
         store_statuses = order.stores_status
         store_statuses = [status.get("status", None) for status in store_statuses]
-        print(store_statuses)
 
         # check if all the stores has failed-refund to the user
         if all(status == "failed-refund" for status in store_statuses):

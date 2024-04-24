@@ -44,13 +44,6 @@ class FCMThread(threading.Thread):
                 for token in chunk
             ]
             response = messaging.send_all(messages)
-            print(response)
-            print(
-                f"Number of successful notifications: {response._success_count}"
-            )
-            print(
-                f"Number of failed notifications: {len(messages) - response._success_count}"
-            )
 
     def run(self):
         self._push_notification()
