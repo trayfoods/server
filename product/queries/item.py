@@ -52,9 +52,10 @@ class ItemQueries(graphene.ObjectType):
     def resolve_hero_data(self, info):
         # filter items by store's gender preference is equal to user profile gender
         user = info.context.user
+        items = Item.get_items()
         if user.is_authenticated:
             user_gender = user.profile.gender
-            items = Item.get_items().filter(
+            items = items.filter(
                 product_creator__gender_preference=user_gender
             ) | Item.get_items().filter(product_creator__gender_preference__isnull=True)
 
