@@ -1,4 +1,4 @@
-import json
+import logging
 
 from django.http import HttpResponse
 from product.models import Order
@@ -21,7 +21,7 @@ class ProcessPayment:
 
     @get_time_complexity
     def process_payment(self):
-        print("event_type", self.event_type)
+        logging.info("event_type", self.event_type)
         if self.event_type == "charge.success":
             return self.charge_success()
         elif self.event_type == "transfer.success":

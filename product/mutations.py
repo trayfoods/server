@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
 from django.conf import settings
@@ -5,7 +6,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, Profile, DeliveryPerson, DeliveryNotification
+from users.models import UserActivity, Store, Profile, DeliveryPerson
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
@@ -1630,7 +1631,7 @@ class InitializeTransactionMutation(graphene.Mutation):
             else:
                 raise GraphQLError(response["message"])
         except Exception as e:
-            print(e)
+            logging.error("Error while initializing transaction: %s" % e)
             raise GraphQLError("An error occured while initializing transaction")
 
 class AddOrdersStoresSeenMutation(Output, graphene.Mutation):

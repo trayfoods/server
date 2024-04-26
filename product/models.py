@@ -740,7 +740,7 @@ class Order(models.Model):
         if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
             return profile.send_email(
                 subject=title,
-                from_email="Your Trayfoods Order <orders@trayfoods.com>",
+                from_email="Trayfoods Order <orders@trayfoods.com>",
                 text_content=message,
                 template="email/order_notification_email.html",
                 context={

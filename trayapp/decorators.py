@@ -1,4 +1,5 @@
 import time
+import logging
 
 # get the time complexity of a function
 def get_time_complexity(fn):
@@ -9,7 +10,7 @@ def get_time_complexity(fn):
         start_time = time.time()
         result = fn(*args, **kwargs)
         end_time = time.time()
-        print(f"Time taken to execute {fn.__name__} is {end_time - start_time}")
+        logging.info(f"Time taken to execute {fn.__name__} is {end_time - start_time}")
         return result
 
     return inner

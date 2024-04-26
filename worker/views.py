@@ -38,21 +38,15 @@ def process_delivery_notification(request):
             device_tokens = delivery_person.profile.user.devices.all().values_list(
                 "device_token", flat=True
             )
-            # check when the token are empty
-            if not device_tokens:
-                return JsonResponse(
-                    {
-                        "error": "delivery person device token not found",
-                        "success": False,
-                    }
-                )
 
             delivery_notification.status = "processing"
             delivery_notification.save()
+
             data = {
                 "success": True,
                 "device_tokens": list(device_tokens),
                 "store_name": store_name,
+                "email": delivery_person.profile.user.email,
                 "store_id": store_id,
             }
             return JsonResponse(data=data, safe=False)

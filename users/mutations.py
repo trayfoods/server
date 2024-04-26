@@ -1256,13 +1256,12 @@ class FindDeliveryPersonMutation(Output, graphene.Mutation):
         if not order.linked_stores.filter(id=store.id).exists():
             return FindDeliveryPersonMutation(error="You are not linked to this order")
 
-        # update store status to ready-for-delivery
-        order.update_store_status(store.id, "ready-for-delivery")
-
         # send delivery request
         delivery_requested = DeliveryPerson.send_delivery(order=order, store=store)
 
         if delivery_requested:
+            # update store status to ready-for-delivery
+            order.update_store_status(store.id, "ready-for-delivery")
             return FindDeliveryPersonMutation(success=True)
         else:
             return FindDeliveryPersonMutation(

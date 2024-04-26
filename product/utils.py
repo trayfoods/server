@@ -60,7 +60,6 @@ def recommend_items(user_id, n=10, min_interactions=5):
     
     # Check if ratings_df has more than one unique user
     if ratings_df.empty or ratings_df["user_id"].nunique() <= 1:
-        print("Not enough data to make recommendations.")
         return
 
     # Combine both ratings and user activity dataframes
@@ -95,7 +94,6 @@ def recommend_items(user_id, n=10, min_interactions=5):
     )[:n]
     # check if recommended items are greater than 0
     if len(recommended_items) == 0:
-        print("No recommendations found.")
         return []
     # Return the top n recommended items
     return recommended_items
