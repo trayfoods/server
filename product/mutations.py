@@ -762,13 +762,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         )
                     )
 
-                # refund the user
-                did_send_refund = order.refund_customer()
-                if not did_send_refund or did_send_refund["status"] == False:
-                    return MarkOrderAsMutation(
-                        error="An error occured while refunding customer, please try again later"
-                    )
-
                 # update the order status to cancelled
                 order.order_status = "cancelled"
                 order.save()
@@ -776,6 +769,23 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # update all the store statuses to cancelled by using the update_store_status method
                 for store in order.linked_stores.all():
                     order.update_store_status(store_id=store.id, status="cancelled")
+                
+                # refund the user
+                did_send_refund = order.refund_customer()
+                if not did_send_refund or did_send_refund["status"] == False:
+                    order.order_status = "processing"
+                    order.save()
+                    
+                    # update store status back to pending
+                    for store in order.linked_stores.all():
+                        order.update_store_status(store_id=store.id, status="pending")
+
+
+                    return MarkOrderAsMutation(
+                        error="An error occured while refunding customer, please try again later"
+                    )
+
+
 
                 # notify the user that the order has been cancelled
                 order.notify_user(
@@ -958,6 +968,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
                 if not is_refund_initiated:
                     order.set_profiles_seen(value=user.profile.id, action="add")
+                    # update store status back to pending
+                    did_update = order.update_store_status(store_id, "pending")
                     return MarkOrderAsMutation(
                         error="An error occured while refunding customer, please try again later"
                     )
