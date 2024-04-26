@@ -114,7 +114,7 @@ class WalletAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "updated_at", "currency")
     readonly_fields = (
         "user",
-        "balance",
+        # "balance",
         "currency",
         "created_at",
         "updated_at",
