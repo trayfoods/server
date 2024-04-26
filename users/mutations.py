@@ -1179,9 +1179,7 @@ class AcceptDeliveryMutation(Output, graphene.Mutation):
 
             # check if delivery person can deliver to the order
             delivery_request_qs = DeliveryNotification.objects.filter(
-                order=order,
-                delivery_person=delivery_person,
-                # , status="sent"
+                order=order, delivery_person=delivery_person, status="sent"
             )
             if not has_accepted or not delivery_request_qs.exists():
                 return AcceptDeliveryMutation(
