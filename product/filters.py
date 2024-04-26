@@ -85,7 +85,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                     == "READY_FOR_PICKUP"
                     or order.get_order_status(self.request.user.profile).upper()
                     == "READY_FOR_DELIVERY"
-                      or order.get_order_status(self.request.user.profile).upper()
+                    or order.get_order_status(self.request.user.profile).upper()
                     == "NO_DELIVERY_PERSON"
                 ]
             )
@@ -128,6 +128,7 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
+        value = value.lower()
         if value == "new":
             # get all order id of the delivery person notification
             delivery_person: DeliveryPerson = (
@@ -136,9 +137,7 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
 
             orderIds = [
                 x.order.id
-                for x in delivery_person.get_notifications().filter(
-                    # status="sent",
-                )
+                for x in delivery_person.get_notifications().exclude(status="accepted")
             ]
 
             return Order.objects.filter(id__in=orderIds)

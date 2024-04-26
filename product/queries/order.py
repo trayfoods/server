@@ -76,25 +76,6 @@ class OrderQueries(graphene.ObjectType):
     def resolve_orders(self, info, **kwargs):
         return info.context.user.orders.all()
 
-    # @permission_checker([IsAuthenticated])
-    # def resolve_discover_deliveries(self, info, **kwargs):
-    #     user = info.context.user
-    #     available_deliveries = []
-    #     if "DELIVERY_PERSON" in user.roles:
-    #         for chunk in chunked_queryset(
-    #             Order.objects.filter(order_status="processing"), chunk_size=100
-    #         ):
-    #             django.db.reset_queries()
-    #             for order in chunk.iterator():
-    #                 if len(order.delivery_people) < 1:
-    #                     # check if delivery person can deliver order
-    #                     if user.profile.get_delivery_person().can_deliver(order):
-    #                         available_deliveries.append(order)
-    #         return available_deliveries
-    #         # order for order in new_orders if DeliveryPerson.can_deliver(order)
-    #     else:
-    #         raise GraphQLError("You are not a delivery person")
-
     @permission_checker([IsAuthenticated])
     def resolve_store_orders(self, info, **kwargs):
         user = info.context.user

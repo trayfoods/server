@@ -1016,7 +1016,7 @@ class Order(models.Model):
         if delivery_person_id:
             delivery_person_notification_instance = DeliveryNotification.objects.filter(
                 delivery_person__id=delivery_person_id, order=self
-            )
+            ).exclude(status="delivered").exclude(status="sent")
             if delivery_person_notification_instance.exists():
                 return {
                     "id": delivery_person_id,
