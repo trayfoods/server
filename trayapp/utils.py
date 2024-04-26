@@ -17,6 +17,8 @@ from azure.storage.queue import (
 from azure.servicebus import ServiceBusClient, ServiceBusMessage
 from azure.identity import DefaultAzureCredential
 
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / "subdir".
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -397,7 +399,7 @@ def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
     message_obj = ServiceBusMessage(message_json)
 
     if ttl:
-        message_obj.time_to_live = ttl
+        message_obj.time_to_live = timedelta(seconds=ttl)
 
     with service_bus_client:
         sender = service_bus_client.get_queue_sender(queue_name)
