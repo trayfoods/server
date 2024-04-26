@@ -5,6 +5,7 @@ from django.template.loader import get_template
 
 import uuid
 import pytz
+import logging
 
 from django.utils import timezone
 
@@ -14,7 +15,6 @@ from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.utils.translation import gettext_lazy as _
 
-# from django.contrib.gis.db import models
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
@@ -428,11 +428,9 @@ class Profile(models.Model):
                 return True
 
             if not SMS_ENABLED:
-                print("SMS is disabled")
-                print(self.calling_code)
-                print(self.phone_number)
-                print(message)
-                print("End of SMS is disabled")
+                logging.error("SMS is disabled")
+                logging.info(message)
+                logging.info("End of SMS is disabled")
                 return False if not settings.DEBUG else True
         except:
             return False
@@ -584,7 +582,6 @@ class Transaction(models.Model):
         return Transaction.objects.filter(wallet=wallet).first()
 
     def settle(self):
-        print("Settling transaction")
         if self.status == "unsettled":
             # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
@@ -1047,7 +1044,7 @@ class Store(models.Model):
                     pytz.timezone(self.timezone)
                 )
             except pytz.UnknownTimeZoneError:
-                print(
+                logging.exception(
                     f"Error: Invalid timezone '{self.timezone}'. Check and update if necessary."
                 )
                 return False
@@ -1067,8 +1064,6 @@ class Store(models.Model):
 
         if not store_open_hours:
             return is_open_data
-
-        print(store_open_hours)
 
         # Convert the open and close time to the store's timezone (handle potential errors)
         try:

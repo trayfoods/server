@@ -1631,7 +1631,7 @@ class InitializeTransactionMutation(graphene.Mutation):
             else:
                 raise GraphQLError(response["message"])
         except Exception as e:
-            logging.error("Error while initializing transaction: %s" % e)
+            logging.exception("Error while initializing transaction: %s" % e)
             raise GraphQLError("An error occured while initializing transaction")
 
 class AddOrdersStoresSeenMutation(Output, graphene.Mutation):

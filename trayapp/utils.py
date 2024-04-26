@@ -382,7 +382,7 @@ def send_notification_to_queue(message, queue_name):
 
     except Exception as e:
         has_error = True
-        logging.error(f"Error sending message to queue: {e}")
+        logging.exception(f"Error sending message to queue: {e}")
 
     return has_error
 

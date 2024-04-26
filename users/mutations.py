@@ -457,7 +457,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                             ),
                         )
             except Exception as e:
-                print(e)
+                logging.exception("Error sending email to admin users: ", e)
 
         # return the vendor and user
         return CreateUpdateStoreMutation(success=True, user=info.context.user)
@@ -1105,7 +1105,7 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
             success = profile.verify_phone_number(code, calling_code)
         except Exception as e:
             error = "Incorrect OTP code, please try again."
-            print(e)
+            logging.exception("Error verifying phone number: ", e)
 
         return VerifyPhoneMutation(success=success, error=error)
 
@@ -1370,7 +1370,7 @@ class RequestAccountDeletionMutation(Output, graphene.Mutation):
             return RequestAccountDeletionMutation(success=True)
 
         except Exception as e:
-            logging.error(e)
+            logging.exception(e)
             return RequestAccountDeletionMutation(
                 error="Error sending email, please try again"
             )
