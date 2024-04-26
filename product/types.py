@@ -295,7 +295,7 @@ class ItemType(DjangoObjectType):
 
     def resolve_is_avaliable(self, info):
         return self.is_avaliable
-    
+
     def resolve_is_only_pickup(self, info):
         store: Store = self.product_creator
         return store.has_physical_store == False
@@ -674,6 +674,7 @@ class OrderType(DjangoObjectType):
 class StatusOrdersCountType(graphene.ObjectType):
     status = graphene.String()
     count = graphene.Int()
+    new_count = graphene.Int()
 
 
 class DiscoverDeliveryType(OrderType, DjangoObjectType):

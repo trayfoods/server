@@ -1,6 +1,7 @@
 from trayapp.base_filters import DateTypeFilter
 from django_filters import FilterSet, CharFilter, NumberFilter
 from product.models import Item, Order, Rating
+from users.models import DeliveryPerson
 
 
 class ItemFilter(FilterSet):
@@ -84,6 +85,8 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                     == "READY_FOR_PICKUP"
                     or order.get_order_status(self.request.user.profile).upper()
                     == "READY_FOR_DELIVERY"
+                      or order.get_order_status(self.request.user.profile).upper()
+                    == "NO_DELIVERY_PERSON"
                 ]
             )
         elif value == "COMPLETED":
@@ -106,13 +109,13 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                 == value.upper()
             ]
         )
-    
+
     def filter_by_shipping_address(self, queryset: list[Order], name, value):
         return queryset.filter(
             id__in=[
                 order.id
                 for order in queryset
-                if order.get_display_shipping_address().lower().contains(value.lower())
+                if value.lower() in order.get_display_shipping_address().lower()
             ]
         )
 
@@ -125,29 +128,51 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
 
     def filter_by_order_status(self, queryset, name, value):
+        if value == "new":
+            # get all order id of the delivery person notification
+            delivery_person: DeliveryPerson = (
+                self.request.user.profile.get_delivery_person()
+            )
+
+            orderIds = [
+                x.order.id
+                for x in delivery_person.get_notifications().filter(
+                    # status="sent",
+                )
+            ]
+
+            return Order.objects.filter(id__in=orderIds)
+
+        delivery_person_id = self.request.user.profile.get_delivery_person().id
+
         if value == "ongoing":
             # filter by ready for pickup or delivery
             return queryset.filter(
                 id__in=[
                     order.id
                     for order in queryset
-                    if order.get_delivery_person(
-                        delivery_person_id=self.request.user.profile.get_delivery_person().id
-                    )["status"].upper()
+                    if order.get_delivery_person(delivery_person_id=delivery_person_id)[
+                        "status"
+                    ].upper()
                     == "OUT-FOR-DELIVERY"
-                    or order.get_delivery_person(
-                        delivery_person_id=self.request.user.profile.get_delivery_person().id
-                    )["status"].upper()
+                    or order.get_delivery_person(delivery_person_id=delivery_person_id)[
+                        "status"
+                    ].upper()
                     == "PICKED-UP"
+                    or order.get_delivery_person(delivery_person_id=delivery_person_id)[
+                        "status"
+                    ].upper()
+                    == "PENDING"
                 ]
             )
+
         return queryset.filter(
             id__in=[
                 order.id
                 for order in queryset
-                if order.get_delivery_person(
-                    delivery_person_id=self.request.user.profile.get_delivery_person().id
-                )["status"].upper()
+                if order.get_delivery_person(delivery_person_id=delivery_person_id)[
+                    "status"
+                ].upper()
                 == value.upper()
             ]
         )

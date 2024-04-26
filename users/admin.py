@@ -182,12 +182,14 @@ class TransactionAdmin(admin.ModelAdmin):
 class DeliveryInline(admin.TabularInline):
     model = DeliveryNotification
     extra = 0
-    readonly_fields = ("store", "delivery_person", "status", "created_at")
+    readonly_fields = ("store", "delivery_person", 
+                       #"status", 
+                       "created_at")
 
 
 class DeliveryPersonAdmin(admin.ModelAdmin):
     inlines = [DeliveryInline]
-    list_display = ("__str__", "is_on_delivery", "is_approved", "status")
+    list_display = ("__str__", "is_approved", "status")
     readonly_fields = ("profile",)
 
 

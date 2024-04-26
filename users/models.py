@@ -1316,7 +1316,6 @@ class DeliveryPerson(models.Model):
         ),
         default="online",
     )
-    is_on_delivery = models.BooleanField(default=False)
     is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:
@@ -1334,6 +1333,18 @@ class DeliveryPerson(models.Model):
     def orders(self):
         return Order.get_orders_by_delivery_person(delivery_person=self)
 
+    # get delivery person's notifications
+    def get_notifications(self):
+        return DeliveryNotification.objects.filter(delivery_person=self, status="sent")
+
+    def get_is_on_delivery(self):
+        active_orders_count = Order.get_active_orders_count_by_delivery_person(
+            delivery_person=self
+        )
+        if active_orders_count > 4:
+            return True
+        return False
+
     def get_active_orders_count(self):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
@@ -1347,7 +1358,7 @@ class DeliveryPerson(models.Model):
         if order_user == delivery_person_profile:
             return False
 
-        if self.is_on_delivery:
+        if self.get_is_on_delivery():
             return False
 
         # check if the delivery person is a vendor and is linked to the order
@@ -1403,11 +1414,14 @@ class DeliveryPerson(models.Model):
                 print("check 11")
                 return False
 
-        # check of delivery person has had any delivery notification with the order
-        delivery_notifications = DeliveryNotification.objects.filter(
-            order=order, delivery_person=self
-        )
-        if delivery_notifications.exists():
+        delivery_notifications = self.get_notifications()
+
+        if delivery_notifications.filter(order=order).exists():
+            return False
+
+        # check if the delivery notification is either pending, processing or sent
+        if delivery_notifications.filter(status__in=["pending", "processing", "sent"]
+        ).exists():
             return False
 
         return True
@@ -1418,7 +1432,6 @@ class DeliveryPerson(models.Model):
         order_user: Profile = order.user
         delivery_people = DeliveryPerson.objects.filter(
             status="online",
-            is_on_delivery=False,
             is_approved=True,
             profile__country=order_user.country,
         )
@@ -1434,7 +1447,6 @@ class DeliveryPerson(models.Model):
         order_user: Profile = order.user
         delivery_people = DeliveryPerson.objects.filter(
             status="online",
-            is_on_delivery=False,
             is_approved=True,
             profile__country=order_user.country,
         )
@@ -1567,9 +1579,7 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
 def send_delivery_when_rejected_or_expired(
     sender, instance: DeliveryNotification, created, **kwargs
 ):
-    if not created:
-        return
-    if instance.status in ["rejected", "expired"]:
+    if instance and instance.status in ["rejected", "expired"]:
         order = instance.order
         store = instance.store
         # check if store has a delivery person
@@ -1595,8 +1605,7 @@ def send_delivery_when_rejected_or_expired(
                 order.notify_store(
                     store_id=store.id,
                     title="No Delivery Person",
-                    message="No delivery person was found available to deliver {}'s order {}, please notify the customer about this".format(
-                        user.user.username,
-                        order.get_order_display_id()
+                    message="No delivery person was found available to deliver {}'s order {}, please tell the customer about this".format(
+                        user.user.username, order.get_order_display_id()
                     ),
                 )

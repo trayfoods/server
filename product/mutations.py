@@ -5,7 +5,7 @@ import graphene
 from graphql import GraphQLError
 from product.models import Item, ItemImage, ItemAttribute, Order, Rating, filter_comment
 from product.types import ItemType
-from users.models import UserActivity, Store, Profile, DeliveryPerson
+from users.models import UserActivity, Store, Profile, DeliveryPerson, DeliveryNotification
 from graphene_file_upload.scalars import Upload
 from .types import (
     ShippingInputType,
@@ -772,6 +772,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.order_status = "cancelled"
                 order.save()
 
+                # update all the store statuses to cancelled by using the update_store_status method
+                for store in order.linked_stores.all():
+                    order.update_store_status(store_id=store.id, status="cancelled")
+
                 # notify the user that the order has been cancelled
                 order.notify_user(
                     title="Order Cancelled",
@@ -788,7 +792,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     success=True,
                     success_msg="Order has been cancelled and a refund has been initiated"
                 )
-
 
         # handle vendor actions
         if "VENDOR" in view_as:
@@ -1335,89 +1338,184 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 return MarkOrderAsMutation(
                     error="You are not authorized to interact with this order"
                 )
+            
             delivery_person_store_id = delivery_person.get("storeId", None)
             if delivery_person_store_id is None:
                 return MarkOrderAsMutation(
                     error="No store id found for this delivery, please contact support"
                 )
             
-            # check if the store status is out for delivery
-            current_delivery_person_store_status = order.get_store_status(
-                delivery_person_store_id
-            )
-            if current_delivery_person_store_status != "out-for-delivery":
-                return MarkOrderAsMutation(
-                    error="The store hasn't indicated that this order was picked up by anyone yet."
-                )
-            order_delivery_people = order.delivery_people
-
-            did_update = order.update_delivery_person_status(
-                delivery_person_id=current_delivery_person_id, status="delivered"
-            )
-
-            if not did_update:
-                return MarkOrderAsMutation(
-                    error="An error occured while updating order delivery status, please try again later"
-                )
-
-            # update store status that the delivery person has delivered the order
-            did_update = order.update_store_status(
-                delivery_person_store_id, "delivered"
-            )
-            if not did_update:
-                return MarkOrderAsMutation(
-                    error="An error occured while updating order status, please try again later"
-                )
-
-            # get delivery_fee by dividing the delivery fee by the number of delivery people
-            delivery_fee = order.delivery_fee / len(order_delivery_people)
-
-            # credit delivery person wallet
-            credit_kwargs = {
-                "amount": delivery_fee,
-                "title": "Delivery Fee",
-                "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
-                "order": order,
-            }
-            current_delivery_person.wallet.add_balance(**credit_kwargs)
-
-            order.save()
-            store_statuses = get_store_statuses(order, "delivered")
-
-            # remove status that are not out-for-delivery or delivered
-            for status in store_statuses:
-                if status not in ["out-for-delivery", "delivered"]:
-                    store_statuses.remove(status)
-
-
-            # check if all store has delivered the order
-            if all(status == "delivered" for status in store_statuses):
-                # update the order status to delivered
-                order.order_status = "delivered"
-                order.save()
-
-            # check if some stores has delivered the order
-            elif any(status == "delivered" for status in store_statuses):
-                # update the order status to partially delivered
-                order.order_status = "partially-delivered"
-                order.save()
-
-            store_qs: Store = order.linked_stores.filter(id=int(delivery_person_store_id)).first()
-            if store_qs is None:
-                raise GraphQLError("An error occured while getting store names, please contact support")
+            if action == "delivered":
             
-            store_name = store_qs.store_name
-            # notify the store that the delivery person has delivered the order
-            order.notify_store(
-                store_id=delivery_person_store_id,
-                message=f"{current_delivery_person.profile.user.get_full_name()} has delivered Order {order.get_order_display_id()} to {order.user.user.username}",
-                title="Order Delivered",
-            )
-            order.log_activity(
-                title="Order Delivered",
-                activity_type="order_delivered",
-                description=f"{current_delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
-            )
+                # check if the store status is out for delivery
+                current_delivery_person_store_status = order.get_store_status(
+                    delivery_person_store_id
+                )
+                if current_delivery_person_store_status != "out-for-delivery":
+                    return MarkOrderAsMutation(
+                        error="The store hasn't indicated that this order was picked up by anyone yet."
+                    )
+                order_delivery_people = order.delivery_people
+
+                did_update = order.update_delivery_person_status(
+                    delivery_person_id=current_delivery_person_id, status="delivered"
+                )
+
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order delivery status, please try again later"
+                    )
+
+                # update store status that the delivery person has delivered the order
+                did_update = order.update_store_status(
+                    delivery_person_store_id, "delivered"
+                )
+                if not did_update:
+                    return MarkOrderAsMutation(
+                        error="An error occured while updating order status, please try again later"
+                    )
+
+                # get delivery_fee by dividing the delivery fee by the number of delivery people
+                delivery_fee = order.delivery_fee / len(order_delivery_people)
+
+                # credit delivery person wallet
+                credit_kwargs = {
+                    "amount": delivery_fee,
+                    "title": "Delivery Fee",
+                    "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
+                    "order": order,
+                }
+                current_delivery_person.wallet.add_balance(**credit_kwargs)
+
+                order.save()
+                store_statuses = get_store_statuses(order, "delivered")
+
+                # remove status that are not out-for-delivery or delivered
+                for status in store_statuses:
+                    if status not in ["out-for-delivery", "delivered"]:
+                        store_statuses.remove(status)
+
+
+                # check if all store has delivered the order
+                if all(status == "delivered" for status in store_statuses):
+                    # update the order status to delivered
+                    order.order_status = "delivered"
+                    order.save()
+
+                    # clear all the order's delivery notifications
+                    order.clear_delivery_notifications()
+
+                # check if some stores has delivered the order
+                elif any(status == "delivered" for status in store_statuses):
+                    # update the order status to partially delivered
+                    order.order_status = "partially-delivered"
+                    order.save()
+
+                store_qs: Store = order.linked_stores.filter(id=int(delivery_person_store_id)).first()
+                if store_qs is None:
+                    raise GraphQLError("An error occured while getting store names, please contact support")
+                
+                store_name = store_qs.store_name
+                # notify the store that the delivery person has delivered the order
+                order.notify_store(
+                    store_id=delivery_person_store_id,
+                    message=f"{current_delivery_person.profile.user.get_full_name()} has delivered Order {order.get_order_display_id()} to {order.user.user.username}",
+                    title="Order Delivered",
+                )
+                order.log_activity(
+                    title="Order Delivered",
+                    activity_type="order_delivered",
+                    description=f"{current_delivery_person.profile.user.get_full_name()} delivered the order from {store_name}",
+                )
+
+            if action == "accepted":
+                if order.is_pickup():
+                    return MarkOrderAsMutation(error="This order can not be delivered")
+
+                # delivery_person = current_delivery_person
+                order_delivery_people = order.delivery_people
+
+                # check if the delivery person is already linked to the order
+                if any(
+                    delivery_person.get("id") == current_delivery_person_id
+                    for delivery_person in order_delivery_people
+                ):
+                    return MarkOrderAsMutation(error="You have already accepted this order")
+
+                # check if the order status is not ready-for-delivery or partially-ready-for-delivery
+                if not order.order_status in [
+                    "ready-for-delivery",
+                    "partially-ready-for-delivery",
+                    "partially-delivered",
+                ]:
+                    return MarkOrderAsMutation(error="This order is not ready for delivery")
+
+                # check if the order store count is same as the delivery people count, if it is then return error
+                if len(order_delivery_people) == order.linked_stores.count():
+                    return MarkOrderAsMutation(error="Order is already taken")
+                
+                if order.order_payment_status == "success":
+                    # check if delivery person can deliver to the order
+                    delivery_request_qs = current_delivery_person.get_notifications().filter(
+                        order=order
+                        , status="sent"
+                    )
+                    if not delivery_request_qs.exists():
+                        return MarkOrderAsMutation(
+                            error="You have not been requested to deliver this order"
+                        )
+
+                    delivery_request = delivery_request_qs.first()
+
+                    if current_delivery_person.get_is_on_delivery():
+                        return MarkOrderAsMutation(
+                            error="You have reached the maximum number of orders you can deliver, complete current deliveries to accept more orders"
+                        )
+
+                    # add the delivery person to the order linked_delivery_people
+                    order.linked_delivery_people.add(current_delivery_person)
+
+                    # add the delivery person to the order_delivery_people
+                    order_delivery_people.append(
+                        {
+                            "id": current_delivery_person.id,
+                            "status": "pending",
+                            "storeId": delivery_request.store.id,
+                        }
+                    )
+                    order.delivery_people = order_delivery_people
+                    order.save()
+
+                    # update the delivery request status to accepted
+                    delivery_request.status = "accepted"
+                    delivery_request.save()
+
+                    # notify the store that the delivery person has accepted the order
+                    store_id = delivery_request.store.id
+
+                    order.notify_store(
+                        store_id=store_id,
+                        title=f"Delivery Person Found For {order.user.user.username}'s Order",
+                        message=f"{current_delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.order_track_id}",
+                    )
+
+                    return MarkOrderAsMutation(success=True)
+                else:
+                    return MarkOrderAsMutation(error="This order was taken")
+            
+            if action == "rejected":
+                # update delivery person order notification status to rejected
+                delivery_request_qs = current_delivery_person.get_notifications().filter(
+                    order=order,
+                )
+                if not delivery_request_qs.exists():
+                    return MarkOrderAsMutation(
+                        error="You have not been requested to deliver this order"
+                    )
+                
+                delivery_request = delivery_request_qs.first()
+                delivery_request.status = "rejected"
+                delivery_request.save()
 
             return MarkOrderAsMutation(success=True)
 
@@ -1521,9 +1619,10 @@ class InitializeTransactionMutation(graphene.Mutation):
                 transaction_id = response["data"]["reference"]
                 payment_url = response["data"]["authorization_url"]
 
-                # update order payment status to pending
-                order.order_payment_status = "pending"
-                order.save()
+                # update order payment status to pending if it's not success
+                if order.order_payment_status != "success":
+                    order.order_payment_status = "pending"
+                    order.save()
 
                 return InitializeTransactionMutation(
                     success=True, transaction_id=transaction_id, payment_url=payment_url

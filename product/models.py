@@ -394,12 +394,6 @@ class Order(models.Model):
     #     "storeId": store.id,
     #     "status": "processing",
     # }]
-    notifications_statuses = models.JSONField(default=list, blank=True)
-    # the notifications_statuses json format is as follows
-    # [{
-    #     "storeId": store.id,
-    #     "status": "sent",
-    # }]
 
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
@@ -935,10 +929,24 @@ class Order(models.Model):
         return self.order_track_id
 
     def view_as(self, current_user_profile):
+        from users.models import DeliveryPerson
+
         # check if the current user is among the linked delivery people
         is_delivery_person = self.linked_delivery_people.filter(
             profile=current_user_profile
         ).exists()
+
+        delivery_person: DeliveryPerson = current_user_profile.get_delivery_person()
+        if delivery_person:
+            is_delivery_person = (
+                is_delivery_person
+                or delivery_person.get_notifications()
+                .filter(
+                    order=self,
+                    delivery_person=delivery_person,
+                )
+                .exists()
+            )
 
         is_vendor = self.linked_stores.filter(vendor=current_user_profile).exists()
 
@@ -1002,6 +1010,19 @@ class Order(models.Model):
     # get delivery_person from the delivery_people json
     def get_delivery_person(self, delivery_person_id: str = None, store_id: int = None):
         delivery_people = self.delivery_people
+
+        from users.models import DeliveryNotification
+
+        if delivery_person_id:
+            delivery_person_notification_instance = DeliveryNotification.objects.filter(
+                delivery_person__id=delivery_person_id, order=self
+            )
+            if delivery_person_notification_instance.exists():
+                return {
+                    "id": delivery_person_id,
+                    "status": "new",
+                    "storeId": delivery_person_notification_instance.first().store.id,
+                }
         for delivery_person in delivery_people:
             if delivery_person_id and (
                 str(delivery_person["id"]) == str(delivery_person_id)
@@ -1010,6 +1031,7 @@ class Order(models.Model):
 
             if store_id and (str(delivery_person["storeId"]) == str(store_id)):
                 return delivery_person
+
         return None
 
     def update_delivery_person_status(
@@ -1049,7 +1071,7 @@ class Order(models.Model):
         from users.models import DeliveryNotification
 
         return DeliveryNotification.objects.filter(
-            order=self, delivery_person_id=delivery_person_id
+            order=self, delivery_person__id=delivery_person_id
         ).first()
 
     def store_delivery_person(self, store_id: int):
@@ -1108,3 +1130,10 @@ class Order(models.Model):
             self.save()
 
         return response
+
+    # clear the order delivery notifications
+    def clear_delivery_notifications(self):
+        from users.models import DeliveryNotification
+
+        delivery_notifications = DeliveryNotification.objects.filter(order=self)
+        delivery_notifications.delete()

@@ -1,7 +1,7 @@
 import graphene
 from graphql import GraphQLError
 from product.models import Order
-from users.models import DeliveryNotification
+from users.models import DeliveryPerson
 from trayapp.permissions import IsAuthenticated, permission_checker
 from graphene_django.filter import DjangoFilterConnectionField
 from ..types import (
@@ -50,19 +50,16 @@ class OrderQueries(graphene.ObjectType):
             if order_qs is None:
                 raise GraphQLError("Order Not Found")
 
-            delivery_person = user.profile.get_delivery_person()
-            delivery_person_id = (
-                user.profile.get_delivery_person().id if delivery_person else None
-            )
-
-            is_delivery_person = order_qs.linked_delivery_people.filter(
-                profile=current_user_profile
-            ).exists() or (
-                delivery_person_id
-                and DeliveryNotification.objects.filter(
-                    order=order, delivery_person__id=delivery_person_id
-                ).exists()
-            )
+            delivery_person: DeliveryPerson = user.profile.get_delivery_person()
+            is_delivery_person = False
+            if delivery_person:
+                is_delivery_person = order_qs.linked_delivery_people.filter(
+                    profile=current_user_profile
+                ).exists() or (
+                    delivery_person.get_notifications()
+                    .filter(order=order_qs, delivery_person__id=delivery_person.id)
+                    .exists()
+                )
             is_vendor = order_qs.linked_stores.filter(
                 vendor=current_user_profile
             ).exists()
@@ -155,13 +152,24 @@ class OrderQueries(graphene.ObjectType):
             profiles_seen__contains=[profile.id]
         )
         for status in statuses:
-            orders_with_status = [
+            status = status.upper()
+            orders_with_status_new_count = [
                 order
                 for order in orders_not_seen_by_profile
-                if order.get_order_status(profile).upper() == status
+                if order.get_order_status(profile).upper() in status
                 and not profile.id in order.profiles_seen
             ]
+            orders_with_status_count = [
+                order
+                for order in orders
+                if order.get_order_status(profile).upper() in status
+            ]
+
             statuses_with_counts.append(
-                {"status": status, "count": len(orders_with_status)}
+                {
+                    "status": status,
+                    "count": len(orders_with_status_count),
+                    "new_count": len(orders_with_status_new_count),
+                }
             )
         return statuses_with_counts
