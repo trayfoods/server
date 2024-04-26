@@ -1350,6 +1350,19 @@ class DeliveryPerson(models.Model):
 
     # method to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
+        delivery_notifications = self.get_notifications()
+
+        if delivery_notifications.filter(order=order).exists():
+            return False
+
+        # check if the delivery notification is either pending, processing or sent
+        if (
+            delivery_notifications.filter(status="pending").exists()
+            or delivery_notifications.filter(status="processing").exists()
+            or delivery_notifications.filter(status="sent").exists()
+        ):
+            return False
+
         order_user: Profile = order.user
 
         delivery_person_profile = self.profile
@@ -1413,16 +1426,6 @@ class DeliveryPerson(models.Model):
             if delivery_person_profile.city != order_user.city:
                 print("check 11")
                 return False
-
-        delivery_notifications = self.get_notifications()
-
-        if delivery_notifications.filter(order=order).exists():
-            return False
-
-        # check if the delivery notification is either pending, processing or sent
-        if delivery_notifications.filter(status__in=["pending", "processing", "sent"]
-        ).exists():
-            return False
 
         return True
 
