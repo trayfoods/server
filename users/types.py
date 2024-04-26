@@ -191,7 +191,7 @@ class TransactionType(DjangoObjectType):
         ]
 
     def resolve_display_date(self, info):
-        return convert_time_to_ago(self.created_at)
+        return convert_time_to_ago(self.updated_on)
     
     def resolve_order_display_id(self: Transaction, info):
         is_order_transaction = self.order is not None

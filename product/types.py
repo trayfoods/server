@@ -597,7 +597,7 @@ class OrderType(DjangoObjectType):
     def resolve_display_date(self, info):
         from trayapp.utils import convert_time_to_ago
 
-        return convert_time_to_ago(self.created_at)
+        return convert_time_to_ago(self.updated_at)
 
     def resolve_items_count(self, info):
         return self.linked_items.count()
