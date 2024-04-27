@@ -309,6 +309,13 @@ class Item(models.Model):
     def filter_by_category(self, category):
         return self.product_categories.filter(slug=category)
 
+    def is_almost_out_of_stock(self):
+        if not self.has_qty:
+            return False
+        if self.product_init_qty == 0:
+            return False
+        return self.product_qty / self.product_init_qty <= 0.2
+
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
@@ -1137,3 +1144,32 @@ class Order(models.Model):
 
         delivery_notifications = DeliveryNotification.objects.filter(order=self)
         delivery_notifications.delete()
+
+
+# signal to notify product creator when a item is about to go out of stock
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models.signals import pre_save
+
+
+@receiver(post_save, sender=Item)
+def notify_product_creator(sender, instance: Item, created, **kwargs):
+    from users.models import Store
+
+    if not created:
+        if instance.is_almost_out_of_stock():
+            store: Store = instance.product_creator
+            store_profile = store.vendor
+            store_profile.notify_me(
+                title="Item Almost Out of Stock",
+                msg=f"`{instance.product_name}` is almost out of stock. Please restock to avoid losing sales.",
+                data={"link": f"/product/{instance.product_slug}"},
+            )
+
+
+# signal to set initial product_init_qty when the product_qty is set
+@receiver(pre_save, sender=Item)
+def set_product_init_qty(sender, instance: Item, **kwargs):
+    if instance.has_qty and instance.product_qty > instance.product_init_qty:
+        instance.product_init_qty = instance.product_qty
+        instance.save()

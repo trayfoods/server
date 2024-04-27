@@ -281,7 +281,7 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
 
     def has_calling_code(self):
-        if not self.calling_code and self.country:
+        if (not self.calling_code or not "+" in self.calling_code) and self.country:
             # get the calling code from the country
             from restcountries import RestCountryApiV2 as rapi
 
@@ -429,7 +429,7 @@ class Profile(models.Model):
 
             if not SMS_ENABLED:
                 logging.error("SMS is disabled")
-                logging.info(message)
+                print(message)
                 logging.info("End of SMS is disabled")
                 return False if not settings.DEBUG else True
         except:
@@ -1577,7 +1577,7 @@ def remove_file_from_s3(sender, instance, using, **kwargs):
 def send_delivery_when_rejected_or_expired(
     sender, instance: DeliveryNotification, created, **kwargs
 ):
-    if instance and instance.status in ["rejected", "expired"]:
+    if not created and instance and instance.status in ["rejected", "expired"]:
         order = instance.order
         store = instance.store
         # check if store has a delivery person
@@ -1607,6 +1607,7 @@ def send_delivery_when_rejected_or_expired(
                         user.user.username, order.get_order_display_id()
                     ),
                 )
+
 
 @receiver(post_save, sender=Profile)
 def update_profile_calling_code(sender, instance, created, **kwargs):
