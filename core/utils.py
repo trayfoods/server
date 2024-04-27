@@ -333,6 +333,11 @@ class ProcessPayment:
                 + Decimal(store_option_groups_price)
                 + Decimal(store_delivery_fee)
             )
+
+            # if it's only one store that is involved in the order add service fee and delivery fee
+            if len(stores_infos) == 1:
+                overrall_store_price += Decimal(order.service_fee) + Decimal(order.delivery_fee) 
+
             if store_status == "pending-refund" and overrall_store_price == order_price:
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
                 # check if the store status is "pending-refund"
