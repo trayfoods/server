@@ -1345,7 +1345,7 @@ class DeliveryPerson(models.Model):
 
     # method to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
-        delivery_notifications = self.get_notifications()
+        delivery_notifications = DeliveryNotification.objects.filter(delivery_person=self)
 
         if delivery_notifications.filter(order=order).exists():
             return False
@@ -1451,15 +1451,10 @@ class DeliveryPerson(models.Model):
         did_complete = False
         did_find_delivery_person = False
         for delivery_person in delivery_people:
-            # check if the delivery person has a notification for the order
-            delivery_notifications = delivery_person.get_notifications().filter(
-                order=order
-            )
             # check if the delivery person has rejected the order before
             if (
                 delivery_person
                 and delivery_person.can_deliver(order)
-                and not delivery_notifications.exists()
             ):
                 # send new delivery request to queue
                 queue_data = {
@@ -1480,20 +1475,19 @@ class DeliveryPerson(models.Model):
                 did_complete = had_error == False
                 did_find_delivery_person = True
                 break  # break the loop if a delivery person is found
+
         if not did_find_delivery_person:
             # update the store status to no delivery person
             order.update_store_status(store_id=store.id, status="no-delivery-person")
             user: Profile = order.user
-            user.notify(
-                title="No Delivery Person",
-                message="No delivery person was found available to deliver your order, please try again later",
-            )
-            store.notify(
+            order.notify_store(
+                store_id=store.id,
                 title="No Delivery Person",
                 message="No delivery person was found available to deliver {}'s order {}, please tell the customer about this".format(
                     user.user.username, order.get_order_display_id()
                 ),
             )
+
         return did_complete
 
 
