@@ -1127,15 +1127,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         error="Order has not been accepted, cannot be marked as ready for delivery"
                     )
 
-                # handle order ready for delivery
-                delivery_people = DeliveryPerson.get_delivery_people_that_can_deliver(
-                    order
-                )
-                # check if any delivery person was found
-                if len(delivery_people) == 0:
-                    return MarkOrderAsMutation(
-                        error="No delivery person found for this order"
-                    )
                 has_start_notification_requesting = DeliveryPerson.send_delivery(
                     order=order,
                     store=store,

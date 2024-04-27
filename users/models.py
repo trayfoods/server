@@ -1449,9 +1449,18 @@ class DeliveryPerson(models.Model):
             profile__country=order_user.country,
         )
         did_complete = False
+        did_find_delivery_person = False
         for delivery_person in delivery_people:
+            # check if the delivery person has a notification for the order
+            delivery_notifications = delivery_person.get_notifications().filter(
+                order=order
+            )
             # check if the delivery person has rejected the order before
-            if delivery_person and delivery_person.can_deliver(order):
+            if (
+                delivery_person
+                and delivery_person.can_deliver(order)
+                and not delivery_notifications.exists()
+            ):
                 # send new delivery request to queue
                 queue_data = {
                     "order_id": order.order_track_id,
@@ -1469,7 +1478,22 @@ class DeliveryPerson(models.Model):
                     message=queue_data, queue_name="new-delivery-request"
                 )
                 did_complete = had_error == False
+                did_find_delivery_person = True
                 break  # break the loop if a delivery person is found
+        if not did_find_delivery_person:
+            # update the store status to no delivery person
+            order.update_store_status(store_id=store.id, status="no-delivery-person")
+            user: Profile = order.user
+            user.notify(
+                title="No Delivery Person",
+                message="No delivery person was found available to deliver your order, please try again later",
+            )
+            store.notify(
+                title="No Delivery Person",
+                message="No delivery person was found available to deliver {}'s order {}, please tell the customer about this".format(
+                    user.user.username, order.get_order_display_id()
+                ),
+            )
         return did_complete
 
 
@@ -1490,6 +1514,10 @@ class DeliveryNotification(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # add unique constraint to order and delivery person
+    class Meta:
+        unique_together = ("order", "delivery_person")
 
     # has_expired: this will check if the status is sent and the updated_at and the current time is greater than 1 minute
     @property
