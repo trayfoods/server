@@ -89,7 +89,7 @@ class ProcessPayment:
                 title="Payment Failed",
                 message="Payment for Order {} has failed, kindly contact support for your refund".format(
                     order.get_order_display_id()
-                )
+                ),
             )
             return HttpResponse("Payment failed, Processing Refund", status=400)
 
@@ -104,7 +104,6 @@ class ProcessPayment:
             order.delivery_fee = new_delivery_fee
             order.order_gateway_fee = order_gateway_fee
             order.order_status = "processing"
-            
 
             shipping_address = order.shipping
             shipping_address = shipping_address.get("address", None)
@@ -325,7 +324,9 @@ class ProcessPayment:
             store_option_groups_price = total.get("option_groups_price", 0)
 
             # get store delivery fee by dividing the delivery fee by the number of stores
-            store_delivery_fee = order.delivery_fee / len(stores_infos)
+            store_delivery_fee = (
+                order.delivery_fee + Decimal(order.delivery_fee_percentage)
+            ) / len(stores_infos)
 
             overrall_store_price = (
                 Decimal(store_total_price)
@@ -336,7 +337,7 @@ class ProcessPayment:
 
             # if it's only one store that is involved in the order add service fee and delivery fee
             if len(stores_infos) == 1:
-                overrall_store_price += Decimal(order.service_fee) + Decimal(order.delivery_fee) 
+                overrall_store_price += Decimal(order.service_fee)
 
             if store_status == "pending-refund" and overrall_store_price == order_price:
                 store: Store = order.linked_stores.filter(id=int(store_id)).first()
