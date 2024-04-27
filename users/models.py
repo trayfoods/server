@@ -1607,3 +1607,10 @@ def send_delivery_when_rejected_or_expired(
                         user.user.username, order.get_order_display_id()
                     ),
                 )
+
+@receiver(post_save, sender=Profile)
+def update_profile_calling_code(sender, instance, created, **kwargs):
+    # check if the calling code is already set
+    if instance.country and not instance.calling_code:
+        instance.has_calling_code()
+        instance.save()

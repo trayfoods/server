@@ -18,7 +18,6 @@ from .mutations import (
     RegisterMutation,
     SendPhoneVerificationCodeMutation,
     VerifyPhoneMutation,
-    AcceptDeliveryMutation,
     UpdateStoreMenuMutation,
     UpdateSchoolInfoMutation,
     UpdateOnlineStatusMutation,
@@ -107,7 +106,6 @@ class Mutation(AuthMutation, graphene.ObjectType):
     withdraw_from_wallet = WithdrawFromWalletMutation.Field()
     hide_wallet_balance = HideWalletBalanceMutation.Field()
     change_pin = ChangePinMutation.Field()
-    accept_delivery = AcceptDeliveryMutation.Field()
     find_delivery_person = FindDeliveryPersonMutation.Field()
 
     create_update_store = CreateUpdateStoreMutation.Field()
