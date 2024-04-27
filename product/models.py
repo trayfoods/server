@@ -882,6 +882,11 @@ class Order(models.Model):
             self.order_payment_status = "pending-refund"
             self.save()
 
+            # update all store status to pending-refund
+            for store_info in self.stores_infos:
+                store_id = store_info.get("storeId")
+                self.update_store_status(store_id, "pending-refund")
+
             # log the activity
             self.log_activity(
                 title="Refund Initiated",
