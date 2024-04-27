@@ -137,7 +137,7 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
 
             orderIds = [
                 x.order.id
-                for x in delivery_person.get_notifications().exclude(status="accepted")
+                for x in delivery_person.get_notifications()
             ]
 
             return Order.objects.filter(id__in=orderIds)

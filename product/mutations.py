@@ -1462,7 +1462,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     # check if delivery person can deliver to the order
                     delivery_request_qs = current_delivery_person.get_notifications().filter(
                         order=order
-                        , status="sent"
                     )
                     if not delivery_request_qs.exists():
                         return MarkOrderAsMutation(

@@ -1314,7 +1314,8 @@ class DeliveryPerson(models.Model):
     is_approved = models.BooleanField(default=False)
 
     def __str__(self) -> str:
-        return self.profile.user.username
+        sent_delivery_notifications_count = self.get_notifications().count()
+        return f"{self.profile.user.username} - {sent_delivery_notifications_count} notifications sent"
 
     @property
     def wallet(self):
@@ -1330,6 +1331,9 @@ class DeliveryPerson(models.Model):
 
     # get delivery person's notifications
     def get_notifications(self):
+        """
+        Get delivery person's sent notifications
+        """
         return DeliveryNotification.objects.filter(delivery_person=self, status="sent")
 
     def get_is_on_delivery(self):
