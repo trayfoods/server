@@ -100,11 +100,15 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
         kwargs.pop("product_images")
         kwargs.pop("is_edit")
 
+        # check if images are not provided
+        if product_images and len(product_images) == 0:
+            return CreateUpdateItemMutation(error="Product images are required")
+
         profile = info.context.user.profile
         if profile.store is None:
             return CreateUpdateItemMutation(error="You are not a vendor")
 
-        proudct_menu_name = kwargs.get("store_menu_name", "Others")
+        proudct_menu_name = kwargs.get("store_menu_name", "OTHERS")
         if not proudct_menu_name in profile.store.store_menu:
             return CreateUpdateItemMutation(error="Invalid Menu Name")
         
@@ -114,14 +118,15 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                 product_slug=product_slug.strip()
             )
         )
-        if is_edit:
-            product = product_qs.first()
-            if product is None:
-                return CreateUpdateItemMutation(error="Item does not exist")
-        else:
-            product = product_qs.filter(product_name=product_name.strip()).first()
-            if not product is None:
-                return CreateUpdateItemMutation(error="Item already exists")
+
+        product_name = product_name.strip()
+
+        if is_edit and not product_qs.exists():
+            return CreateUpdateItemMutation(error="Item does not exists")
+        elif not is_edit and product_qs.filter(product_name=product_name.strip()).exists():
+                return CreateUpdateItemMutation(error="Item with this name already exists")
+            
+        product = product_qs.first()
 
         with transaction.atomic():
             try:
@@ -132,34 +137,23 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                     )
                 product_type = ItemAttribute.objects.get(slug=product_type_val)
 
-                if product is None and not profile.store is None:
-                    # Spread the kwargs
-                    save_data = {
-                        **kwargs,
-                        "product_creator": profile.store,
-                        "product_type": product_type,
-                        "has_qty": kwargs.get("product_qty")
-                        and kwargs.get("product_qty", 0) > 0,
-                    }
+                # Spread the kwargs
+                save_data = {
+                    **kwargs,
+                    "product_creator": profile.store,
+                    "product_type": product_type,
+                    "has_qty": kwargs.get("product_qty")
+                    and kwargs.get("product_qty", 0) > 0,
+                }
 
+                if not is_edit:
                     # Checking if slug already exists
                     if (
-                        (not Item.objects
+                        not Item.objects
                         .filter(product_slug=product_slug.strip())
-                        .exists()) or (is_edit and product is not None)
+                        .exists()
                     ):
-                        if is_edit:
-                            product_ = product
-                            save_data.pop("product_slug")
-                            product = product_
-                            for key, value in save_data.items():
-                                setattr(product, key, value)
-                            product.save()
-                        else:
                             product = Item.objects.create(**save_data)
-                            if not product_categories is None:
-                                product.product_categories.set(product_categories)
-                            product.save()
                     else:
                         save_data.pop("product_slug")
                         new_slug = kwargs.get("product_slug").strip() + str(
@@ -169,29 +163,33 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                             **save_data, product_slug=new_slug
                         )
                         product.save()
+                else:
+                    # bulk update the product
+                    product_qs.update(**save_data)
+                    product = product_qs.first()
 
-                    # Check if the product has been created
-                    if product is None:
-                        raise GraphQLError("An error occured while creating product")
+                if not product_categories is None:
+                    product.product_categories.set(product_categories)
+                    product.save()
+                # Check if the product has been created
+                if product is None:
+                    raise GraphQLError("An error occured while creating product")
 
-                    # Optimize Image Handling
-                    item_images = [
-                        ItemImage(
-                            product=product, item_image=image, is_primary=is_primary
-                        )
-                        for image, is_primary in zip(
-                            # convert to list to avoid multiple iteration
-                            product_images,
-                            [True] + [False] * (len(product_images) - 1),
-                        )
-                    ]
-                    if not is_edit:
-                        ItemImage.objects.bulk_create(item_images)
-                    else:
-                        # check if any changes were made to the images
-                        if len(item_images) > 0:
-                            ItemImage.objects.filter(product=product).delete()
-                            ItemImage.objects.bulk_create(item_images)
+                # Optimize Image Handling
+                item_images = [
+                    ItemImage(
+                        product=product, item_image=image, is_primary=is_primary
+                    )
+                    for image, is_primary in zip(
+                        # convert to list to avoid multiple iteration
+                        product_images,
+                        [True] + [False] * (len(product_images) - 1),
+                    )
+                ] # this will create a list of ItemImage objects
+                if is_edit:
+                    product.itemimage_set.all().delete()
+
+                ItemImage.objects.bulk_create(item_images)
 
                 return CreateUpdateItemMutation(product=product, success=True)
             except IntegrityError as e:
