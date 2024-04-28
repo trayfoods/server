@@ -171,6 +171,11 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                 if not product_categories is None:
                     product.product_categories.set(product_categories)
                     product.save()
+
+                #set the new product qty to be the same as the product init qty
+                if product.has_qty:
+                    product.product_init_qty = kwargs.get("product_qty")
+                    product.save()
                 # Check if the product has been created
                 if product is None:
                     raise GraphQLError("An error occured while creating product")
