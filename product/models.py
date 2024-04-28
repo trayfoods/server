@@ -122,6 +122,7 @@ class Item(models.Model):
             ("active", "active"),
             ("inactive", "inactive"),
             ("deleted", "deleted"),
+            ("suspended", "suspended"),
         ),
         default="active",
         editable=False,

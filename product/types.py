@@ -153,7 +153,7 @@ class ItemType(DjangoObjectType):
     is_avaliable_for_store = graphene.String()
     is_only_pickup = graphene.Boolean()
     rating_percentage = graphene.Float()
-    is_out_of_stock = graphene.Boolean()
+    product_status = graphene.String()
 
     class Meta:
         model = Item
@@ -184,6 +184,7 @@ class ItemType(DjangoObjectType):
             "is_avaliable",
             "store_menu_name",
             "rating_percentage",
+            "product_status",
         ]
 
     def resolve_option_groups(self, info):
@@ -304,8 +305,18 @@ class ItemType(DjangoObjectType):
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()
 
-    def resolve_is_out_of_stock(self: Item, info):
-        return self.is_out_of_stock
+    def resolve_product_status(self: Item, info):
+        # check if the item is out of stock, not avaliable or is almost out of stock
+        # if none of the above is true, return product_status
+
+        if self.is_out_of_stock:
+            return "OUT_OF_STOCK"
+        elif not self.is_avaliable:
+            return "NOT_AVALIABLE"
+        elif self.is_almost_out_of_stock():
+            return "ALMOST_OUT_OF_STOCK"
+        # return in_stock if the item is in stock
+        return "IN_STOCK" if self.product_status != "suspended" else self.product_status
 
 
 class ItemNode(ItemType, DjangoObjectType):
