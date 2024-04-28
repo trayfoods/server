@@ -186,7 +186,7 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                         [True] + [False] * (len(product_images) - 1),
                     )
                 ] # this will create a list of ItemImage objects
-                if is_edit:
+                if is_edit and product.itemimage_set.exists() and len(item_images) > 0:
                     product.itemimage_set.all().delete()
 
                 ItemImage.objects.bulk_create(item_images)
