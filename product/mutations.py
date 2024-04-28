@@ -36,7 +36,7 @@ class Output:
 from django.db import transaction, IntegrityError
 
 
-class AddProductMutation(Output, graphene.Mutation):
+class CreateUpdateItemMutation(Output, graphene.Mutation):
     class Arguments:
         product_qty = graphene.Int()
         product_desc = graphene.String()
@@ -45,13 +45,15 @@ class AddProductMutation(Output, graphene.Mutation):
         product_qty_unit = graphene.String()
         product_categories = graphene.List(graphene.String)
         option_groups = graphene.List(OptionGroupInputType)
-        product_images = Upload(required=True)
+        product_images = Upload(required=False)
         product_name = graphene.String(required=True)
         product_slug = graphene.String(required=True)
         product_type = graphene.String(required=True)
         product_price = graphene.Decimal(required=True)
         store_menu_name = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
+
+        is_edit = graphene.Boolean(default_value=False)
 
     product = graphene.Field(ItemType, default_value=None)
 
@@ -78,7 +80,7 @@ class AddProductMutation(Output, graphene.Mutation):
                 or kwargs.get(field) == ""
             ):
                 field = str(field).replace("_", " ").capitalize()
-                return AddProductMutation(error=f"{field} is required.")
+                return CreateUpdateItemMutation(error=f"{field} is required.")
 
         kwargs = {
             k: v for k, v in kwargs.items() if v is not None
@@ -90,29 +92,36 @@ class AddProductMutation(Output, graphene.Mutation):
         product_categories_vals = kwargs.get("product_categories", None)
         product_type_val = kwargs.get("product_type")
 
+        is_edit = kwargs.get("is_edit")
+
         # Remove category, type and images from kwargs
         kwargs.pop("product_categories")
         kwargs.pop("product_type")
         kwargs.pop("product_images")
+        kwargs.pop("is_edit")
 
         profile = info.context.user.profile
         if profile.store is None:
-            return AddProductMutation(error="You are not a vendor")
+            return CreateUpdateItemMutation(error="You are not a vendor")
 
         proudct_menu_name = kwargs.get("store_menu_name", "Others")
         if not proudct_menu_name in profile.store.store_menu:
-            return AddProductMutation(error="Invalid Menu Name")
-
-        product = (
+            return CreateUpdateItemMutation(error="Invalid Menu Name")
+        
+        product_qs = (
             Item.objects
             .filter(
-                product_slug=product_slug.strip(), product_name=product_name.strip()
+                product_slug=product_slug.strip()
             )
-            .first()
         )
-
-        if not product is None:
-            return AddProductMutation(error="Product Already Exists")
+        if is_edit:
+            product = product_qs.first()
+            if product is None:
+                return CreateUpdateItemMutation(error="Item does not exist")
+        else:
+            product = product_qs.filter(product_name=product_name.strip()).first()
+            if not product is None:
+                return CreateUpdateItemMutation(error="Item already exists")
 
         with transaction.atomic():
             try:
@@ -123,7 +132,7 @@ class AddProductMutation(Output, graphene.Mutation):
                     )
                 product_type = ItemAttribute.objects.get(slug=product_type_val)
 
-                if product is None and not profile is None:
+                if product is None and not profile.store is None:
                     # Spread the kwargs
                     save_data = {
                         **kwargs,
@@ -135,14 +144,22 @@ class AddProductMutation(Output, graphene.Mutation):
 
                     # Checking if slug already exists
                     if (
-                        not Item.objects
+                        (not Item.objects
                         .filter(product_slug=product_slug.strip())
-                        .exists()
+                        .exists()) or (is_edit and product is not None)
                     ):
-                        product = Item.objects.create(**save_data)
-                        if not product_categories is None:
-                            product.product_categories.set(product_categories)
-                        product.save()
+                        if is_edit:
+                            product_ = product
+                            save_data.pop("product_slug")
+                            product = product_
+                            for key, value in save_data.items():
+                                setattr(product, key, value)
+                            product.save()
+                        else:
+                            product = Item.objects.create(**save_data)
+                            if not product_categories is None:
+                                product.product_categories.set(product_categories)
+                            product.save()
                     else:
                         save_data.pop("product_slug")
                         new_slug = kwargs.get("product_slug").strip() + str(
@@ -168,9 +185,15 @@ class AddProductMutation(Output, graphene.Mutation):
                             [True] + [False] * (len(product_images) - 1),
                         )
                     ]
-                    ItemImage.objects.bulk_create(item_images)
+                    if not is_edit:
+                        ItemImage.objects.bulk_create(item_images)
+                    else:
+                        # check if any changes were made to the images
+                        if len(item_images) > 0:
+                            ItemImage.objects.filter(product=product).delete()
+                            ItemImage.objects.bulk_create(item_images)
 
-                return AddProductMutation(product=product, success=True)
+                return CreateUpdateItemMutation(product=product, success=True)
             except IntegrityError as e:
                 raise GraphQLError(e)
 
@@ -416,7 +439,9 @@ class AddProductClickMutation(Output, graphene.Mutation):
         if is_open_data["open_soon"]:
             return AddProductClickMutation(error="Item's Store has not opened yet")
 
-
+        if item.is_out_of_stock():
+            return AddProductClickMutation(error="Item is out of stock")
+        
         if info.context.user.is_authenticated:
             # Add the user activity
             new_activity = UserActivity.objects.create(

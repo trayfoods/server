@@ -3,7 +3,7 @@ from graphql import GraphQLError
 from product.types import ItemAttributeType
 from product.mutations import (
     ItemCopyDeleteMutation,
-    AddProductMutation,
+    CreateUpdateItemMutation,
     AddProductClickMutation,
     CreateOrderMutation,
     RateItemMutation,
@@ -86,7 +86,7 @@ class Query(ItemQueries, ReviewsQueries, OrderQueries, graphene.ObjectType):
 
 class Mutation(graphene.ObjectType):
     # product
-    add_product = AddProductMutation.Field()
+    create_update_item = CreateUpdateItemMutation.Field()
     add_product_click = AddProductClickMutation.Field()
     copy_delete_item = ItemCopyDeleteMutation.Field()
 

@@ -153,6 +153,7 @@ class ItemType(DjangoObjectType):
     is_avaliable_for_store = graphene.String()
     is_only_pickup = graphene.Boolean()
     rating_percentage = graphene.Float()
+    is_out_of_stock = graphene.Boolean()
 
     class Meta:
         model = Item
@@ -302,6 +303,9 @@ class ItemType(DjangoObjectType):
 
     def resolve_rating_percentage(self: Item, info):
         return self.calculate_rating_percentage()
+
+    def resolve_is_out_of_stock(self: Item, info):
+        return self.is_out_of_stock
 
 
 class ItemNode(ItemType, DjangoObjectType):

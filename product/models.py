@@ -130,6 +130,8 @@ class Item(models.Model):
     is_groupable = models.BooleanField(default=False)
     option_groups = models.JSONField(default=list, blank=True, editable=False)
 
+    has_notified_store_of_low_stock = models.BooleanField(default=False, editable=False)
+
     class Meta:
         ordering = ["-product_clicks"]
 
@@ -530,6 +532,15 @@ class Order(models.Model):
     def __str__(self):
         return "Order #" + str(self.order_track_id)
 
+    def get_order_total(self):
+        return (
+            self.overall_price
+            + self.delivery_fee
+            + self.extra_delivery_fee
+            + self.service_fee
+            + self.funds_refunded
+        )
+
     # get order display id
     def get_order_display_id(self):
         order_track_id = self.order_track_id
@@ -747,7 +758,7 @@ class Order(models.Model):
         if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
             return profile.send_email(
                 subject=title,
-                from_email="Trayfoods Order <orders@trayfoods.com>",
+                from_email="Trayfoods Orders <orders@trayfoods.com>",
                 text_content=message,
                 template="email/order_notification_email.html",
                 context={
@@ -1162,14 +1173,20 @@ def notify_product_creator(sender, instance: Item, created, **kwargs):
     from users.models import Store
 
     if not created:
-        if instance.is_almost_out_of_stock():
+        if (
+            instance.is_almost_out_of_stock()
+            and not instance.has_notified_store_of_low_stock
+        ):
             store: Store = instance.product_creator
             store_profile = store.vendor
-            store_profile.notify_me(
+            did_notified_store_of_low_stock = store_profile.notify_me(
                 title="Item Almost Out of Stock",
                 msg=f"`{instance.product_name}` is almost out of stock. Please restock to avoid losing sales.",
                 data={"link": f"/product/{instance.product_slug}"},
             )
+            if did_notified_store_of_low_stock:
+                instance.has_notified_store_of_low_stock = True
+                instance.save()
 
 
 # signal to set initial product_init_qty when the product_qty is set
@@ -1177,4 +1194,5 @@ def notify_product_creator(sender, instance: Item, created, **kwargs):
 def set_product_init_qty(sender, instance: Item, **kwargs):
     if instance.has_qty and instance.product_qty > instance.product_init_qty:
         instance.product_init_qty = instance.product_qty
+        instance.has_notified_store_of_low_stock = False
         instance.save()
