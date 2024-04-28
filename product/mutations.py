@@ -175,6 +175,7 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                 if product is None:
                     raise GraphQLError("An error occured while creating product")
 
+                old_images = ItemImage.objects.filter(product=product)
                 # Optimize Image Handling
                 item_images = [
                     ItemImage(
@@ -186,10 +187,15 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                         [True] + [False] * (len(product_images) - 1),
                     )
                 ] # this will create a list of ItemImage objects
-                if is_edit and product.itemimage_set.exists() and len(item_images) > 0:
-                    product.itemimage_set.all().delete()
 
-                ItemImage.objects.bulk_create(item_images)
+                if len(item_images) > 0:
+                    ItemImage.objects.bulk_create(item_images)
+
+                if is_edit and product.itemimage_set.exists():
+                    # delete the images that are linked to the product but are not in the item_images
+                    for old_image in old_images:
+                        if old_image not in item_images:
+                            old_image.delete()
 
                 return CreateUpdateItemMutation(product=product, success=True)
             except IntegrityError as e:
