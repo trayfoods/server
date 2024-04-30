@@ -1176,7 +1176,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         if action == "add":
             if is_menu_exist:
-                return UpdateStoreMenuMutation(error=f"{menu.name} already exists")
+                return UpdateStoreMenuMutation(error=f"'{menu.name}' already exists")
 
             new_menu = Menu.objects.create(
                 name=menu.name.lower(), type=menu.type, store=store
@@ -1185,12 +1185,18 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
         elif action == "remove":
             if not is_menu_exist:
-                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+                return UpdateStoreMenuMutation(error=f"'{menu.name}' does not exists")
 
             menu_to_remove = Menu.objects.filter(name=menu.name, store=store).first()
 
             if not menu_to_remove:
-                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+                return UpdateStoreMenuMutation(error=f"'{menu.name}' does not exists")
+
+            # prevent store from deleting `others` menu
+            if menu_to_remove.name == "others":
+                return UpdateStoreMenuMutation(
+                    error="You cannot delete the 'Others' menu"
+                )
 
             menu_to_remove.delete()
 
@@ -1199,11 +1205,11 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
                 return UpdateStoreMenuMutation(error="Old menu name is required")
 
             if not Menu.objects.filter(name=old_menu_name, store=store).exists():
-                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+                return UpdateStoreMenuMutation(error=f"'{menu.name}' does not exists")
 
             old_menu = Menu.objects.filter(name=old_menu_name, store=store).first()
             if not old_menu:
-                return UpdateStoreMenuMutation(error=f"{old_menu_name} does not exists")
+                return UpdateStoreMenuMutation(error=f"'{old_menu_name}' does not exists")
 
             old_menu.name = menu.name
             old_menu.type = menu.type
