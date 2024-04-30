@@ -12,6 +12,7 @@ from users.mixins import RegisterMixin, ObtainJSONWebTokenMixin
 from trayapp.permissions import IsAuthenticated, permission_checker
 
 from .types import UserNodeType, StoreOpenHoursInput, AveragePreparationTimeInput
+from product.types import MenuInputType
 from .models import (
     Transaction,
     Store,
@@ -24,10 +25,10 @@ from .models import (
     Wallet,
     DeliveryPerson,
     Profile,
-    DeliveryNotification,
+    Menu,
 )
 from .inputs import StudentHostelFieldInput
-from product.models import Order
+from product.models import Order, ItemAttribute
 from django.conf import settings
 from core.utils import get_paystack_balance
 import uuid
@@ -1146,10 +1147,12 @@ class FindDeliveryPersonMutation(Output, graphene.Mutation):
 
 class UpdateStoreMenuMutation(Output, graphene.Mutation):
     class Arguments:
-        menus = graphene.List(graphene.String, required=True)
+        old_menu_name = graphene.String()
+        menu = graphene.Argument(MenuInputType, required=True)
+        action = graphene.String(required=True)
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, menus: list[str]):
+    def mutate(self, info, menu: MenuInputType, action: str, old_menu_name=None):
         user = info.context.user
         user_profile = user.profile
         store = user_profile.store
@@ -1157,37 +1160,95 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
         if not "VENDOR" in user.roles or store is None:
             return UpdateStoreMenuMutation(error="You are not a vendor")
 
-        store_menu = store.store_menu
+        allowed_actions = ["add", "remove", "edit"]
 
-        # check if OTHERS is missing in the menu
-        if not "OTHERS" in menus:
-            return UpdateStoreMenuMutation(error="Others menu cannot be removed")
-        new_menu = []
-        # set all the menu names to upper case
-        for name in menus:
-            new_menu.append(name.upper())
+        if not action in allowed_actions:
+            return UpdateStoreMenuMutation(error="Invalid action")
 
-        # remove duplicates
-        new_menu = list(set(new_menu))
+        # check if any of the menu already exists
+        menu.name = menu.name.lower()
+        is_menu_exist = Menu.objects.filter(name=menu.name, store=store).exists()
 
-        removed_menu = []
-        # check the removed menu
-        for name in store_menu:
-            if not name in new_menu:
-                removed_menu.append(name)
+        menu.type = ItemAttribute.objects.filter(slug=menu.type, _type="TYPE").first()
 
-        if len(removed_menu) > 0:
-            # check if the menu is in the store_products, if not update the store_products store_menu_name to 'OTHERS'
-            store_products = store.get_store_products().filter(
-                store_menu_name__in=removed_menu
+        if menu.type is None:
+            return UpdateStoreMenuMutation(error="Invalid menu type")
+
+        if action == "add":
+            if is_menu_exist:
+                return UpdateStoreMenuMutation(error=f"{menu.name} already exists")
+
+            new_menu = Menu.objects.create(
+                name=menu.name.lower(), type=menu.type, store=store
             )
-            if store_products.exists():
-                store_products.update(store_menu_name="OTHERS")
+            new_menu.save()
 
-        # save the store menu
-        store.store_menu = new_menu
-        store.save()
+        elif action == "remove":
+            if not is_menu_exist:
+                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+
+            menu_to_remove = Menu.objects.filter(name=menu.name, store=store).first()
+
+            if not menu_to_remove:
+                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+
+            menu_to_remove.delete()
+
+        elif action == "edit":
+            if not old_menu_name:
+                return UpdateStoreMenuMutation(error="Old menu name is required")
+
+            if not Menu.objects.filter(name=old_menu_name, store=store).exists():
+                return UpdateStoreMenuMutation(error=f"{menu.name} does not exists")
+
+            old_menu = Menu.objects.filter(name=old_menu_name, store=store).first()
+            if not old_menu:
+                return UpdateStoreMenuMutation(error=f"{old_menu_name} does not exists")
+
+            old_menu.name = menu.name
+            old_menu.type = menu.type
+            old_menu.save()
+
+        # loop and rearrange the menu position
+        menus = store.menus()
+        for index, menu in enumerate(menus):
+            menu.position = index
+            menu.save()
+
         return UpdateStoreMenuMutation(success=True)
+
+
+class RearrangeStoreMenusMutation(Output, graphene.Mutation):
+    class Arguments:
+        menu_order = graphene.List(graphene.String, required=True)
+
+    @permission_checker([IsAuthenticated])
+    def mutate(self, info, menu_order: list[str]):
+        user = info.context.user
+        user_profile = user.profile
+        store: Store = user_profile.store
+
+        if not "VENDOR" in user.roles or store is None:
+            return RearrangeStoreMenusMutation(error="You are not a vendor")
+
+        store_menus = store.menus()
+
+        if len(menu_order) != store_menus.count():
+            return RearrangeStoreMenusMutation(
+                error="Menu order does not match the number of menus"
+            )
+
+        for index, menu_name in enumerate(menu_order):
+            menu = store_menus.filter(name=menu_name).first()
+            if not menu:
+                return RearrangeStoreMenusMutation(
+                    error=f"{menu_name.capitalize()} does not exist"
+                )
+
+            menu.position = index
+            menu.save()
+
+        return RearrangeStoreMenusMutation(success=True)
 
 
 class HideWalletBalanceMutation(Output, graphene.Mutation):

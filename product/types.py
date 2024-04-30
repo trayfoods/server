@@ -3,7 +3,7 @@ from graphene_django.types import DjangoObjectType
 
 from trayapp.permissions import permission_checker, IsAuthenticated
 from .models import Item, ItemAttribute, ItemImage, Order, Rating
-from users.models import Store, DeliveryPerson
+from users.models import Store, DeliveryPerson, Menu
 from users.types import StoreType, School
 from .filters import (
     ItemFilter,
@@ -154,6 +154,7 @@ class ItemType(DjangoObjectType):
     is_only_pickup = graphene.Boolean()
     rating_percentage = graphene.Float()
     product_status = graphene.String()
+    store_menu_name = graphene.String()
 
     class Meta:
         model = Item
@@ -186,6 +187,9 @@ class ItemType(DjangoObjectType):
             "rating_percentage",
             "product_status",
         ]
+
+    def resolve_store_menu_name(self, info):
+        return self.get_product_menu_name()
 
     def resolve_option_groups(self, info):
         # get self.option_groups [json, list]
@@ -316,7 +320,16 @@ class ItemType(DjangoObjectType):
         elif self.is_almost_out_of_stock():
             return "ALMOST_OUT_OF_STOCK"
         # return in_stock if the item is in stock
-        return "IN_STOCK" if self.product_status != "suspended" else self.product_status
+        return (
+            "IN_STOCK"
+            if self.product_status != "suspended"
+            else self.product_status.upper()
+        )
+
+
+class MenuInputType(graphene.InputObjectType):
+    name = graphene.String(required=True)
+    type = graphene.String(required=True)
 
 
 class ItemNode(ItemType, DjangoObjectType):

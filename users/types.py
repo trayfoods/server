@@ -10,6 +10,7 @@ from .models import (
     School,
     Student,
     Store,
+    Menu,
     Profile,
     Hostel,
     Gender,
@@ -305,8 +306,18 @@ class StoreNode(StoreType, graphene.ObjectType):
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreFilter
 
+class MenuType(DjangoObjectType):
+    type = graphene.String()
+
+    class Meta:
+        model = Menu
+        fields = "__all__"
+
+    def resolve_type(self, info):
+        return self.type.slug
+
 class StoreItmMenuType(graphene.ObjectType):
-    menu = graphene.String()
+    menu = graphene.Field(MenuType)
     items = graphene.List("product.types.ItemType")
 
 class DeliveryPersonType(DjangoObjectType):

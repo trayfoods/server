@@ -50,7 +50,7 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
         product_slug = graphene.String(required=True)
         product_type = graphene.String(required=True)
         product_price = graphene.Decimal(required=True)
-        store_menu_name = graphene.String(required=True)
+        menu_id = graphene.String(required=True)
         product_share_visibility = graphene.String(required=True)
 
         is_edit = graphene.Boolean(default_value=False)
@@ -66,7 +66,6 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
             "product_type",
             "product_share_visibility",
             "product_images",
-            "store_menu_name",
         ]
 
         if not kwargs.get("product_qty") is None and kwargs.get("product_qty") > 0:
@@ -91,6 +90,7 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
         product_images = kwargs.get("product_images")
         product_categories_vals = kwargs.get("product_categories", None)
         product_type_val = kwargs.get("product_type")
+        menu_id = kwargs.get("menu_id")
 
         is_edit = kwargs.get("is_edit")
 
@@ -99,6 +99,7 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
         kwargs.pop("product_type")
         kwargs.pop("product_images")
         kwargs.pop("is_edit")
+        kwargs.pop("menu_id")
 
         # check if images are not provided
         if product_images and len(product_images) == 0:
@@ -107,9 +108,8 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
         profile = info.context.user.profile
         if profile.store is None:
             return CreateUpdateItemMutation(error="You are not a vendor")
-
-        proudct_menu_name = kwargs.get("store_menu_name", "OTHERS")
-        if not proudct_menu_name in profile.store.store_menu:
+        menu_instance = profile.store.menus().filter(id=menu_id).first()
+        if menu_instance is None:
             return CreateUpdateItemMutation(error="Invalid Menu Name")
         
         product_qs = (
@@ -135,13 +135,11 @@ class CreateUpdateItemMutation(Output, graphene.Mutation):
                     product_categories = ItemAttribute.objects.filter(
                         slug__in=product_categories_vals
                     )
-                product_type = ItemAttribute.objects.get(slug=product_type_val)
-
                 # Spread the kwargs
                 save_data = {
                     **kwargs,
                     "product_creator": profile.store,
-                    "product_type": product_type,
+                    "product_menu": menu_instance,
                     "has_qty": kwargs.get("product_qty")
                     and kwargs.get("product_qty", 0) > 0,
                 }
@@ -225,7 +223,6 @@ class EditProductMutation(Output, graphene.Mutation):
         product_name = graphene.String()
         product_type = graphene.String()
         product_price = graphene.Decimal()
-        store_menu_name = graphene.String()
         product_share_visibility = graphene.String()
 
     product = graphene.Field(ItemType, default_value=None)
@@ -265,10 +262,6 @@ class EditProductMutation(Output, graphene.Mutation):
         profile = info.context.user.profile
         if profile.store is None:
             return EditProductMutation(error="You are not a vendor")
-
-        proudct_menu_name = kwargs.get("store_menu_name", "Others")
-        if not proudct_menu_name in profile.store.store_menu:
-            return EditProductMutation(error="Invalid Menu Name")
 
         product = (
             Item.get_items()
@@ -316,7 +309,6 @@ class EditProductMutation(Output, graphene.Mutation):
                         product.product_share_visibility = kwargs.get(
                             "product_share_visibility"
                         )
-                        product.store_menu_name = kwargs.get("store_menu_name")
 
                         if not product_categories is None:
                             product.product_categories.set(product_categories)
@@ -411,13 +403,15 @@ class UpdateItemMenuMutation(Output, graphene.Mutation):
         item = item.first()
         if item.product_creator != store:
             return UpdateItemMenuMutation(error="You are not allowed to edit this item")
+        
+        menu_instance = store.menus().filter(name=menu).first()
 
-        if not menu in store.store_menu:
+        if not menu_instance:
             return UpdateItemMenuMutation(
                 error="'{}' is not part of your menu".format(menu)
             )
 
-        item.store_menu_name = menu
+        item.product_menu = menu_instance
         item.save()
         return UpdateItemMenuMutation(success=True)
 

@@ -19,6 +19,7 @@ from .mutations import (
     SendPhoneVerificationCodeMutation,
     VerifyPhoneMutation,
     UpdateStoreMenuMutation,
+    RearrangeStoreMenusMutation,
     UpdateSchoolInfoMutation,
     UpdateOnlineStatusMutation,
     HideWalletBalanceMutation,
@@ -111,6 +112,7 @@ class Mutation(AuthMutation, graphene.ObjectType):
     create_update_store = CreateUpdateStoreMutation.Field()
     update_store_menu = UpdateStoreMenuMutation.Field()
     update_online_status = UpdateOnlineStatusMutation.Field()
+    rearrange_store_menus = RearrangeStoreMenusMutation.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

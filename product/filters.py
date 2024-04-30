@@ -15,12 +15,12 @@ class ItemFilter(FilterSet):
         field_name="product_creator__store_address", lookup_expr="icontains"
     )
     category = CharFilter(method="filter_by_category")
+    store_menu_name = CharFilter(field_name="product_menu__name", lookup_expr="exact")
 
     class Meta:
         model = Item
         fields = {
             "product_name": ["icontains"],
-            "store_menu_name": ["exact"],
             "product_slug": ["icontains"],
             "product_price": ["exact", "lt", "gt"],  # lt = less than, gt = greater than
         }

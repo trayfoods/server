@@ -1,7 +1,7 @@
 import graphene
 from graphene_django.filter import DjangoFilterConnectionField
 from users.models import Store
-from users.types import StoreType, StoreNode, StoreItmMenuType
+from users.types import StoreType, StoreNode, StoreItmMenuType, MenuType
 from product.types import ItemNode, CategoryType, ItemAttribute
 from trayapp.permissions import permission_checker, IsAuthenticated
 from graphql import GraphQLError
@@ -10,7 +10,8 @@ from graphql import GraphQLError
 class StoreQueries(graphene.ObjectType):
     stores = DjangoFilterConnectionField(StoreNode)
     store_items = DjangoFilterConnectionField(ItemNode)
-    store_itm_menu = graphene.List(StoreItmMenuType)
+    menu = graphene.Field(MenuType, name=graphene.String(required=True))
+    store_items_menus = graphene.List(StoreItmMenuType)
     store_items_categories = graphene.List(
         CategoryType, store_nickname=graphene.String()
     )
@@ -32,26 +33,24 @@ class StoreQueries(graphene.ObjectType):
     def resolve_store_items(self, info, **kwargs):
         user = info.context.user
         if not "VENDOR" in user.roles:
-            raise GraphQLError("243: You are not a vendor")
+            raise GraphQLError("You are not a vendor")
         store: Store = user.profile.store
         return store.get_store_products()
 
     @permission_checker([IsAuthenticated])
-    def resolve_store_itm_menu(self, info, **kwargs):
+    def resolve_store_items_menus(self, info, **kwargs):
         user = info.context.user
         if not "VENDOR" in user.roles:
-            raise GraphQLError("243: You are not a vendor")
+            raise GraphQLError("You are not a vendor")
 
         store: Store = user.profile.store
         store_items = store.get_store_products()
-        store_menu = store.store_menu
+        store_menu = store.menus()
         store_menu_with_items = []
 
         for menu in store_menu:
             store_menu_with_items.append(
-                StoreItmMenuType(
-                    menu=menu, items=store_items.filter(store_menu_name=menu)
-                )
+                StoreItmMenuType(menu=menu, items=store_items.filter(product_menu=menu))
             )
         return store_menu_with_items
 

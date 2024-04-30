@@ -966,7 +966,7 @@ class Store(models.Model):
     store_type = models.CharField(max_length=20)
     store_categories = models.JSONField(default=list, blank=True)
     store_rank = models.FloatField(default=0, editable=False)
-    store_menu: list = models.JSONField(default=list, blank=True)
+    # store_menu: list = models.JSONField(default=list, blank=True)
     has_physical_store = models.BooleanField(default=False)
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
@@ -1010,18 +1010,7 @@ class Store(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        # check if all is not in store menu
-        all_exists = False
-        for menu in self.store_menu:
-            name = menu.upper()
-            if name == "OTHERS":
-                all_exists = True
-                break
-        if not all_exists:
-            self.store_menu.append("OTHERS")
-            self.save()
-
-        return f"{self.store_nickname}"
+        return self.store_nickname
 
     # check if store is open
     def get_is_open_data(self):
@@ -1200,6 +1189,32 @@ class Store(models.Model):
 
         return True
 
+    def menus(self):
+        return Menu.objects.filter(store=self)
+
+    @property
+    def store_menu(self):
+        return [menu.name for menu in self.menus()]
+
+
+class Menu(models.Model):
+    position = models.IntegerField(default=0, editable=False)
+    name = models.CharField(max_length=50)
+    store = models.ForeignKey("users.Store", on_delete=models.CASCADE)
+    type = models.ForeignKey(
+        "product.ItemAttribute", on_delete=models.CASCADE, related_name="menus"
+    )
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position"]
+
+    def __str__(self):
+        return self.name
+
+    def get_menu_items(self):
+        return Item.objects.filter(menu=self)
+
 
 class Hostel(models.Model):
     name = models.CharField(max_length=50)
@@ -1349,7 +1364,9 @@ class DeliveryPerson(models.Model):
 
     # method to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
-        delivery_notifications = DeliveryNotification.objects.filter(delivery_person=self)
+        delivery_notifications = DeliveryNotification.objects.filter(
+            delivery_person=self
+        )
 
         if delivery_notifications.filter(order=order).exists():
             return False
@@ -1456,10 +1473,7 @@ class DeliveryPerson(models.Model):
         did_find_delivery_person = False
         for delivery_person in delivery_people:
             # check if the delivery person has rejected the order before
-            if (
-                delivery_person
-                and delivery_person.can_deliver(order)
-            ):
+            if delivery_person and delivery_person.can_deliver(order):
                 # send new delivery request to queue
                 queue_data = {
                     "order_id": order.order_track_id,

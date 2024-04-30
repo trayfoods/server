@@ -3,6 +3,7 @@ from django.contrib import admin
 from users.models import (
     Student,
     Store,
+    Menu,
     StoreOpenHours,
     Profile,
     Hostel,
@@ -66,6 +67,12 @@ class UserAccountAdmin(admin.ModelAdmin):
     # def get_queryset(self, request):
     #     qs = super().get_queryset(request)
     #     return qs.exclude(is_staff=True)
+
+
+class MenuInline(admin.TabularInline):
+    model = Menu
+    extra = 0
+    readonly_fields = ("name", "store")
 
 
 class StoreInline(admin.TabularInline):
@@ -182,9 +189,12 @@ class TransactionAdmin(admin.ModelAdmin):
 class DeliveryInline(admin.TabularInline):
     model = DeliveryNotification
     extra = 0
-    readonly_fields = ("store", "delivery_person", 
-                       #"status", 
-                       "created_at")
+    readonly_fields = (
+        "store",
+        "delivery_person",
+        # "status",
+        "created_at",
+    )
 
 
 class DeliveryPersonAdmin(admin.ModelAdmin):
@@ -210,7 +220,7 @@ class StoreOpenHoursInline(admin.TabularInline):
 
 
 class StoreAdmin(admin.ModelAdmin):
-    inlines = [StoreOpenHoursInline]
+    inlines = [MenuInline, StoreOpenHoursInline]
     list_display = (
         "store_name",
         "__str__",

@@ -83,12 +83,9 @@ class Item(models.Model):
         default="public",
         editable=False,
     )
-    store_menu_name = models.CharField(
-        max_length=30,
-        default="OTHERS",
-        blank=True,
-        editable=False,
-        help_text="Menu Name From Product Creator Store Menu",
+
+    product_menu = models.ForeignKey(
+        "users.Menu", on_delete=models.CASCADE, blank=True, null=True
     )
 
     product_categories = models.ManyToManyField(
@@ -282,6 +279,11 @@ class Item(models.Model):
         )
 
         return normalized_weighted_average_rating
+
+    def get_product_menu_name(self):
+        if self.product_menu:
+            return self.product_menu.name
+        return "others"
 
     # check if the item has qty and the qty is 0, method name: is_out_of_stock
     @property

@@ -2,7 +2,7 @@ import graphene
 from graphql import GraphQLError
 
 from ..models import Item
-from users.models import Store
+from users.models import Store, Menu
 from ..types import ItemNode, ItemType, ReviewNode
 from users.models import UserActivity
 from graphene_django.filter import DjangoFilterConnectionField
@@ -15,6 +15,8 @@ class ItemQueries(graphene.ObjectType):
         ItemType,
         item_slug=graphene.String(required=True),
     )
+
+
     hero_data = graphene.List(ItemType)
 
     item_reviews = DjangoFilterConnectionField(
@@ -51,25 +53,6 @@ class ItemQueries(graphene.ObjectType):
 
         return items
 
-    def resolve_hero_data(self, info):
-        # filter items by store's gender preference is equal to user profile gender
-        user = info.context.user
-        items = Item.get_items()
-        if user.is_authenticated:
-            user_gender = user.profile.gender
-            items = items.filter(
-                product_creator__gender_preference=user_gender
-            ) | Item.get_items().filter(product_creator__gender_preference__isnull=True)
-
-        items = (
-            items.exclude(product_creator__is_approved=False)
-            .filter(product_type__slug__icontains="food")
-            .exclude(product_type__slug__icontains="not")
-            .order_by("-product_clicks")[:4]
-        )
-
-        return items
-
     def resolve_item(self, info, item_slug):
         from django.utils import timezone
 
@@ -97,3 +80,28 @@ class ItemQueries(graphene.ObjectType):
             raise GraphQLError("404: Item Not Found")
 
         return item
+
+    def resolve_menu(self, info, name):
+        menu = Menu.objects.filter(name=name).first()
+        if menu is None:
+            raise GraphQLError("Menu does not exist")
+        return menu
+
+    def resolve_hero_data(self, info):
+        # filter items by store's gender preference is equal to user profile gender
+        user = info.context.user
+        items = Item.get_items()
+        if user.is_authenticated:
+            user_gender = user.profile.gender
+            items = items.filter(
+                product_creator__gender_preference=user_gender
+            ) | Item.get_items().filter(product_creator__gender_preference__isnull=True)
+
+        items = (
+            items.exclude(product_creator__is_approved=False)
+            .filter(product_type__slug__icontains="food")
+            .exclude(product_type__slug__icontains="not")
+            .order_by("-product_clicks")[:4]
+        )
+
+        return items
