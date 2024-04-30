@@ -154,7 +154,6 @@ class ItemType(DjangoObjectType):
     is_only_pickup = graphene.Boolean()
     rating_percentage = graphene.Float()
     product_status = graphene.String()
-    store_menu_name = graphene.String()
 
     class Meta:
         model = Item
@@ -171,7 +170,7 @@ class ItemType(DjangoObjectType):
             "is_groupable",
             "product_share_visibility",
             "product_categories",
-            "product_type",
+            "product_menu",
             "product_images",
             "product_desc",
             "product_price",
@@ -183,13 +182,9 @@ class ItemType(DjangoObjectType):
             "product_creator",
             "product_created_on",
             "is_avaliable",
-            "store_menu_name",
             "rating_percentage",
             "product_status",
         ]
-
-    def resolve_store_menu_name(self, info):
-        return self.get_product_menu_name()
 
     def resolve_option_groups(self, info):
         # get self.option_groups [json, list]

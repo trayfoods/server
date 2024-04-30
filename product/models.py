@@ -280,11 +280,6 @@ class Item(models.Model):
 
         return normalized_weighted_average_rating
 
-    def get_product_menu_name(self):
-        if self.product_menu:
-            return self.product_menu.name
-        return "others"
-
     # check if the item has qty and the qty is 0, method name: is_out_of_stock
     @property
     def is_out_of_stock(self):

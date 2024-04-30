@@ -314,7 +314,7 @@ class MenuType(DjangoObjectType):
         fields = "__all__"
 
     def resolve_type(self, info):
-        return self.type.slug
+        return self.type.slug if self.type else "UNKNOWN"
 
 class StoreItmMenuType(graphene.ObjectType):
     menu = graphene.Field(MenuType)

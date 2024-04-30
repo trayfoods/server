@@ -966,7 +966,6 @@ class Store(models.Model):
     store_type = models.CharField(max_length=20)
     store_categories = models.JSONField(default=list, blank=True)
     store_rank = models.FloatField(default=0, editable=False)
-    # store_menu: list = models.JSONField(default=list, blank=True)
     has_physical_store = models.BooleanField(default=False)
     store_cover_image = models.ImageField(
         upload_to=store_cover_image_directory_path, null=True, blank=True
@@ -1202,7 +1201,11 @@ class Menu(models.Model):
     name = models.CharField(max_length=50)
     store = models.ForeignKey("users.Store", on_delete=models.CASCADE)
     type = models.ForeignKey(
-        "product.ItemAttribute", on_delete=models.CASCADE, related_name="menus"
+        "product.ItemAttribute",
+        on_delete=models.SET_NULL,
+        related_name="menus",
+        blank=True,
+        null=True,
     )
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -1654,4 +1657,13 @@ def update_profile_calling_code(sender, instance, created, **kwargs):
     # check if the calling code is already set
     if instance.country and not instance.calling_code:
         instance.has_calling_code()
+        instance.save()
+
+
+# signal to add others as store default menu when created
+@receiver(post_save, sender=Store)
+def add_others_as_default_menu(sender, instance, created, **kwargs):
+    if created:
+        menu = Menu.objects.create(name="Others", store=instance)
+        menu.save()
         instance.save()
