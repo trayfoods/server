@@ -1155,7 +1155,7 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
     def mutate(self, info, menu: MenuInputType, action: str, old_menu_name=None):
         user = info.context.user
         user_profile = user.profile
-        store = user_profile.store
+        store: Store = user_profile.store
 
         if not "VENDOR" in user.roles or store is None:
             return UpdateStoreMenuMutation(error="You are not a vendor")
@@ -1198,6 +1198,13 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
                     error="You cannot delete the 'Others' menu"
                 )
 
+            # get all the items in the menu
+            items = menu_to_remove.get_menu_items()
+            # change all the items to the `others` menu
+            for item in items:
+                item.product_menu = store.menus().filter(name="others").first()
+                item.save()
+
             menu_to_remove.delete()
 
         elif action == "edit":
@@ -1209,7 +1216,9 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
 
             old_menu = Menu.objects.filter(name=old_menu_name, store=store).first()
             if not old_menu:
-                return UpdateStoreMenuMutation(error=f"'{old_menu_name}' does not exists")
+                return UpdateStoreMenuMutation(
+                    error=f"'{old_menu_name}' does not exists"
+                )
 
             old_menu.name = menu.name
             old_menu.type = menu.type

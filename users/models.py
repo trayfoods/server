@@ -1216,7 +1216,7 @@ class Menu(models.Model):
         return self.name
 
     def get_menu_items(self):
-        return Item.objects.filter(menu=self)
+        return Item.objects.filter(product_menu=self)
 
 
 class Hostel(models.Model):
