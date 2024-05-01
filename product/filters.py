@@ -154,10 +154,6 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
                     or order.get_delivery_person(delivery_person_id=delivery_person_id)[
                         "status"
                     ].upper()
-                    == "PICKED-UP"
-                    or order.get_delivery_person(delivery_person_id=delivery_person_id)[
-                        "status"
-                    ].upper()
                     == "PENDING"
                 ]
             )

@@ -1398,7 +1398,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     order.notify_store(
                         store_id=store_id,
                         title=f"Delivery Person Found For {order.user.user.username}'s Order",
-                        message=f"{current_delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.order_track_id}",
+                        message=f"{current_delivery_person.profile.user.get_full_name()} has accepted the delivery request for Order {order.get_order_display_id()}",
                     )
 
                     return MarkOrderAsMutation(success=True)

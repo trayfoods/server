@@ -1,7 +1,7 @@
 import graphene
 from graphql import GraphQLError
 from product.models import Order
-from users.models import DeliveryPerson
+from users.models import DeliveryPerson, Profile
 from trayapp.permissions import IsAuthenticated, permission_checker
 from graphene_django.filter import DjangoFilterConnectionField
 from ..types import (
@@ -106,7 +106,7 @@ class OrderQueries(graphene.ObjectType):
     def resolve_status_orders_count(self, info, statuses: list[str], who: str):
         statuses_with_counts = []
         user = info.context.user
-        profile = user.profile
+        profile: Profile = user.profile
         who = who.lower()
         if not who in ["delivery_person", "vendor"]:
             raise GraphQLError("Invalid Role")
@@ -145,6 +145,33 @@ class OrderQueries(graphene.ObjectType):
                 for order in orders
                 if order.get_order_status(profile).upper() in status
             ]
+
+            if status == "ONGOING":
+                # get orders with status ["pening", "out-for-delivery"]
+                orders_with_status_count = [
+                    order
+                    for order in orders
+                    if order.get_order_status(profile).upper()
+                    in ["PENDING", "OUT-FOR-DELIVERY"]
+                ]
+
+            elif status == "READY":
+                # get orders with status ["ready-for-pickup", "ready-for-delivery", "no-delivery-person"]
+                orders_with_status_count = [
+                    order
+                    for order in orders
+                    if order.get_order_status(profile).upper()
+                    in ["READY_FOR_PICKUP", "READY_FOR_DELIVERY", "NO_DELIVERY_PERSON"]
+                ]
+
+            elif status == "COMPLETED":
+                # get orders with status ["delivered", "picked-up"]
+                orders_with_status_count = [
+                    order
+                    for order in orders
+                    if order.get_order_status(profile).upper()
+                    in ["DELIVERED", "PICKED_UP"]
+                ]
 
             statuses_with_counts.append(
                 {

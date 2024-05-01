@@ -1037,6 +1037,7 @@ class Order(models.Model):
                     "status": "new",
                     "storeId": delivery_person_notification_instance.first().store.id,
                 }
+        
         for delivery_person in delivery_people:
             if delivery_person_id and (
                 str(delivery_person["id"]) == str(delivery_person_id)
