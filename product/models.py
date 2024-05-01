@@ -94,12 +94,6 @@ class Item(models.Model):
         blank=True,
     )
 
-    product_type = models.ForeignKey(
-        "ItemAttribute",
-        related_name="product_type",
-        on_delete=models.SET_NULL,
-        null=True,
-    )
     product_creator = models.ForeignKey(
         "users.Store",
         null=True,
@@ -122,7 +116,6 @@ class Item(models.Model):
             ("suspended", "suspended"),
         ),
         default="active",
-        editable=False,
     )
 
     is_groupable = models.BooleanField(default=False)
@@ -165,7 +158,7 @@ class Item(models.Model):
         return (
             cls.objects.exclude(product_status="deleted")
             .exclude(product_creator__is_approved=False)
-            .exclude(product_type__slug__icontains="package")
+            .exclude(product_menu__type__slug__icontains="package")
         )
 
     # filter the product available in a store

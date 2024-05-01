@@ -18,15 +18,20 @@ class ItemAdmin(admin.ModelAdmin):
     inlines = [ItemImageInlineAdmin, RatingInlineAdmin]
     list_display = (
         "product_name",
-        "product_qty_unit",
-        "product_type",
         "product_price",
+        "product_qty_unit",
+        "product_menu",
+        "product_status",
+    )
+    search_fields = (
+        "product_name",
+        "product_menu__name",
+        "product_creator__store_name",
     )
     readonly_fields = (
         "product_images",
         "product_slug",
         "product_price",
-        "product_type",
         "product_clicks",
         "product_views",
     )

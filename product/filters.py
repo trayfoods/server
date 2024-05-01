@@ -5,7 +5,7 @@ from users.models import DeliveryPerson
 
 
 class ItemFilter(FilterSet):
-    type = CharFilter(field_name="product_type__slug", lookup_expr="exact")
+    type = CharFilter(field_name="product_menu__type__slug", lookup_expr="exact")
 
     store_nickname = CharFilter(method="filter_by_store_nickname")
     school = CharFilter(field_name="product_creator__school__slug", lookup_expr="exact")
@@ -135,10 +135,7 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
                 self.request.user.profile.get_delivery_person()
             )
 
-            orderIds = [
-                x.order.id
-                for x in delivery_person.get_notifications()
-            ]
+            orderIds = [x.order.id for x in delivery_person.get_notifications()]
 
             return Order.objects.filter(id__in=orderIds)
 

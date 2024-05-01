@@ -104,7 +104,7 @@ class StoreQueries(graphene.ObjectType):
         store = store_qs.first()
         # filter store items and exclude packages
         store_items = store.get_store_products().exclude(
-            product_type__slug__icontains="package"
+            product_menu__type__slug__icontains="package"
         )
 
         top_store_items = store_items.order_by("-product_views")[:11]
