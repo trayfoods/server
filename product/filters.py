@@ -72,7 +72,7 @@ class OrderFilter(DefaultOrderFilter, FilterSet):
 
 class StoreOrderFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
-    shipping_address = CharFilter(method="filter_by_shipping_address")
+    search_query = CharFilter(method="filter_by_search_query")
 
     def filter_by_order_status(self, queryset, name, value):
         if value == "READY":
@@ -110,18 +110,20 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
             ]
         )
 
-    def filter_by_shipping_address(self, queryset: list[Order], name, value):
+    def filter_by_search_query(self, queryset: list[Order], name, value):
         return queryset.filter(
             id__in=[
                 order.id
                 for order in queryset
                 if value.lower() in order.get_display_shipping_address().lower()
+                or value.lower() in order.get_order_display_id().lower()
+                or value.lower() in order.order_confirm_pin.lower()
             ]
         )
 
     class Meta:
         model = Order
-        fields = {"order_status": ["exact"], "order_track_id": ["icontains"]}
+        fields = {"order_status": ["exact"]}
 
 
 class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
