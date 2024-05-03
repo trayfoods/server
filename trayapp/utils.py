@@ -140,14 +140,14 @@ def image_resized(image, w, h, format=None):
     imageTemporaryResized = _image.resize((w, h), Image.BICUBIC)
 
     file = io.BytesIO()
-    content_type = Image.MIME[_image.format]
-    imageTemporaryResized.save(file, _image.format, optimize=True, quality=95)
-
     if format:
         # Using BICUBIC interpolation for high-quality resizing in the specified format
         imageTemporaryResized = imageTemporaryResized.resize((w, h), Image.BICUBIC)
         content_type = f"image/{format}"
         imageTemporaryResized.save(file, format, optimize=True, quality=95)
+    else:
+        content_type = Image.MIME[_image.format]
+        imageTemporaryResized.save(file, _image.format, optimize=True, quality=95)
 
     file.seek(0)
     size = sys.getsizeof(file)
