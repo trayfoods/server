@@ -153,8 +153,8 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
                     for order in queryset
                     if order.get_delivery_person(delivery_person_id=delivery_person_id)[
                         "status"
-                    ].upper()
-                    == "OUT_FOR_DELIVERY"
+                    ].upper().replace("_", "-")
+                    == "OUT-FOR-DELIVERY"
                     or order.get_delivery_person(delivery_person_id=delivery_person_id)[
                         "status"
                     ].upper()

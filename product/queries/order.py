@@ -151,7 +151,7 @@ class OrderQueries(graphene.ObjectType):
                 orders_with_status_count = [
                     order
                     for order in orders
-                    if order.get_order_status(profile).upper()
+                    if order.get_order_status(profile).upper().replace("-", "_")
                     in ["PENDING", "OUT-FOR-DELIVERY"]
                 ]
 
