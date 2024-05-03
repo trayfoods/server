@@ -154,7 +154,7 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
                     if order.get_delivery_person(delivery_person_id=delivery_person_id)[
                         "status"
                     ].upper()
-                    == "OUT-FOR-DELIVERY"
+                    == "OUT_FOR_DELIVERY"
                     or order.get_delivery_person(delivery_person_id=delivery_person_id)[
                         "status"
                     ].upper()
