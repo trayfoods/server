@@ -128,6 +128,7 @@ class WalletAdmin(admin.ModelAdmin):
     )
 
 
+
 class HostelFieldInline(admin.TabularInline):
     model = HostelField
     extra = 0

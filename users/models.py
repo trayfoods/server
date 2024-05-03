@@ -604,7 +604,7 @@ class Wallet(models.Model):
         default=00.00,
         decimal_places=2,
         blank=True,
-        editable=False,
+        # editable=False,
     )
     hide_balance = models.BooleanField(default=False)
     passcode = models.CharField(
