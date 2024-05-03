@@ -128,6 +128,8 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
 
 class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
+    search_query = CharFilter(method="filter_by_search_query")
+
 
     def filter_by_order_status(self, queryset, name, value):
         value = value.lower()
@@ -168,5 +170,16 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
                     "status"
                 ].upper()
                 == value.upper()
+            ]
+        )
+
+    def filter_by_search_query(self, queryset: list[Order], name, value):
+        return queryset.filter(
+            id__in=[
+                order.id
+                for order in queryset
+                if value.lower() in order.get_display_shipping_address().lower()
+                or value.lower() in order.get_order_display_id().lower()
+                or value.lower() in order.order_confirm_pin.lower()
             ]
         )
