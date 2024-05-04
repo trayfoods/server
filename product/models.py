@@ -808,17 +808,16 @@ class Order(models.Model):
         # get the store option groups price
         store_option_groups_price = total.get("option_groups_price", 0)
 
-        # get len of stores linked to this order
-        store_count = self.linked_stores.count()
-
         # divide the delivery fee by the number of stores linked to the order to get the delivery fee for each store
-        delivery_fee = self.delivery_fee / store_count
+        store_delivery_fee = (
+                self.delivery_fee + self.delivery_fee_percentage
+            ) / len(self.stores_infos)
 
         amount = (
             Decimal(store_total_price)
             + Decimal(store_plate_price)
             + Decimal(store_option_groups_price)
-            + Decimal(delivery_fee)
+            + Decimal(store_delivery_fee)
         )
 
         # convert the overall_price to kobo
