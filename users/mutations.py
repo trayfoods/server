@@ -1202,6 +1202,14 @@ class UpdateStoreMenuMutation(Output, graphene.Mutation):
             items = menu_to_remove.get_menu_items()
             # change all the items to the `others` menu
             for item in items:
+                store_others_menu = store.menus().filter(name="others").first()
+                if not store_others_menu:
+                    # create the others menu if it does not exist
+                    others_menu = Menu.objects.create(
+                        name="others", type=menu.type, store=store
+                    )
+                    others_menu.save()
+
                 item.product_menu = store.menus().filter(name="others").first()
                 item.save()
 
