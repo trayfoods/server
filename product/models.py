@@ -72,7 +72,7 @@ class Item(models.Model):
     )
     has_qty = models.BooleanField(default=False, editable=False)
     product_qty_unit = models.CharField(max_length=20, blank=True, null=True)
-    product_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    product_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     product_calories = models.FloatField(default=0.0)
     product_desc = models.CharField(
         max_length=200, blank=True, null=True, help_text="Product Description"
@@ -398,22 +398,22 @@ class Order(models.Model):
     user = models.ForeignKey("users.Profile", on_delete=models.CASCADE)
 
     overall_price = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     delivery_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     extra_delivery_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     service_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     funds_refunded = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     delivery_fee_percentage = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     shipping = models.JSONField(default=dict)
     stores_infos = models.JSONField(default=list)
@@ -439,7 +439,7 @@ class Order(models.Model):
     order_payment_method = models.CharField(max_length=20, default="card")
     order_payment_url = models.CharField(max_length=200, editable=False, blank=True)
     order_gateway_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0, editable=False
+        max_digits=12, decimal_places=2, default=0.0, editable=False
     )
     order_payment_status = models.CharField(
         max_length=25,

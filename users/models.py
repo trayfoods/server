@@ -539,13 +539,13 @@ class Transaction(models.Model):
     title = models.CharField(max_length=50)
     desc = models.CharField(max_length=200, null=True, blank=True)
     amount = models.DecimalField(
-        max_digits=7,
+        max_digits=12,
         default=0,
         decimal_places=2,
         editable=False,
     )
     transfer_fee = models.DecimalField(
-        max_digits=7,
+        max_digits=12,
         default=0,
         decimal_places=2,
         editable=False,
@@ -599,12 +599,12 @@ class Wallet(models.Model):
     user = models.OneToOneField(Profile, on_delete=models.CASCADE)
     currency = models.CharField(max_length=4, default="NGN")
     balance = models.DecimalField(
-        max_digits=100,
+        max_digits=12,
         null=True,
         default=00.00,
         decimal_places=2,
         blank=True,
-        # editable=False,
+        editable=False,
     )
     hide_balance = models.BooleanField(default=False)
     passcode = models.CharField(
