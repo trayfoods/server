@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
-from trayapp.utils import image_resized, image_exists
+from trayapp.utils import image_resized, image_exists, termii_send_sms
 
 from product.models import Item, Order
 
@@ -281,18 +281,24 @@ class Profile(models.Model):
         super().save(*args, **kwargs)
 
     def has_calling_code(self):
-        if (not self.calling_code or not "+" in self.calling_code) and self.country:
+        calling_code = self.calling_code
+
+        if not calling_code and self.country:
             # get the calling code from the country
             from restcountries import RestCountryApiV2 as rapi
 
             country = rapi.get_country_by_country_code(self.country.code)
-            calling_code = country.calling_codes[0]
-            if "+" not in calling_code:
-                calling_code = f"+{calling_code}"
+            calling_code: str = country.calling_codes[0]
 
             self.calling_code = calling_code
             self.save()
-        return True if self.calling_code else False
+
+        if "+" in calling_code:
+            calling_code = calling_code.replace("+", "")
+            self.calling_code = calling_code
+            self.save()
+
+        return True if calling_code else False
 
     def get_full_phone_number(self):
         return f"{self.calling_code}{self.phone_number}"
@@ -381,9 +387,6 @@ class Profile(models.Model):
         # check if the phone number has been used by another user
         self.clean_phone_number(new_phone_number)
 
-        if "+" not in calling_code:
-            calling_code = f"+{calling_code}"
-
         new_phone_number = f"{calling_code}{new_phone_number}"
 
         verification = TWILIO_CLIENT.verify.v2.services(
@@ -400,8 +403,6 @@ class Profile(models.Model):
         return success
 
     def verify_phone_number(self, code, calling_code):
-        if "+" not in calling_code:
-            calling_code = f"+{calling_code}"
 
         phone_number = f"{calling_code}{self.phone_number}"
 
@@ -422,9 +423,11 @@ class Profile(models.Model):
         try:
             if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
-                TWILIO_CLIENT.messages.create(
-                    body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
-                )
+                termii_send_sms(to=phone_number, msg=message, channel="dnd")
+
+                # TWILIO_CLIENT.messages.create(
+                #     body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
+                # )
                 return True
 
             if not SMS_ENABLED:
@@ -432,7 +435,8 @@ class Profile(models.Model):
                 print(message)
                 logging.info("End of SMS is disabled")
                 return False if not settings.DEBUG else True
-        except:
+        except Exception as e:
+            print(e)
             return False
 
     def send_push_notification(self, title, msg, data=None):
@@ -471,14 +475,19 @@ class Profile(models.Model):
             if data:
                 from_email = data.get("from_email", None) or from_email
                 template = data.get("template", None)
-            if skip_email or not self.send_email(
-                subject=title,
-                from_email=from_email,
-                text_content=msg,
-                template=template,
-                context=data,
-            ):
-                return self.send_sms(message=msg)
+            did_send_sms = self.send_sms(message=msg)
+
+            # send email if sms fail
+            if not skip_email and not did_send_sms:
+                return self.send_email(
+                    subject=title,
+                    from_email=from_email,
+                    text_content=msg,
+                    template=template,
+                    context=data,
+                )
+
+            return did_send_sms
 
     def send_email(
         self, subject, from_email, text_content, template=None, context=None

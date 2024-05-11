@@ -404,3 +404,24 @@ def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
     with service_bus_client:
         sender = service_bus_client.get_queue_sender(queue_name)
         sender.send_messages(message_obj)
+
+
+def termii_send_sms(to: str, msg: str, channel="generic", media=None):
+    url = "https://api.ng.termii.com/api/sms/send"
+    payload = {
+        "to": to,
+        "from": "TrayFoods",
+        "sms": msg,
+        "type": "plain",
+        "channel": channel,
+        "api_key": settings.TERMII_API_KEY,
+    }
+    if media:
+        payload += {"media": media}
+    headers = {
+        "Content-Type": "application/json",
+    }
+    response = requests.request("POST", url, headers=headers, json=payload)
+
+    return response.json()
+
