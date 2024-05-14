@@ -117,10 +117,11 @@ class OrderQueries(graphene.ObjectType):
             if not "VENDOR" in user.roles:
                 raise GraphQLError("You are not a vendor")
             # get recent orders
-            orders: list[Order] = profile.store.orders.filter(
-                created_at__date__gte=timezone.now().date()
-                - timezone.timedelta(days=7)  # get orders from the last 7 days
-            )
+            orders: list[Order] = profile.store.orders
+            # .filter(
+            #     created_at__date__gte=timezone.now().date()
+            #     - timezone.timedelta(days=7)  # get orders from the last 7 days
+            # )
         elif who == "delivery_person":
             if not "DELIVERY_PERSON" in user.roles:
                 raise GraphQLError("You are not a delivery person")

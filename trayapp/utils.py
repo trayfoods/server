@@ -425,3 +425,26 @@ def termii_send_sms(to: str, msg: str, channel="generic", media=None):
 
     return response.json()
 
+def termii_send_otp(to: str, channel="generic", media=None):
+    url = "https://api.ng.termii.com/api/sms/otp/send"
+    payload = {
+         "api_key" : settings.TERMII_API_KEY,
+          "message_type" : "NUMERIC",
+          "to" : to,
+          "from" : "TrayFoods",
+          "channel" : "dnd",
+          "pin_attempts" : 10,
+          "pin_time_to_live" :  5,
+          "pin_length" : 6,
+          "pin_placeholder" : "< 1234 >",
+          "message_text" : "Your pin is < 1234 >",
+          "pin_type" : "NUMERIC"
+       }
+    if media:
+        payload += {"media": media}
+    headers = {
+        "Content-Type": "application/json",
+    }
+    response = requests.request("POST", url, headers=headers, json=payload)
+
+    return response.json()
