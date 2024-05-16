@@ -1516,7 +1516,7 @@ class DeliveryPerson(models.Model):
                     user.user.username, order.get_order_display_id()
                 ),
             )
-            did_complete = True
+            did_complete = False
 
         return did_complete
 
