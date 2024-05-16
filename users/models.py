@@ -1387,7 +1387,6 @@ class DeliveryPerson(models.Model):
         if (
             delivery_notifications.filter(status="pending").exists()
             or delivery_notifications.filter(status="processing").exists()
-            or delivery_notifications.filter(status="sent").exists()
         ):
             return False
 
@@ -1517,6 +1516,7 @@ class DeliveryPerson(models.Model):
                     user.user.username, order.get_order_display_id()
                 ),
             )
+            did_complete = True
 
         return did_complete
 
