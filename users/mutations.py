@@ -900,14 +900,11 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         )
         transaction.save()
 
-        print("transaction", transaction)
-
         if not transaction is None:
             try:
                 response = requests.post(
                     url, data=json.dumps(post_data), headers=headers
                 )
-                print(response.json())
                 if response.status_code == 200:
                     response = response.json()
                     if not response["data"] or not response["data"]["status"]:

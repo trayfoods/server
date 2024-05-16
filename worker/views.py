@@ -46,7 +46,7 @@ def process_delivery_notification(request):
                 "success": True,
                 "device_tokens": list(device_tokens),
                 "store_name": store_name,
-                "email": delivery_person.profile.user.email,
+                "phone_number": delivery_person.profile.get_full_phone_number(),
                 "store_id": store_id,
             }
             return JsonResponse(data=data, safe=False)

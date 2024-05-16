@@ -432,12 +432,12 @@ def termii_send_otp(to: str, channel="generic", media=None):
           "message_type" : "NUMERIC",
           "to" : to,
           "from" : "TrayFoods",
-          "channel" : "dnd",
+          "channel" : channel,
           "pin_attempts" : 10,
           "pin_time_to_live" :  5,
           "pin_length" : 6,
           "pin_placeholder" : "< 1234 >",
-          "message_text" : "Your pin is < 1234 >",
+          "message_text" : "Your OTP is < 1234 >",
           "pin_type" : "NUMERIC"
        }
     if media:

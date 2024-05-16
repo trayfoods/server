@@ -746,21 +746,26 @@ class Order(models.Model):
         profile: Profile = self.user
         if not data:
             data = {"link": f"/checkout/{self.order_track_id}"}  # default link
-        if not profile.notify_me(title=title, msg=message, data=data, skip_email=True):
-            return profile.send_email(
-                subject=title,
-                from_email="Trayfoods Orders <orders@trayfoods.com>",
-                text_content=message,
-                template="email/order_notification_email.html",
-                context={
-                    "title": title,
-                    "message": message,
-                    "order_id": self.order_track_id,
-                    "is_multi_store_order": self.linked_stores.count() > 1,
-                    "store_name": self.linked_stores.first().store_name,
-                    "is_customer": True,
-                },
-            )
+
+        try:
+            profile.send_push_notification(title=title, msg=message, data=data)
+            profile.send_email(
+                    subject=title,
+                    from_email="Trayfoods Orders <orders@trayfoods.com>",
+                    text_content=message,
+                    template="email/order_notification_email.html",
+                    context={
+                        "title": title,
+                        "message": message,
+                        "order_id": self.order_track_id,
+                        "is_multi_store_order": self.linked_stores.count() > 1,
+                        "store_name": self.linked_stores.first().store_name,
+                        "is_customer": True,
+                    },
+                )
+        except Exception as e:
+            print(e)
+            return False
 
     def notify_store(self, store_id: int, message: str, title: str = "Order Status"):
         from users.models import Store
