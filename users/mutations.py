@@ -909,14 +909,13 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                         success = True
                     else:
                         success = False
-                        error = response["message"]
                 else:
                     success = False
-                    error = response["message"]
 
                 # delete the transaction
                 if success == False:
                     transaction.delete()
+                    error = response["message"] if "message" in response else "Unable to transfer at the moment, please try again later"
             except Exception as e:
                 success = False
                 # delete the transaction
