@@ -903,7 +903,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 response = requests.post(
                     url, data=json.dumps(post_data), headers=headers
                 )
-                print(response)
+                print(response.json())
                 if response.status_code == 200:
                     response = response.json()
                     if response["status"] == True:
