@@ -903,10 +903,10 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 response = requests.post(
                     url, data=json.dumps(post_data), headers=headers
                 )
-                print(response.json())
-                response = response.json()
+                response_json = response.json()
+                print(response_json)
                 if response.status_code == 200:
-                    if response["status"] == True:
+                    if response_json["status"] == True:
                         success = True
                     else:
                         success = False
@@ -916,7 +916,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 # delete the transaction
                 if success == False:
                     transaction.delete()
-                    error = response["message"] if "message" in response else "Unable to transfer at the moment, please try again later"
+                    error = response_json["message"] if "message" in response_json else "Unable to transfer at the moment, please try again later"
             except Exception as e:
                 success = False
                 # delete the transaction
