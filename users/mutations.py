@@ -885,8 +885,6 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             "reason": reason,
         }
 
-        print("post_data", post_data)
-
         # create a transaction
         transaction = Transaction.objects.create(
             wallet=wallet,
