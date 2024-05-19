@@ -423,7 +423,7 @@ class Profile(models.Model):
         try:
             if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
-                termii_send_sms(to=phone_number, msg=message, channel="dnd")
+                termii_send_sms(to=phone_number, msg=message)
 
                 # TWILIO_CLIENT.messages.create(
                 #     body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
