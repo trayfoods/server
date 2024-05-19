@@ -907,23 +907,18 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 )
                 if response.status_code == 200:
                     response = response.json()
-                    if not response["data"] or not response["data"]["status"]:
-                        success = False
-                        # delete the transaction
-                        transaction.delete()
-                        error = response["message"]
                     if response["status"] == True:
                         success = True
                     else:
                         success = False
-                        # delete the transaction
-                        transaction.delete()
                         error = response["message"]
                 else:
                     success = False
-                    # delete the transaction
-                    transaction.delete()
                     error = response["message"]
+
+                # delete the transaction
+                if success == False:
+                    transaction.delete()
             except Exception as e:
                 success = False
                 # delete the transaction
