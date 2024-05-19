@@ -421,7 +421,8 @@ class Profile(models.Model):
 
     def send_sms(self, message):
         try:
-            if SMS_ENABLED and (self.has_calling_code() and self.phone_number_verified):
+            if SMS_ENABLED and self.has_calling_code():
+                                # and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
                 termii_send_sms(to=phone_number, msg=message)
 
