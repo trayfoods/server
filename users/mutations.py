@@ -908,6 +908,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                     if response["status"] == True:
                         success = True
                     else:
+                        print(response)
                         success = False
                 else:
                     success = False
