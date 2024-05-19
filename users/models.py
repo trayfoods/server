@@ -448,6 +448,8 @@ class Profile(models.Model):
             "device_token", flat=True
         )
         device_tokens = list(user_devices)
+        if not device_tokens or len(device_tokens) == 0:
+            return False
         try:
             from .threads import FCMThread
 
