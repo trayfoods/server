@@ -94,7 +94,7 @@ if "localhost:3000" == FRONTEND_URL:
 else:
     FRONTEND_URL = "https://%s" % FRONTEND_URL
 
-ALLOWED_HOSTS = ["api.trayfoods.com", "localhost", "trayfoods.azurewebsites.net"]
+ALLOWED_HOSTS = ["api.trayfoods.com", "localhost", "trayfoods.azurewebsites.net", "169.254.129.5"]
 SMS_ENABLED = "True" == os.environ.get("SMS_ENABLED", "False")
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = os.environ.get("DATA_UPLOAD_MAX_NUMBER_FIELDS", 2000)
