@@ -472,12 +472,12 @@ class Profile(models.Model):
 
     def notify_me(self, title, msg, data=None, skip_email=False):
         if not self.send_push_notification(title, msg, data):
+            did_send_sms = self.send_sms(message=msg)
             from_email = settings.DEFAULT_FROM_EMAIL
             template = None
             if data:
                 from_email = data.get("from_email", None) or from_email
                 template = data.get("template", None)
-            did_send_sms = self.send_sms(message=msg)
 
             # send email if sms fail
             if not skip_email and not did_send_sms:
