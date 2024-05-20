@@ -921,7 +921,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
 
             # handle order cancelled
             if action == "cancelled":
-                if order_status != "accepted":
+                if not order_status in ["accepted", "no-delivery-person"]:
                     order.set_profiles_seen(value=user.profile.id, action="add")
                     return MarkOrderAsMutation(
                         error="You cannot cancel this order because it has been marked as {}".format(
@@ -958,6 +958,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         did_send_refund = order.store_refund_customer(store_id)
                         if not did_send_refund or did_send_refund["status"] == False:
                             order.set_profiles_seen(value=user.profile.id, action="add")
+                            print(did_send_refund)
                             message = did_send_refund.get("message", "An error occured while refunding customer, please try again later")
                             return MarkOrderAsMutation(
                                 error=message
