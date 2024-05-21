@@ -1346,14 +1346,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 ):
                     return MarkOrderAsMutation(error="You have already accepted this order")
 
-                # check if the order status is not ready-for-delivery or partially-ready-for-delivery
-                if not order.order_status in [
-                    "ready-for-delivery",
-                    "partially-ready-for-delivery",
-                    "partially-delivered",
-                ]:
-                    return MarkOrderAsMutation(error="This order is not ready for delivery")
-
                 # check if the order store count is same as the delivery people count, if it is then return error
                 if len(order_delivery_people) == order.linked_stores.count():
                     return MarkOrderAsMutation(error="Order is already taken")
