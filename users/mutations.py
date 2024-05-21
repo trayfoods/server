@@ -940,7 +940,6 @@ class ChangePinMutation(Output, graphene.Mutation):
 
         user = info.context.user
         profile = user.profile
-        error = None
         wallet = Wallet.objects.filter(user=profile).first()
 
         new_pin = str(new_pin)
@@ -962,7 +961,7 @@ class ChangePinMutation(Output, graphene.Mutation):
             if is_old_pin == False:
                 return ChangePinMutation(error="Wrong Old Pin")
 
-        elif pwd:
+        if pwd:
             is_pwd = wallet.user.user.check_password(pwd)
 
             if is_pwd == False:
@@ -974,7 +973,7 @@ class ChangePinMutation(Output, graphene.Mutation):
         wallet.set_passcode(new_pin)
         wallet.save()
 
-        return ChangePinMutation(success=True, error=error)
+        return ChangePinMutation(success=True)
 
 
 class UserDeviceMutation(Output, graphene.Mutation):

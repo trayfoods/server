@@ -422,7 +422,7 @@ class Profile(models.Model):
     def send_sms(self, message):
         try:
             if SMS_ENABLED and self.has_calling_code():
-                                # and self.phone_number_verified):
+                # and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
                 termii_send_sms(to=phone_number, msg=message)
 
@@ -679,6 +679,7 @@ class Wallet(models.Model):
         if self.passcode is None:
             # set passcode to 0000
             self.set_passcode("0000")
+            self.save()
 
         return check_password(passcode, self.passcode)
 
