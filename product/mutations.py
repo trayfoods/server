@@ -692,6 +692,15 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                     message="Your Order has been cancelled and a refund has been initiated",
                 )
 
+                # notify the stores that the order has been cancelled
+                store_names = get_store_name_from_store_status(order)
+                for store_name in store_names:
+                    order.notify_store(
+                        title="Order Cancelled",
+                        message=f"Order {order.get_order_display_id()} has been cancelled by {order.user.user.username}",
+                        store_name=store_name,
+                    )
+
                 order.log_activity(
                     title="Order Cancelled",
                     activity_type="order_cancelled",
