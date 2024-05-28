@@ -349,7 +349,9 @@ class ProcessPayment:
                     )
                     if order_transaction:
                         store.wallet.deduct_balance(
-                            amount=overrall_store_price,
+                            amount=Decimal(store_total_price)
+                            + Decimal(store_plate_price)
+                            + Decimal(store_option_groups_price),
                             _type="refund",
                             desc="Refund for Order {}".format(
                                 order.get_order_display_id()
