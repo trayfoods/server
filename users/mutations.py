@@ -915,7 +915,11 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 # delete the transaction
                 if success == False:
                     transaction.delete()
-                    error = response_json["message"] if "message" in response_json else "Unable to transfer at the moment, please try again later"
+                    error = (
+                        response_json["message"]
+                        if "message" in response_json
+                        else "Unable to transfer at the moment, please try again later"
+                    )
             except Exception as e:
                 success = False
                 # delete the transaction
@@ -1023,6 +1027,8 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
             required=True, description="Phone number in E.164 format"
         )
 
+    pin_id = graphene.String(default_value=None)
+
     @staticmethod
     @permission_checker([IsAuthenticated])
     def mutate(self, info, phone, country):
@@ -1030,42 +1036,65 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
         success = False
         error = None
 
-        from restcountries import RestCountryApiV2 as rapi
+        pin_id = None
 
-        get_country = rapi.get_country_by_country_code(country)
-
-        # check if the country was found
-        if get_country is None:
-            raise GraphQLError(
-                f"Issue with the country: '{country}', please contact support."
-            )
-
-        calling_code = get_country.calling_codes[0]
+        phone = phone.strip()
+        phone = phone.replace(" ", "")
 
         profile.clean_phone_number(phone)
 
+        calling_code = None
+
+        # check if we already have the country calling code
+        if country in settings.COUNTRY_CALLING_CODES:
+            calling_code = settings.COUNTRY_CALLING_CODES[country]
+        else:
+            get_country = None
+            try:
+                from restcountries import RestCountryApiV2 as rapi
+
+                get_country = rapi.get_country_by_country_code(country)
+            except Exception as e:
+                logging.exception("Error getting country calling code: ", e)
+
+            # check if the country was found
+            if get_country is None:
+                raise GraphQLError(f"please contact support to continue")
+
+            calling_code = get_country.calling_codes[0]
+
+        phone = phone.replace(calling_code, "")
+
         if settings.DEBUG or not settings.SMS_ENABLED:
-            success = True
-            return SendPhoneVerificationCodeMutation(success=success, error=error)
+            return SendPhoneVerificationCodeMutation(success=True)
 
         try:
             # send the verification code through twilio
-            success = profile.send_phone_number_verification_code(
+            response = profile.send_phone_number_verification_code(
                 new_phone_number=phone, calling_code=calling_code
             )
+            success = response["success"]
+            pin_id = response["pin_id"]
         except Exception as e:
             if "use" in str(e):
                 error = "Phone number already in use, please try another."
             else:
                 error = "Issue sending the OTP code, please try again."
 
-        return SendPhoneVerificationCodeMutation(success=success, error=error)
+            logging.exception("Error sending phone verification code: ", e)
+
+        if not success:
+            error = "Issue sending the OTP code, please try again."
+
+        return SendPhoneVerificationCodeMutation(
+            success=success, error=error, pin_id=pin_id
+        )
 
 
 class VerifyPhoneMutation(Output, graphene.Mutation):
     class Arguments:
-        country = graphene.String(
-            required=True, description="Country code in ISO 3166-1 alpha-2 format"
+        pin_id = graphene.String(
+            required=True, description="Temporary ID for the verification code"
         )
         code = graphene.String(
             required=True,
@@ -1074,30 +1103,17 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
 
     @staticmethod
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, code, country):
-        profile = info.context.user.profile
+    def mutate(self, info, code, pin_id):
+        profile: Profile = info.context.user.profile
         success = False
         error = None
 
-        from restcountries import RestCountryApiV2 as rapi
-
-        get_country = rapi.get_country_by_country_code(country)
-
-        # check if the country was found
-        if get_country is None:
-            raise GraphQLError(
-                f"Issue with the country: '{country}', please contact support."
-            )
-
-        calling_code = get_country.calling_codes[0]
-
         if settings.DEBUG:
-            success = True
-            return VerifyPhoneMutation(success=success, error=error)
+            return VerifyPhoneMutation(success=True)
 
         try:
             # verify the phone number
-            success = profile.verify_phone_number(code, calling_code)
+            success = profile.verify_phone_number(pin=code, pin_id=pin_id)
         except Exception as e:
             error = "Incorrect OTP code, please try again."
             logging.exception("Error verifying phone number: ", e)

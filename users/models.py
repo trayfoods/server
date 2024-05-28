@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
-from trayapp.utils import image_resized, image_exists, termii_send_sms
+from trayapp.utils import image_resized, image_exists, termii_send_sms, termii_send_otp
 
 from product.models import Item, Order
 
@@ -389,32 +389,42 @@ class Profile(models.Model):
 
         new_phone_number = f"{calling_code}{new_phone_number}"
 
-        verification = TWILIO_CLIENT.verify.v2.services(
-            settings.TWILIO_VERIFY_SERVICE_SID
-        ).verifications.create(to=new_phone_number, channel="sms")
+        verification = termii_send_otp(to=new_phone_number)
 
-        success = True if verification.status == "pending" else False
+        pin_id = verification.get("pinId")
+
+        success = True if pin_id else False
 
         if success:
             self.phone_number = new_phone_number.replace(calling_code, "")
             self.phone_number_verified = False
             self.save()
 
-        return success
+        return {
+            "success": success,
+            "pin_id": pin_id,
+        }
 
-    def verify_phone_number(self, code, calling_code):
+    def verify_phone_number(self, pin_id, pin):
+        import requests
 
-        phone_number = f"{calling_code}{self.phone_number}"
+        url = "https://api.ng.termii.com/api/sms/otp/verify"
+        payload = {
+            "api_key": settings.TERMII_API_KEY,
+            "pin_id": pin_id,
+            "pin": pin,
+        }
+        headers = {
+            "Content-Type": "application/json",
+        }
+        response = requests.request("POST", url, headers=headers, json=payload)
+        response = response.json()
+        verified = response.get("verified")
 
-        verification_check = TWILIO_CLIENT.verify.v2.services(
-            settings.TWILIO_VERIFY_SERVICE_SID
-        ).verification_checks.create(to=phone_number, code=code)
-
-        success = True if verification_check.status == "approved" else False
+        success = True if verified else False
 
         if success:
             self.phone_number_verified = True
-            self.calling_code = calling_code
             self.save()
 
         return success
@@ -1508,28 +1518,32 @@ class DeliveryPerson(models.Model):
         )
         did_complete = False
         did_find_delivery_person = False
-        for delivery_person in delivery_people:
-            # check if the delivery person has rejected the order before
-            if delivery_person and delivery_person.can_deliver(order):
-                # send new delivery request to queue
-                queue_data = {
-                    "order_id": order.order_track_id,
-                    "delivery_person_id": delivery_person.id,
-                }
-                new_delivery_notification = DeliveryNotification.objects.create(
-                    order=order,
-                    store=store,
-                    delivery_person=delivery_person,
-                    status="pending",
-                )
-                new_delivery_notification.save()
-                # send notification to queue
-                had_error = send_notification_to_queue(
-                    message=queue_data, queue_name="new-delivery-request"
-                )
-                did_complete = had_error == False
-                did_find_delivery_person = True
-                break  # break the loop if a delivery person is found
+        try:
+            for delivery_person in delivery_people:
+                # check if the delivery person has rejected the order before
+                if delivery_person and delivery_person.can_deliver(order):
+                    # send new delivery request to queue
+                    queue_data = {
+                        "order_id": order.order_track_id,
+                        "delivery_person_id": delivery_person.id,
+                    }
+                    new_delivery_notification = DeliveryNotification.objects.create(
+                        order=order,
+                        store=store,
+                        delivery_person=delivery_person,
+                        status="pending",
+                    )
+                    new_delivery_notification.save()
+                    # send notification to queue
+                    had_error = send_notification_to_queue(
+                        message=queue_data, queue_name="new-delivery-request"
+                    )
+                    did_complete = had_error == False
+                    did_find_delivery_person = True
+                    break  # break the loop if a delivery person is found
+        except Exception as e:
+            did_complete = False
+            did_find_delivery_person = False
 
         if not did_find_delivery_person:
             # update the store status to no delivery person

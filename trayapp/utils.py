@@ -425,7 +425,7 @@ def termii_send_sms(to: str, msg: str, channel="generic", media=None):
 
     return response.json()
 
-def termii_send_otp(to: str, channel="generic", media=None):
+def termii_send_otp(to: str, channel="generic"):
     url = "https://api.ng.termii.com/api/sms/otp/send"
     payload = {
          "api_key" : settings.TERMII_API_KEY,
@@ -437,11 +437,9 @@ def termii_send_otp(to: str, channel="generic", media=None):
           "pin_time_to_live" :  5,
           "pin_length" : 6,
           "pin_placeholder" : "< 1234 >",
-          "message_text" : "Your OTP is < 1234 >",
+          "message_text" : "Hi, there. Your TrayFoods otp is < 1234 >. Please, do not share this otp. Thank you.",
           "pin_type" : "NUMERIC"
        }
-    if media:
-        payload += {"media": media}
     headers = {
         "Content-Type": "application/json",
     }
