@@ -734,6 +734,13 @@ class Wallet(models.Model):
         )
         transaction.save()
 
+        # notify the user
+        self.user.notify_me(
+            title=title,
+            msg=desc,
+            data={"order_id": order.get_order_display_id() if order else None},
+        )
+
     def deduct_balance(self, **kwargs):
         amount = kwargs.get("amount")
         transfer_fee = kwargs.get("transfer_fee", 0.00)
@@ -799,8 +806,15 @@ class Wallet(models.Model):
         transaction.order = order
         transaction.desc = desc
         transaction.status = status
-
         transaction.save()
+
+        # notify the user
+        self.user.notify_me(
+            title=title,
+            msg=desc,
+            data={"order_id": order.get_order_display_id() if order else None},
+        )
+
         return transaction
 
     def reverse_transaction(self, **kwargs):
@@ -844,6 +858,14 @@ class Wallet(models.Model):
         transaction.title = title
         transaction.desc = desc
         transaction.save()
+
+        # notify the user
+        self.user.notify_me(
+            title=title,
+            msg=desc,
+            data={"order_id": order.get_order_display_id() if order else None},
+        )
+
         return transaction
 
     # put transaction on hold
