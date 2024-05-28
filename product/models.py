@@ -1,5 +1,6 @@
 import os
 import uuid
+import logging
 import requests
 from decimal import Decimal
 from django.db import models
@@ -764,7 +765,7 @@ class Order(models.Model):
                     },
                 )
         except Exception as e:
-            print(e)
+            logging.error(f"Error sending notification to user: {e}")
             return False
 
     def notify_store(self, store_id: int, message: str, title: str = "Order Status"):

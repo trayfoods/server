@@ -967,7 +967,6 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                         did_send_refund = order.store_refund_customer(store_id)
                         if not did_send_refund or did_send_refund["status"] == False:
                             order.set_profiles_seen(value=user.profile.id, action="add")
-                            print(did_send_refund)
                             message = did_send_refund.get("message", "An error occured while refunding customer, please try again later")
                             return MarkOrderAsMutation(
                                 error=message

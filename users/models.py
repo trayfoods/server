@@ -447,7 +447,7 @@ class Profile(models.Model):
                 logging.info("End of SMS is disabled")
                 return False if not settings.DEBUG else True
         except Exception as e:
-            print(e)
+            logging.exception(e)
             return False
 
     def send_push_notification(self, title, msg, data=None):

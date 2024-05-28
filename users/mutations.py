@@ -925,7 +925,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 # delete the transaction
                 transaction.delete()
                 error = str(e)
-                print("error from paystack", error)
+                logging.exception("error from paystack", error)
         return WithdrawFromWalletMutation(success=success, error=error)
 
 
