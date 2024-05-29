@@ -211,6 +211,9 @@ class ProcessPayment:
             # update the transaction status
             transaction.status = "success"
             transaction.gateway_transfer_id = gateway_transfer_id
+            transaction.desc = "We have successfully transferred {} {} to {}".format(
+                transaction.amount, transaction.wallet.currency, account_name
+            )
             transaction.save()
             return HttpResponse("Transfer successful", status=200)
 
@@ -241,6 +244,16 @@ class ProcessPayment:
             transaction.status = "failed"
             transaction.gateway_transfer_id = gateway_transfer_id
             transaction.save()
+
+            profile: Profile = transaction.wallet.profile
+
+            # notify the user
+            profile.notify_me(
+                title="Transfer Failed",
+                message="Transfer of {} {} has failed".format(
+                    transaction.amount, transaction.wallet.currency
+                ),
+            )
             return HttpResponse("Transfer failed", status=200)
 
         return HttpResponse("Transfer failed", status=400)
@@ -271,7 +284,7 @@ class ProcessPayment:
             kwargs = {
                 "amount": amount,
                 "transaction_id": transaction_id,
-                "desc": "TRF to " + account_name + " was reversed to your wallet",
+                "desc": "We have reversed the transfer to " + account_name,
             }
             transaction.wallet.reverse_transaction(**kwargs)
             # update the transaction status

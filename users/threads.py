@@ -6,7 +6,7 @@ from firebase_admin import messaging
 class FCMThread(threading.Thread):
     """
     :param title: Title of notification
-    :param msg: Message or body of notification
+    :param message: Message or body of notification
     :param tokens: Tokens of the users who will receive this notification
     :param data: A dictionary of data fields (optional). All keys and values in the dictionary must be strings.
     :return -> None:
@@ -15,13 +15,13 @@ class FCMThread(threading.Thread):
     def __init__(
         self: threading.Thread,
         title: str,
-        msg: str,
+        message: str,
         tokens: list,
         image: str = None,
         data: Optional[list] = None,
     ) -> None:
         self.title = title
-        self.msg = msg
+        self.message = message
         self.tokens = tokens
         self.image = image
         self.data = data
@@ -36,7 +36,7 @@ class FCMThread(threading.Thread):
             messages = [
                 messaging.Message(
                     notification=messaging.Notification(
-                        self.title, self.msg, self.image
+                        self.title, self.message, self.image
                     ),
                     token=token,
                     data=self.data,

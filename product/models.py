@@ -749,7 +749,7 @@ class Order(models.Model):
             data = {"link": f"/checkout/{self.order_track_id}"}  # default link
 
         try:
-            profile.send_push_notification(title=title, msg=message, data=data)
+            profile.send_push_notification(title=title, message=message, data=data)
             profile.send_email(
                     subject=title,
                     from_email="Trayfoods Orders <orders@trayfoods.com>",
@@ -775,7 +775,7 @@ class Order(models.Model):
         if store:
             return store.vendor.notify_me(
                 title=title,
-                msg=message,
+                message=message,
                 data={
                     "link": f"/checkout/{self.order_track_id}",
                     "from_email": f"Update on Order {self.get_order_display_id()} <orders@trayfoods.com>",
@@ -1178,7 +1178,7 @@ def notify_product_creator(sender, instance: Item, created, **kwargs):
             store_profile = store.vendor
             did_notified_store_of_low_stock = store_profile.notify_me(
                 title="Item Almost Out of Stock",
-                msg=f"`{instance.product_name}` is almost out of stock. Please restock to avoid losing sales.",
+                message=f"`{instance.product_name}` is almost out of stock. Please restock to avoid losing sales.",
                 data={"link": f"/product/{instance.product_slug}"},
             )
             if did_notified_store_of_low_stock:

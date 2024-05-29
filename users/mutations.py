@@ -821,14 +821,14 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         self, info, amount, recipient_code, pass_code, account_name, reason=None
     ):
         user = info.context.user
-        profile = user.profile
+        profile: Profile = user.profile
         error = None
         success = False
-        wallet = Wallet.objects.filter(user=profile).first()
+        wallet = profile.get_wallet()
 
         # check if wallet exists
         if wallet is None:
-            raise GraphQLError("Wallet does not exist, Please contact support")
+            raise GraphQLError("Please contact support to continue")
 
         # check if passcode is empty
         if pass_code is None:
@@ -866,8 +866,7 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
                 amount_able_to_tranfer = 0
 
             raise GraphQLError(
-                "Insufficient Balance, You can only withdraw "
-                + str(amount_able_to_tranfer)
+                f"You can only transfer a maximum of {str(amount_able_to_tranfer)} {wallet.currency} at the moment"
             )
 
         url = "https://api.paystack.co/transfer"
@@ -890,9 +889,9 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
             wallet=wallet,
             transaction_id=reference,
             transfer_fee=transfer_fee,
-            title="Wallet Debited",
+            title="TRF to " + account_name,
             status="pending",
-            desc="TRF to " + account_name,
+            desc="We are processing your transfer, please wait a moment",
             amount=amount,
             _type="debit",
         )
@@ -1065,8 +1064,8 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
 
         phone = phone.replace(calling_code, "")
 
-        # if settings.DEBUG or not settings.SMS_ENABLED:
-        #     return SendPhoneVerificationCodeMutation(success=True)
+        if settings.DEBUG or not settings.SMS_ENABLED:
+            return SendPhoneVerificationCodeMutation(success=True)
 
         try:
             # send the verification code through twilio
@@ -1105,8 +1104,8 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
         success = False
         error = None
 
-        # if settings.DEBUG:
-        #     return VerifyPhoneMutation(success=True)
+        if settings.DEBUG:
+            return VerifyPhoneMutation(success=True)
 
         try:
             # verify the phone number

@@ -434,7 +434,7 @@ class Profile(models.Model):
             if SMS_ENABLED and self.has_calling_code():
                 # and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
-                termii_send_sms(to=phone_number, msg=message)
+                termii_send_sms(to=phone_number, message=message)
 
                 # TWILIO_CLIENT.messages.create(
                 #     body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
@@ -450,7 +450,7 @@ class Profile(models.Model):
             logging.exception(e)
             return False
 
-    def send_push_notification(self, title, msg, data=None):
+    def send_push_notification(self, title, message, data=None):
         user = self.user
         if not user.has_token_device:
             return False
@@ -466,7 +466,7 @@ class Profile(models.Model):
 
             FCMThread(
                 title=title,
-                msg=msg,
+                message=message,
                 tokens=device_tokens,
                 data=(
                     data
@@ -481,9 +481,9 @@ class Profile(models.Model):
         except:
             return False
 
-    def notify_me(self, title, msg, data=None, skip_email=False):
-        if not self.send_push_notification(title, msg, data):
-            did_send_sms = self.send_sms(message=msg)
+    def notify_me(self, title, message, data=None, skip_email=False):
+        if not self.send_push_notification(title, message, data):
+            did_send_sms = self.send_sms(message=message)
             from_email = settings.DEFAULT_FROM_EMAIL
             template = None
             if data:
@@ -495,7 +495,7 @@ class Profile(models.Model):
                 return self.send_email(
                     subject=title,
                     from_email=from_email,
-                    text_content=msg,
+                    text_content=message,
                     template=template,
                     context=data,
                 )
@@ -747,7 +747,7 @@ class Wallet(models.Model):
         # notify the user
         self.user.notify_me(
             title=title,
-            msg=desc,
+            message=desc,
             data={"order_id": order.get_order_display_id() if order else None},
         )
 
@@ -821,7 +821,7 @@ class Wallet(models.Model):
         # notify the user
         self.user.notify_me(
             title=title,
-            msg=desc,
+            message=desc,
             data={"order_id": order.get_order_display_id() if order else None},
         )
 
@@ -872,7 +872,7 @@ class Wallet(models.Model):
         # notify the user
         self.user.notify_me(
             title=title,
-            msg=desc,
+            message=desc,
             data={"order_id": order.get_order_display_id() if order else None},
         )
 
