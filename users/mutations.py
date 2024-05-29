@@ -1065,8 +1065,8 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
 
         phone = phone.replace(calling_code, "")
 
-        if settings.DEBUG or not settings.SMS_ENABLED:
-            return SendPhoneVerificationCodeMutation(success=True)
+        # if settings.DEBUG or not settings.SMS_ENABLED:
+        #     return SendPhoneVerificationCodeMutation(success=True)
 
         try:
             # send the verification code through twilio
@@ -1079,12 +1079,9 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
             if "use" in str(e):
                 error = "Phone number already in use, please try another."
             else:
-                error = "Issue sending the OTP code, please try again."
+                error = "Issue sending the OTP, please try again."
 
             logging.exception("Error sending phone verification code: ", e)
-
-        if not success:
-            error = "Issue sending the OTP code, please try again."
 
         return SendPhoneVerificationCodeMutation(
             success=success, error=error, pin_id=pin_id
@@ -1108,8 +1105,8 @@ class VerifyPhoneMutation(Output, graphene.Mutation):
         success = False
         error = None
 
-        if settings.DEBUG:
-            return VerifyPhoneMutation(success=True)
+        # if settings.DEBUG:
+        #     return VerifyPhoneMutation(success=True)
 
         try:
             # verify the phone number
