@@ -406,12 +406,12 @@ def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
         sender.send_messages(message_obj)
 
 
-def termii_send_sms(to: str, msg: str, channel="generic", media=None):
+def termii_send_sms(to: str, message: str, channel="generic", media=None):
     url = "https://api.ng.termii.com/api/sms/send"
     payload = {
         "to": to,
         "from": "TrayFoods",
-        "sms": msg,
+        "sms": message,
         "type": "plain",
         "channel": channel,
         "api_key": settings.TERMII_API_KEY,
