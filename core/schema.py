@@ -92,6 +92,15 @@ class CoreQueries(graphene.ObjectType):
         ]
 
     def resolve_country(self, info, code):
+        if code.upper() == "NG":
+            return CountryType(
+                name="Nigeria",
+                code="NG",
+                flag=info.context.build_absolute_uri(
+                    "https://flagcdn.com/{}.svg".format(code.lower())
+                ),
+                idd_code="234",
+            )
         country = rapi.get_country_by_country_code(code)
         return CountryType(
             name=country.name,

@@ -282,13 +282,20 @@ class Profile(models.Model):
 
     def has_calling_code(self):
         calling_code = self.calling_code
+        COUNTRY_CALLING_CODES = settings.COUNTRY_CALLING_CODES
 
         if not calling_code and self.country:
-            # get the calling code from the country
-            from restcountries import RestCountryApiV2 as rapi
+            country_code = self.country.code
+            country_code_in_dict: str | None = COUNTRY_CALLING_CODES.get(country_code, None)
 
-            country = rapi.get_country_by_country_code(self.country.code)
-            calling_code: str = country.calling_codes[0]
+            if not country_code_in_dict or country_code_in_dict == "":
+                # get the calling code from the country
+                from restcountries import RestCountryApiV2 as rapi
+
+                country = rapi.get_country_by_country_code(self.country.code)
+                calling_code: str = country.calling_codes[0]
+            else:
+                calling_code: str = country_code_in_dict
 
             self.calling_code = calling_code
             self.save()

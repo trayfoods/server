@@ -1042,11 +1042,14 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
 
         profile.clean_phone_number(phone)
 
-        calling_code = None
+        calling_code = profile.calling_code
+
+        COUNTRY_CALLING_CODES = settings.COUNTRY_CALLING_CODES
+        country_code_in_dict: str | None = COUNTRY_CALLING_CODES.get(country, None)
 
         # check if we already have the country calling code
-        if country in settings.COUNTRY_CALLING_CODES:
-            calling_code = settings.COUNTRY_CALLING_CODES[country]
+        if country_code_in_dict:
+            calling_code = country_code_in_dict
         else:
             get_country = None
             try:

@@ -948,6 +948,10 @@ class Order(models.Model):
         return self.order_track_id
 
     def view_as(self, current_user_profile):
+        """
+        Check if the current user is a vendor, delivery person or user
+        current_user_profile: the current user profile
+        """
         from users.models import DeliveryPerson
 
         # check if the current user is among the linked delivery people
