@@ -98,7 +98,7 @@ ALLOWED_HOSTS = [
     "api.trayfoods.com",
     "localhost",
     "trayfoods.azurewebsites.net",
-    "169.254.129.5",
+    "169.254.129.3",
 ]
 SMS_ENABLED = "True" == os.environ.get("SMS_ENABLED", "False")
 
