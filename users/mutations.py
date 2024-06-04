@@ -830,6 +830,12 @@ class WithdrawFromWalletMutation(Output, graphene.Mutation):
         if wallet is None:
             raise GraphQLError("Please contact support to continue")
 
+        # the minimum amount that can be withdrawn is 100
+        if amount < 100:
+            raise GraphQLError(
+                "Minimum amount that can be withdrawn is 100 {}".format(wallet.currency)
+            )
+
         # check if passcode is empty
         if pass_code is None:
             raise GraphQLError("Pin cannot be empty")
