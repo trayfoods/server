@@ -654,44 +654,56 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # allow user to cancel order when no store has accepted or rejected the order
             # then only process a full refund if the order has not been accepted or has been rejected (when the stores count is 1)
             if action == "cancelled":
-                if order.order_status != "processing":
+                if order.order_payment_status == "success" or order.order_status != "processing":
                     return MarkOrderAsMutation(
                         error="You cannot cancel this order because it has been marked as {}".format(
                             order_status.replace("-", " ").capitalize()
                         )
                     )
+                
+                pre_order_status = order.order_status
 
                 # update the order status to cancelled
                 order.order_status = "cancelled"
                 order.save()
 
-                # update all the store statuses to cancelled by using the update_store_status method
-                for store in order.linked_stores.all():
-                    order.update_store_status(store_id=store.id, status="cancelled")
-                
-                # refund the user
-                did_send_refund = order.refund_customer()
-                if not did_send_refund or did_send_refund["status"] == False:
-                    order.order_status = "processing"
-                    order.save()
-                    order_disp_id = order.get_order_display_id()
-                    order_user: Profile = order.user
-                    # update store status to cancelled
+                try:
+                    # update all the store statuses to cancelled by using the update_store_status method
                     for store in order.linked_stores.all():
                         order.update_store_status(store_id=store.id, status="cancelled")
+                    
+                    # refund the user
+                    did_send_refund = order.refund_customer()
+                    if not did_send_refund or did_send_refund["status"] == False:
+                        order.order_status = "processing"
+                        order.save()
+                        order_disp_id = order.get_order_display_id()
+                        order_user: Profile = order.user
+                        # update store status to cancelled
+                        for store in order.linked_stores.all():
+                            order.update_store_status(store_id=store.id, status="cancelled")
 
-                        # notify the stores
-                        order.notify_store(
-                            store_id=store.id,
-                            title="Order Cancelled",
-                            message="Order {} has been cancelled by {}".format(order_disp_id, order_user.user.username)
+                            # notify the stores
+                            order.notify_store(
+                                store_id=store.id,
+                                title="Order Cancelled",
+                                message="Order {} has been cancelled by {}".format(order_disp_id, order_user.user.username)
+                            )
+
+
+                        return MarkOrderAsMutation(
+                            error="An error occured while refunding customer, please try again later"
                         )
-
-
+                except Exception as e:
+                    order.order_status = pre_order_status
+                    order.save()
+                    # save all store statuses
+                    for store in order.linked_stores.all():
+                        order.update_store_status(store_id=store.id, status=pre_order_status)
+                    logging.error(e)
                     return MarkOrderAsMutation(
-                        error="An error occured while refunding customer, please try again later"
+                        error="An error occured while cancelling order, please try again later"
                     )
-
 
 
                 # notify the user that the order has been cancelled
