@@ -428,6 +428,8 @@ class Profile(models.Model):
         response = response.json()
         verified = response.get("verified")
 
+        print(response)
+
         success = True if verified else False
 
         if success:
