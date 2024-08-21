@@ -1028,6 +1028,9 @@ class Order(models.Model):
         statuses = []
         for store_status in stores_status:
             statuses.append(store_status.get("status"))
+
+        # remove duplicates
+        statuses = list(set(statuses))
         return statuses
 
     # get store_status from the stores_status json
