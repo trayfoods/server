@@ -102,7 +102,7 @@ class OrderAdmin(admin.ModelAdmin):
         "service_fee",
         "delivery_fee",
         "order_payment_url",
-        "stores_status",
+        # "stores_status",
         "activities_log",
         "profiles_seen",
     )
