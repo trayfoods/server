@@ -1021,6 +1021,14 @@ class Order(models.Model):
         self.save()
 
         return has_updated
+    
+    # get all store status and return the common statuses in an array
+    def get_common_store_statuses(self):
+        stores_status = self.stores_status
+        statuses = []
+        for store_status in stores_status:
+            statuses.append(store_status.get("status"))
+        return statuses
 
     # get store_status from the stores_status json
     def get_store_status(self, store_id):

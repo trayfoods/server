@@ -654,7 +654,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             # allow user to cancel order when no store has accepted or rejected the order
             # then only process a full refund if the order has not been accepted or has been rejected (when the stores count is 1)
             if action == "cancelled":
-                if order.order_payment_status == "success" or order.order_status != "processing":
+                skip_nxt_err = False
+                if order.order_payment_status == "success" and "cancelled" in order.get_common_store_statuses():
+                    skip_nxt_err = True
+                if not skip_nxt_err and ("refund" in order.order_payment_status or order.order_status != "processing"):
                     return MarkOrderAsMutation(
                         error="You cannot cancel this order because it has been marked as {}".format(
                             order_status.replace("-", " ").capitalize()

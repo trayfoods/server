@@ -405,6 +405,8 @@ ALLOWED_STORE_ORDER_STATUS = [
     "out-for-delivery",  # also know as "Assigned to Delivery Person & In Transit"
     "picked-up",
     "delivered",
+    "item-returned",
+    "returned",
     "no-delivery-person",
     "cancelled",
     "pending-refund",
