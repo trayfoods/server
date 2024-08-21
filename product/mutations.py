@@ -679,16 +679,11 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 if not did_send_refund or did_send_refund["status"] == False:
                     order.order_status = pre_order_status
                     order.save()
-                    
-                    # save all store statuses
-                    for store in order.linked_stores.all():
-                        order.update_store_status(store_id=store.id, status='pending')
 
                     return MarkOrderAsMutation(
-                        error="An error occured while cancelling order, please try again later"
+                        error="An error occured while refunding your order, please try again later"
                     )
                 
-
 
                 # notify the user that the order has been cancelled
                 order.notify_user(
