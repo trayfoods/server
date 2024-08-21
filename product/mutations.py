@@ -670,43 +670,24 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.order_status = "cancelled"
                 order.save()
 
-                try:
-                    # update all the store statuses to cancelled by using the update_store_status method
-                    for store in order.linked_stores.all():
-                        order.update_store_status(store_id=store.id, status="cancelled")
-                    
-                    # refund the user
-                    did_send_refund = order.refund_customer()
-                    if not did_send_refund or did_send_refund["status"] == False:
-                        order.order_status = "processing"
-                        order.save()
-                        order_disp_id = order.get_order_display_id()
-                        order_user: Profile = order.user
-                        # update store status to cancelled
-                        for store in order.linked_stores.all():
-                            order.update_store_status(store_id=store.id, status="cancelled")
-
-                            # notify the stores
-                            order.notify_store(
-                                store_id=store.id,
-                                title="Order Cancelled",
-                                message="Order {} has been cancelled by {}".format(order_disp_id, order_user.user.username)
-                            )
-
-
-                        return MarkOrderAsMutation(
-                            error="An error occured while refunding customer, please try again later"
-                        )
-                except Exception as e:
+                # update all the store statuses to cancelled by using the update_store_status method
+                for store in order.linked_stores.all():
+                    order.update_store_status(store_id=store.id, status="cancelled")
+                
+                # refund the user
+                did_send_refund = order.refund_customer()
+                if not did_send_refund or did_send_refund["status"] == False:
                     order.order_status = pre_order_status
                     order.save()
+                    
                     # save all store statuses
                     for store in order.linked_stores.all():
-                        order.update_store_status(store_id=store.id, status=pre_order_status)
-                    logging.error(e)
+                        order.update_store_status(store_id=store.id, status='pending')
+
                     return MarkOrderAsMutation(
                         error="An error occured while cancelling order, please try again later"
                     )
+                
 
 
                 # notify the user that the order has been cancelled
