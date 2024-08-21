@@ -703,7 +703,7 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 order.log_activity(
                     title="Order Cancelled",
                     activity_type="order_cancelled",
-                    description="Order has been cancelled by the user",
+                    description="Order has been cancelled by the customer",
                 )
 
                 return MarkOrderAsMutation(
