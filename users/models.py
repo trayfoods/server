@@ -398,6 +398,8 @@ class Profile(models.Model):
 
         verification = termii_send_otp(to=new_phone_number)
 
+        print(verification)
+
         pin_id = verification.get("pinId")
 
         success = True if pin_id else False
