@@ -432,7 +432,7 @@ def termii_send_otp(to: str, channel="dnd"):
         "api_key": settings.TERMII_API_KEY,
         "message_type": "NUMERIC",
         "to": to,
-        "from": "TrayFoods",
+        "from": "N-Alert",
         "channel": channel,
         "pin_attempts": 10,
         "pin_time_to_live": 5,
