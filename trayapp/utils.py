@@ -426,7 +426,7 @@ def termii_send_sms(to: str, message: str, channel="generic", media=None):
     return response.json()
 
 
-def termii_send_otp(to: str, channel="generic"):
+def termii_send_otp(to: str, channel="dnd"):
     url = "https://v3.api.termii.com/api/sms/otp/send"
     payload = {
         "api_key": settings.TERMII_API_KEY,
