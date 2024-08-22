@@ -1062,6 +1062,30 @@ class Store(models.Model):
     def __str__(self):
         return self.store_nickname
 
+    @classmethod
+    def filter_by_country(cls, country):
+        return cls.objects.filter(country=country)
+
+    @classmethod
+    def filter_by_state(cls, state):
+        state = state.lower()
+        return cls.objects.filter(state=state)
+
+    @classmethod
+    def filter_by_city(cls, city):
+        city = city.lower()
+        return cls.objects.filter(city=city)
+
+    @classmethod
+    def filter_by_school(cls, school):
+        school = school.lower()
+        return cls.objects.filter(school=school)
+
+    @classmethod
+    def filter_by_campus(cls, campus):
+        campus = campus.lower()
+        return cls.objects.filter(campus=campus)
+
     # check if store is open
     def get_is_open_data(self):
 

@@ -1,10 +1,13 @@
 import graphene
 from graphene_django.filter import DjangoFilterConnectionField
-from users.models import Store
+from users.models import Store, Profile, Student
+from product.models import Order
 from users.types import StoreType, StoreNode, StoreItmMenuType, MenuType
 from product.types import ItemNode, CategoryType, ItemAttribute
 from trayapp.permissions import permission_checker, IsAuthenticated
 from graphql import GraphQLError
+
+from django.utils import timezone
 
 
 class StoreQueries(graphene.ObjectType):
@@ -17,6 +20,64 @@ class StoreQueries(graphene.ObjectType):
     )
     top10_store_items = graphene.List(ItemNode, store_nickname=graphene.String())
     get_store = graphene.Field(StoreType, store_nickname=graphene.String())
+    featured_stores = graphene.List(StoreType)
+
+    @permission_checker([IsAuthenticated])
+    def resolve_featured_stores(self, info, **kwargs):
+        """
+        Featured Store
+        - get user country
+        """
+        featured_stores = []
+        profile: Profile = info.context.user.profile
+        country = profile.country
+        state = profile.state
+        city = profile.city
+
+        regional_stores = (
+            Store.filter_by_country(country)
+            .exclude(is_approved=False)
+            .filter(state=state)
+            .filter(city=city)
+        )[:5]
+
+        filtered_stores = []
+        if profile.is_student:
+            student: Student = profile.student
+            school = student.school
+            campus = student.campus
+
+            filtered_stores = Store.objects.filter(
+                school=school, campus=campus
+            ).order_by("-store_rank")[:5]
+
+        # get user orders for 14 days
+        user_orders = Order.objects.filter(
+            user=profile, order_status="delivered"
+        ).filter(
+            created_at__date__gte=timezone.now().date()
+            - timezone.timedelta(days=14)
+        )
+
+        # get linked stores
+        linked_stores = []
+        for order in user_orders:
+            linked_stores.append(order.linked_stores.all())
+
+        linked_stores = list(set(linked_stores))
+        linked_stores = [store for store in linked_stores if store and store.is_approved]
+
+        # merge all stores
+        featured_stores = list(
+            set(list(regional_stores) + list(filtered_stores) + list(linked_stores))
+        )
+
+        # sort the list by store rank
+        featured_stores = sorted(
+            featured_stores, key=lambda x: x.store_rank, reverse=True
+        )
+
+        return featured_stores
 
     def resolve_stores(self, info, **kwargs):
         stores = Store.objects.all().exclude(is_approved=False)

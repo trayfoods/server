@@ -12,8 +12,6 @@ from ..types import (
     StatusOrdersCountType,
 )
 
-from django.utils import timezone
-
 
 class OrderQueries(graphene.ObjectType):
     orders = DjangoFilterConnectionField(OrderNode)
