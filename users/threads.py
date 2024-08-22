@@ -24,7 +24,7 @@ class FCMThread(threading.Thread):
         self.message = message
         self.tokens = tokens
         self.image = image
-        self.sound = "default.wav"
+        self.sound = "default.mp3"
         self.data = data
         threading.Thread.__init__(self)
 
