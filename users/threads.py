@@ -24,7 +24,7 @@ class FCMThread(threading.Thread):
         self.message = message
         self.tokens = tokens
         self.image = image
-        self.sound = "defaultNotificationSound.wav"
+        self.sound = "default.wav"
         self.data = data
         threading.Thread.__init__(self)
 
