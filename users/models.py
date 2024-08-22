@@ -286,7 +286,9 @@ class Profile(models.Model):
 
         if not calling_code and self.country:
             country_code = self.country.code
-            country_code_in_dict: str | None = COUNTRY_CALLING_CODES.get(country_code, None)
+            country_code_in_dict: str | None = COUNTRY_CALLING_CODES.get(
+                country_code, None
+            )
 
             if not country_code_in_dict or country_code_in_dict == "":
                 # get the calling code from the country
@@ -398,8 +400,6 @@ class Profile(models.Model):
 
         verification = termii_send_otp(to=new_phone_number)
 
-        print(verification)
-
         pin_id = verification.get("pinId")
 
         success = True if pin_id else False
@@ -417,7 +417,7 @@ class Profile(models.Model):
     def verify_phone_number(self, pin_id, pin):
         import requests
 
-        url = "https://api.ng.termii.com/api/sms/otp/verify"
+        url = "https://https://v3.api.termii.com/api/sms/otp/verify"
         payload = {
             "api_key": settings.TERMII_API_KEY,
             "pin_id": pin_id,
@@ -430,8 +430,6 @@ class Profile(models.Model):
         response = response.json()
         verified = response.get("verified")
 
-        print(response)
-
         success = True if verified else False
 
         if success:
@@ -443,13 +441,9 @@ class Profile(models.Model):
     def send_sms(self, message):
         try:
             if SMS_ENABLED and self.has_calling_code():
-                # and self.phone_number_verified):
                 phone_number = f"{self.calling_code}{self.phone_number}"
                 termii_send_sms(to=phone_number, message=message)
 
-                # TWILIO_CLIENT.messages.create(
-                #     body=message, from_=settings.TWILIO_PHONE_NUMBER, to=phone_number
-                # )
                 return True
 
             if not SMS_ENABLED:
@@ -457,6 +451,7 @@ class Profile(models.Model):
                 print(message)
                 logging.info("End of SMS is disabled")
                 return False if not settings.DEBUG else True
+
         except Exception as e:
             logging.exception(e)
             return False
