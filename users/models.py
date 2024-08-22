@@ -417,7 +417,7 @@ class Profile(models.Model):
     def verify_phone_number(self, pin_id, pin):
         import requests
 
-        url = "https://https://v3.api.termii.com/api/sms/otp/verify"
+        url = "https://v3.api.termii.com/api/sms/otp/verify"
         payload = {
             "api_key": settings.TERMII_API_KEY,
             "pin_id": pin_id,

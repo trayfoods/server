@@ -407,7 +407,7 @@ def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
 
 
 def termii_send_sms(to: str, message: str, channel="generic", media=None):
-    url = "https://https://v3.api.termii.com/api/sms/send"
+    url = "https://v3.api.termii.com/api/sms/send"
     payload = {
         "to": to,
         "from": "TrayFoods",
@@ -427,7 +427,7 @@ def termii_send_sms(to: str, message: str, channel="generic", media=None):
 
 
 def termii_send_otp(to: str, channel="generic"):
-    url = "https://https://v3.api.termii.com/api/sms/otp/send"
+    url = "https://v3.api.termii.com/api/sms/otp/send"
     payload = {
         "api_key": settings.TERMII_API_KEY,
         "message_type": "NUMERIC",

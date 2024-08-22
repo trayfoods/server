@@ -43,7 +43,7 @@ class FCMThread(threading.Thread):
                 )
                 for token in chunk
             ]
-            response = messaging.send_all(messages)
+            messaging.send_all(messages)
 
     def run(self):
         self._push_notification()
