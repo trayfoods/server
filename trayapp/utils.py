@@ -345,6 +345,7 @@ def chunked_queryset(queryset, chunk_size=10000):
 
 
 def send_message_to_queue(message, queue_name):
+    print("Sending message to queue", message)
     """
     Sends notification data to a specified Azure Queue Storage queue.
 

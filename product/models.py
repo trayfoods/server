@@ -784,7 +784,8 @@ class Order(models.Model):
                     "order_id": self.order_track_id,
                 },
             )
-        return False
+        else:
+            return False
 
     def store_refund_customer(self, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
