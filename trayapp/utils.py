@@ -353,7 +353,7 @@ def send_message_to_queue(message, queue_name):
         queue_name (str): Name of the Azure Queue Storage queue.
     """
 
-    has_error = False
+    success = True
 
     try:
         # Create Queue Client (using DefaultAzureCredential for authentication)
@@ -381,10 +381,10 @@ def send_message_to_queue(message, queue_name):
         )
 
     except Exception as e:
-        has_error = True
+        success = False
         logging.exception(f"Error sending message to queue: {e}")
 
-    return has_error
+    return success
 
 
 def send_message_to_queue_bus(message_dict, queue_name, ttl=None):

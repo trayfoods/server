@@ -485,7 +485,7 @@ class Profile(models.Model):
             "message": message,
             "data": data,
         }
-        send_message_to_queue(message=queue_data, queue_name="new-push-notification")
+        return send_message_to_queue(message=queue_data, queue_name="new-push-notification")
         # try:
         #     from .threads import FCMThread
 
@@ -1584,10 +1584,9 @@ class DeliveryPerson(models.Model):
                     )
                     new_delivery_notification.save()
                     # send notification to queue
-                    had_error = send_message_to_queue(
+                    did_complete = send_message_to_queue(
                         message=queue_data, queue_name="new-delivery-request"
                     )
-                    did_complete = had_error == False
                     did_find_delivery_person = True
                     break  # break the loop if a delivery person is found
         except Exception as e:
