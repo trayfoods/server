@@ -344,7 +344,7 @@ def chunked_queryset(queryset, chunk_size=10000):
     yield queryset.filter(pk__gte=start_pk)
 
 
-def send_notification_to_queue(message, queue_name):
+def send_message_to_queue(message, queue_name):
     """
     Sends notification data to a specified Azure Queue Storage queue.
 

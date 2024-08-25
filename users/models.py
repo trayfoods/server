@@ -25,7 +25,7 @@ from product.models import Item, Order
 from datetime import datetime
 from django.conf import settings
 
-from trayapp.utils import get_twilio_client, send_notification_to_queue
+from trayapp.utils import get_twilio_client, send_message_to_queue
 from django.contrib.auth.hashers import check_password, make_password
 
 TWILIO_CLIENT = get_twilio_client()
@@ -467,25 +467,44 @@ class Profile(models.Model):
         device_tokens = list(user_devices)
         if not device_tokens or len(device_tokens) == 0:
             return False
-        try:
-            from .threads import FCMThread
+        """
+        Example message body:
+    {
+        "device_tokens": ["device_token_1", "device_token_2"],
+        "title": "Notification Title",
+        "message": "Notification Message",
+        "data": {
+            "key1": "value1",
+            "key2": "value2"
+        }
+    }
+        """
+        queue_data = {
+            "device_tokens": device_tokens,
+            "title": title,
+            "message": message,
+            "data": data,
+        }
+        send_message_to_queue(message=queue_data, queue_name="new-push-notification")
+        # try:
+        #     from .threads import FCMThread
 
-            FCMThread(
-                title=title,
-                message=message,
-                tokens=device_tokens,
-                data=(
-                    data
-                    if data
-                    else {
-                        "priority": "high",
-                        "sound": "default",
-                    }
-                ),
-            ).start()
-            return True
-        except:
-            return False
+        #     FCMThread(
+        #         title=title,
+        #         message=message,
+        #         tokens=device_tokens,
+        #         data=(
+        #             data
+        #             if data
+        #             else {
+        #                 "priority": "high",
+        #                 "sound": "default",
+        #             }
+        #         ),
+        #     ).start()
+        #     return True
+        # except:
+        #     return False
 
     def notify_me(self, title, message, data=None, skip_email=False):
         if not self.send_push_notification(title, message, data):
@@ -1565,7 +1584,7 @@ class DeliveryPerson(models.Model):
                     )
                     new_delivery_notification.save()
                     # send notification to queue
-                    had_error = send_notification_to_queue(
+                    had_error = send_message_to_queue(
                         message=queue_data, queue_name="new-delivery-request"
                     )
                     did_complete = had_error == False
