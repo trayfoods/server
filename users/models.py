@@ -486,25 +486,7 @@ class Profile(models.Model):
             "data": data,
         }
         return send_message_to_queue(message=queue_data, queue_name="new-push-notification")
-        # try:
-        #     from .threads import FCMThread
 
-        #     FCMThread(
-        #         title=title,
-        #         message=message,
-        #         tokens=device_tokens,
-        #         data=(
-        #             data
-        #             if data
-        #             else {
-        #                 "priority": "high",
-        #                 "sound": "default",
-        #             }
-        #         ),
-        #     ).start()
-        #     return True
-        # except:
-        #     return False
 
     def notify_me(self, title, message, data=None, skip_email=False):
         if not self.send_push_notification(title, message, data):

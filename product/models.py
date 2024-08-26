@@ -751,19 +751,19 @@ class Order(models.Model):
         try:
             profile.send_push_notification(title=title, message=message, data=data)
             profile.send_email(
-                    subject=title,
-                    from_email="Trayfoods Orders <orders@trayfoods.com>",
-                    text_content=message,
-                    template="email/order_notification_email.html",
-                    context={
-                        "title": title,
-                        "message": message,
-                        "order_id": self.order_track_id,
-                        "is_multi_store_order": self.linked_stores.count() > 1,
-                        "store_name": self.linked_stores.first().store_name,
-                        "is_customer": True,
-                    },
-                )
+                subject=title,
+                from_email="Trayfoods Orders <orders@trayfoods.com>",
+                text_content=message,
+                template="email/order_notification_email.html",
+                context={
+                    "title": title,
+                    "message": message,
+                    "order_id": self.order_track_id,
+                    "is_multi_store_order": self.linked_stores.count() > 1,
+                    "store_name": self.linked_stores.first().store_name,
+                    "is_customer": True,
+                },
+            )
         except Exception as e:
             logging.error(f"Error sending notification to user: {e}")
             return False
@@ -772,8 +772,9 @@ class Order(models.Model):
         from users.models import Store
 
         store: Store = self.linked_stores.filter(id=store_id).first()
-        if store:
-            return store.vendor.notify_me(
+
+        return (
+            store.vendor.notify_me(
                 title=title,
                 message=message,
                 data={
@@ -784,8 +785,9 @@ class Order(models.Model):
                     "order_id": self.order_track_id,
                 },
             )
-        else:
-            return False
+            if store.vendor
+            else False
+        )
 
     def store_refund_customer(self, store_id: int):
         PAYSTACK_SECRET_KEY = settings.PAYSTACK_SECRET_KEY
@@ -816,9 +818,9 @@ class Order(models.Model):
         store_option_groups_price = total.get("option_groups_price", 0)
 
         # divide the delivery fee by the number of stores linked to the order to get the delivery fee for each store
-        store_delivery_fee = (
-                self.delivery_fee + self.delivery_fee_percentage
-            ) / len(self.stores_infos)
+        store_delivery_fee = (self.delivery_fee + self.delivery_fee_percentage) / len(
+            self.stores_infos
+        )
 
         amount = (
             Decimal(store_total_price)
@@ -1022,7 +1024,7 @@ class Order(models.Model):
         self.save()
 
         return has_updated
-    
+
     # get all store status and return the common statuses in an array
     def get_common_store_statuses(self):
         stores_status = self.stores_status
@@ -1058,7 +1060,7 @@ class Order(models.Model):
                     "status": "new",
                     "storeId": delivery_person_notification_instance.first().store.id,
                 }
-        
+
         for delivery_person in delivery_people:
             if delivery_person_id and (
                 str(delivery_person["id"]) == str(delivery_person_id)

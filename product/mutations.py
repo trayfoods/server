@@ -692,12 +692,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
 
                 # notify the stores that the order has been cancelled
-                store_names = get_store_name_from_store_status(order)
-                for store_name in store_names:
+                store_ids = order.linked_stores.values_list("id", flat=True)
+                for store_id in store_ids:
                     order.notify_store(
                         title="Order Cancelled",
                         message=f"Order {order.get_order_display_id()} has been cancelled by {order.user.user.username}",
-                        store_name=store_name,
+                        store_id=store_id,
                     )
 
                 order.log_activity(
