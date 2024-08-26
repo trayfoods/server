@@ -438,13 +438,31 @@ class Profile(models.Model):
 
         return success
 
-    def send_sms(self, message):
+    def send_sms(self, message: str):
         try:
             if SMS_ENABLED and self.has_calling_code():
                 phone_number = f"{self.calling_code}{self.phone_number}"
-                termii_send_sms(to=phone_number, message=message)
 
-                return True
+                """
+                Example message body:
+                {
+                    "phone_number": "+2348123456789",
+                    "message": "SMS Message",
+                    "channel": "generic",
+                    "type": "plain",
+                    "from": "TrayFoods"
+                }
+                """
+                queue_data = {
+                    "phone_number": phone_number,
+                    "message": message,
+                    "channel": "generic",
+                    "type": "plain",
+                    "from": "TrayFoods",
+                }
+                return send_message_to_queue(
+                    message=queue_data, queue_name="new-sms-notification"
+                )
 
             if not SMS_ENABLED:
                 logging.error("SMS is disabled")
@@ -469,15 +487,15 @@ class Profile(models.Model):
             return False
         """
         Example message body:
-    {
-        "device_tokens": ["device_token_1", "device_token_2"],
-        "title": "Notification Title",
-        "message": "Notification Message",
-        "data": {
-            "key1": "value1",
-            "key2": "value2"
+        {
+            "device_tokens": ["device_token_1", "device_token_2"],
+            "title": "Notification Title",
+            "message": "Notification Message",
+            "data": {
+                "key1": "value1",
+                "key2": "value2"
+            }
         }
-    }
         """
         queue_data = {
             "device_tokens": device_tokens,
@@ -485,8 +503,9 @@ class Profile(models.Model):
             "message": message,
             "data": data,
         }
-        return send_message_to_queue(message=queue_data, queue_name="new-push-notification")
-
+        return send_message_to_queue(
+            message=queue_data, queue_name="new-push-notification"
+        )
 
     def notify_me(self, title, message, data=None, skip_email=False):
         if not self.send_push_notification(title, message, data):
