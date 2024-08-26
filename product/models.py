@@ -781,7 +781,7 @@ class Order(models.Model):
                     "link": f"/checkout/{self.order_track_id}",
                     "from_email": f"Update on Order {self.get_order_display_id()} <orders@trayfoods.com>",
                     "template": "email/order_notification_email.html",
-                    "is_customer": False,
+                    "is_customer": "false",
                     "order_id": self.order_track_id,
                 },
             )
