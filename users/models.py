@@ -937,6 +937,29 @@ class Wallet(models.Model):
 
         return transaction
 
+    def send_wallet_alert(self, amount: Decimal):
+        """
+        Send a wallet alert to the user
+        e.g
+        ```
+        wallet = Wallet.objects.get(user__username="divine")
+        wallet.send_wallet_alert(1000)
+        ```
+        """
+        # check if the user has a device
+        message = (
+            f"{amount} {self.currency} has been credited to your wallet main balance"
+            if amount > 0
+            else f"{amount} {self.currency} has been deducted from your wallet"
+        )
+        if self.user.has_token_device:
+            # send a push notification
+            title = "Credit Alert" if amount > 0 else "Debit Alert"
+            self.user.send_push_notification(title, message)
+        else:
+            # send an SMS
+            self.user.send_sms(message)
+
 
 class StoreOpenHours(models.Model):
     store = models.ForeignKey("Store", on_delete=models.CASCADE)

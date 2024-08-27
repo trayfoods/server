@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
-from users.models import Transaction
+from users.models import Transaction, Wallet
 import logging
 
 
@@ -19,8 +19,31 @@ class Command(BaseCommand):
         )
 
         # Update those transactions to 'settled'
+        transactions_grouped_by_wallet = (
+            []
+        )  # {"wallet": transaction.wallet.id, "amount": transaction.amount}
         for transaction in unsettled_transactions:
             transaction.settle()
-            # Add any additional logic here, such as sending notifications
+            # add the wallet if it doesn't exist in the list
+            # then keep adding the amount to the wallet in the list
+            # no duplicate wallet in the list
+            wallet: Wallet = transaction.wallet
+            amount = transaction.amount
+            if not any(
+                transaction["wallet"] == wallet
+                for transaction in transactions_grouped_by_wallet
+            ):
+                transactions_grouped_by_wallet.append(
+                    {"wallet": wallet, "amount": amount}
+                )
+            else:
+                for transaction in transactions_grouped_by_wallet:
+                    if transaction["wallet"] == wallet:
+                        transaction["amount"] += amount
+
+        # notify the user of the transactions settled
+        for transaction in transactions_grouped_by_wallet:
+            wallet: Wallet = transaction["wallet"]
+            wallet.send_wallet_alert(transaction["amount"])
 
         self.stdout.write(self.style.SUCCESS("Successfully settled transactions"))
