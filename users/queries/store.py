@@ -81,11 +81,11 @@ class StoreQueries(graphene.ObjectType):
         )
 
         # filter out closed stores with store.get_is_open_data()
-        featured_stores = [
-            store
-            for store in featured_stores
-            if store.get_is_open_data().get("is_open") == True
-        ]
+        # featured_stores = [
+        #     store
+        #     for store in featured_stores
+        #     if store.get_is_open_data().get("is_open") == True
+        # ]
 
         # get top 5 stores
         featured_stores = featured_stores[:5]
