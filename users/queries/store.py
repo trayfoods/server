@@ -36,7 +36,7 @@ class StoreQueries(graphene.ObjectType):
 
         regional_stores = (
             Store.filter_by_country(country)
-            .exclude(is_approved=False)
+            .exclude(is_approved=False, vendor=profile)
             .filter(state=state)
             .filter(city=city)
         )[:5]
@@ -49,7 +49,7 @@ class StoreQueries(graphene.ObjectType):
 
             filtered_stores = (
                 Store.objects.filter(school=school, campus=campus)
-                .exclude(is_approved=False)
+                .exclude(is_approved=False, vendor=profile)
                 .order_by("-store_rank")[:5]
             )
 
@@ -63,7 +63,7 @@ class StoreQueries(graphene.ObjectType):
         # get linked stores
         linked_stores = []
         for order in user_orders:
-            linked_stores.append(order.linked_stores.all().exclude(is_approved=False))
+            linked_stores.append(order.linked_stores.all().exclude(is_approved=False, vendor=profile))
 
         linked_stores = list(set(linked_stores))
         linked_stores = [
