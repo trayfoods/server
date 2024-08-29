@@ -325,6 +325,7 @@ class ItemType(DjangoObjectType):
 class MenuInputType(graphene.InputObjectType):
     name = graphene.String(required=True)
     type = graphene.String(required=True)
+    categories = graphene.List(graphene.String, required=False)
 
 
 class ItemNode(ItemType, DjangoObjectType):

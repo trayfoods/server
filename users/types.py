@@ -245,6 +245,8 @@ class StoreType(DjangoObjectType):
     country = graphene.String()
     country_code = graphene.String()
 
+    can_accept_orders = graphene.Boolean()
+
     class Meta:
         model = Store
         fields = "__all__"
@@ -298,6 +300,9 @@ class StoreType(DjangoObjectType):
     
     def resolve_country_code(self, info):
         return self.country.code
+    
+    def resolve_can_accept_orders(self: Store, info):
+        return self.can_accept_orders()
 
 
 class StoreNode(StoreType, graphene.ObjectType):

@@ -1313,6 +1313,19 @@ class Store(models.Model):
     def store_menu(self):
         return [menu.name for menu in self.menus()]
 
+    # check if store can accept orders
+    def can_accept_orders(self):
+        return (
+            # check if store is online
+            self.status == "online"
+            # check if store is approved
+            and self.is_approved
+            # check if store's vendor is active
+            and self.vendor.user.is_active
+            # check if store is open
+            and self.get_is_open_data()["is_open"]
+        ) or settings.DEBUG  # Allow store to accept orders in debug mode
+
 
 class Menu(models.Model):
     position = models.IntegerField(default=0, editable=False)
@@ -1325,6 +1338,7 @@ class Menu(models.Model):
         blank=True,
         null=True,
     )
+    categories = models.ManyToManyField("product.ItemAttribute", blank=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:

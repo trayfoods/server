@@ -23,7 +23,7 @@ class StoreQueries(graphene.ObjectType):
     featured_stores = graphene.List(StoreType)
 
     @permission_checker([IsAuthenticated])
-    def resolve_featured_stores(self, info, **kwargs):
+    def resolve_featured_stores(self, info):
         """
         Featured Store
         - get user country
@@ -47,35 +47,48 @@ class StoreQueries(graphene.ObjectType):
             school = student.school
             campus = student.campus
 
-            filtered_stores = Store.objects.filter(
-                school=school, campus=campus
-            ).order_by("-store_rank")[:5]
+            filtered_stores = (
+                Store.objects.filter(school=school, campus=campus)
+                .exclude(is_approved=False)
+                .order_by("-store_rank")[:5]
+            )
 
         # get user orders for 14 days
         user_orders = Order.objects.filter(
             user=profile, order_status="delivered"
         ).filter(
-            created_at__date__gte=timezone.now().date()
-            - timezone.timedelta(days=14)
+            created_at__date__gte=timezone.now().date() - timezone.timedelta(days=14)
         )
 
         # get linked stores
         linked_stores = []
         for order in user_orders:
-            linked_stores.append(order.linked_stores.all())
+            linked_stores.append(order.linked_stores.all().exclude(is_approved=False))
 
         linked_stores = list(set(linked_stores))
-        linked_stores = [store for store in linked_stores if store and store.is_approved]
+        linked_stores = [
+            store for store in linked_stores if store and store.is_approved
+        ]
 
         # merge all stores
         featured_stores = list(
             set(list(regional_stores) + list(filtered_stores) + list(linked_stores))
         )
 
-        # sort the list by store rank
+        # sort the list by store rank in descending order
         featured_stores = sorted(
-            featured_stores, key=lambda x: x.store_rank, reverse=True
+            featured_stores, key=lambda x: -x.store_rank, reverse=True
         )
+
+        # filter out closed stores with store.get_is_open_data()
+        featured_stores = [
+            store
+            for store in featured_stores
+            if store.get_is_open_data().get("is_open") == True
+        ]
+
+        # get top 5 stores
+        featured_stores = featured_stores[:5]
 
         return featured_stores
 
