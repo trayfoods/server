@@ -353,16 +353,13 @@ if DEBUG == False:
 
 CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
-    "https://orange-carnival-q6q5g46j75v2564-3000.app.github.dev",
     "http://127.0.0.1:3000",
+    'http://localhost:8101',
     "http://localhost:8000",
     "https://www.trayfoods.com",
     'capacitor://trayfoods',
     'ionic://trayfoods',
     'http://trayfoods',
-    'https://trayfoods',
-    'http://localhost:8080',
-    'http://localhost:8100',
 )
 
 CORS_ALLOW_METHODS = (
