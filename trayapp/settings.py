@@ -348,18 +348,21 @@ if DEBUG == False:
     CSRF_TRUSTED_ORIGINS = [
         "https://www.trayfoods.com",
         "https://trayfoods.com",
+        "capacitor://trayfoods",
+        "ionic://trayfoods",
+        "http://trayfoods",
     ]
 
 
 CORS_ORIGIN_WHITELIST = (
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    'http://localhost:8101',
+    "http://localhost:8101",
     "http://localhost:8000",
     "https://www.trayfoods.com",
-    'capacitor://trayfoods',
-    'ionic://trayfoods',
-    'http://trayfoods',
+    "capacitor://trayfoods",
+    "ionic://trayfoods",
+    "http://trayfoods",
 )
 
 CORS_ALLOW_METHODS = (
