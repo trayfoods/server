@@ -67,7 +67,7 @@ graphql-core==3.2.3
 graphql-relay==3.2.0
 grpcio==1.60.0
 grpcio-status==1.60.0
-gunicorn==21.2.0
+gunicorn==22.0.0
 httplib2==0.22.0
 hyperlink==21.0.0
 idna==3.6
