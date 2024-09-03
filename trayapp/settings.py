@@ -344,39 +344,39 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_LOG_SHOW_URLS = True
 
-if DEBUG == False:
-    CSRF_TRUSTED_ORIGINS = [
-        "https://www.trayfoods.com",
-        "https://trayfoods.com",
-        "http://127.0.0.1:8000",
-        "http://localhost:8000",
+# if DEBUG == False:
+#     CSRF_TRUSTED_ORIGINS = [
+#         "https://www.trayfoods.com",
+#         "https://trayfoods.com",
+#         "http://127.0.0.1:8000",
+#         "http://localhost:8000",
 
-        # ionic capacitor ios and android
-        "capacitor://localhost",
-        "ionic://localhost",
-        "http://localhost",
-        "http://localhost:8080",
-        "http://localhost:8100",
-        "http://localhost:8101",
-    ]
+#         # ionic capacitor ios and android
+#         "capacitor://localhost",
+#         "ionic://localhost",
+#         "http://localhost",
+#         "http://localhost:8080",
+#         "http://localhost:8100",
+#         "http://localhost:8101",
+#     ]
 
 
-CORS_ORIGIN_WHITELIST = (
-    "http://localhost:3000",
-    "https://trayfoods.com",
-    "https://localhost",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "https://www.trayfoods.com",
+# CORS_ORIGIN_WHITELIST = (
+#     "http://localhost:3000",
+#     "https://trayfoods.com",
+#     "https://localhost",
+#     "http://127.0.0.1:3000",
+#     "http://localhost:8000",
+#     "https://www.trayfoods.com",
 
-    # ionic capacitor ios and android
-    "capacitor://localhost",
-    "ionic://localhost",
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:8100",
-    "http://localhost:8101",
-)
+#     # ionic capacitor ios and android
+#     "capacitor://localhost",
+#     "ionic://localhost",
+#     "http://localhost",
+#     "http://localhost:8080",
+#     "http://localhost:8100",
+#     "http://localhost:8101",
+# )
 
 # allow all origins
 CORS_ORIGIN_ALLOW_ALL = True
