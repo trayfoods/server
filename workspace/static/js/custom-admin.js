@@ -84,7 +84,9 @@ window.addEventListener("load", function () {
         });
       }
       $(".school-field").change(filterCampus);
-      filterCampus();
+      if ($("#id_school option:selected").val()) {
+        filterCampus();
+      }
     });
   })(django.jQuery);
 });
