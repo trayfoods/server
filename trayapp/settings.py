@@ -361,6 +361,7 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:8000",
     "https://www.trayfoods.com",
     "capacitor://trayfoods",
+    "capacitor://localhost",
     "ionic://trayfoods",
     "http://trayfoods",
 )
