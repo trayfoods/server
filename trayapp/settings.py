@@ -358,6 +358,7 @@ if DEBUG == False:
         "http://localhost:8080",
         "http://localhost:8100",
         "http://localhost:8101",
+        "file://",
     ]
 
 
@@ -376,6 +377,7 @@ CORS_ORIGIN_WHITELIST = (
     "http://localhost:8080",
     "http://localhost:8100",
     "http://localhost:8101",
+    "file://",
 )
 
 # allow all origins
