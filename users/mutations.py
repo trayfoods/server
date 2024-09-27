@@ -1340,7 +1340,7 @@ class RequestAccountDeletionMutation(Output, graphene.Mutation):
             user_profile: Profile = user.profile
             # notify the user that the request has been sent
             user_profile.send_sms(
-                message="Your account deletion request has been sent to the admin. Please wait for a response, if this was not you, please contact support before 24hrs"
+                message="Sorry to see you go, your account deletion request has been sent to the admin. Please wait for a response"
             )
             # send email to user
             if device and device == "ios":
