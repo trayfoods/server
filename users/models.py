@@ -952,7 +952,7 @@ class Wallet(models.Model):
             if amount > 0
             else f"{amount} {self.currency} has been deducted from your wallet"
         )
-        if self.user.has_token_device:
+        if self.user.user.has_token_device:
             # send a push notification
             title = "Credit Alert" if amount > 0 else "Debit Alert"
             self.user.send_push_notification(title, message)
