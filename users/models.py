@@ -267,7 +267,7 @@ class Profile(models.Model):
 
     def save(self, *args, **kwargs):
         # Resize the image before saving
-        if self.image:
+        if self.image and (not self.pk or self.image_has_changed()):
             w, h = 300, 300  # Set the desired width and height for the resized image
             if image_exists(self.image.name):
                 img_file, _, _, _ = image_resized(self.image, w, h)
@@ -280,24 +280,28 @@ class Profile(models.Model):
 
         super().save(*args, **kwargs)
 
+    def image_has_changed(self):
+        if not self.pk:
+            return True
+        old_image = Profile.objects.get(pk=self.pk).image
+        return old_image != self.image
+
     def has_calling_code(self):
         calling_code = self.calling_code
         COUNTRY_CALLING_CODES = settings.COUNTRY_CALLING_CODES
 
         if not calling_code and self.country:
             country_code = self.country.code
-            country_code_in_dict: str | None = COUNTRY_CALLING_CODES.get(
-                country_code, None
-            )
+            country_code_in_dict = COUNTRY_CALLING_CODES.get(country_code)
 
-            if not country_code_in_dict or country_code_in_dict == "":
-                # get the calling code from the country
+            if not country_code_in_dict:
                 from restcountries import RestCountryApiV2 as rapi
 
                 country = rapi.get_country_by_country_code(self.country.code)
-                calling_code: str = country.calling_codes[0]
+                calling_code = country.calling_codes[0]
+                COUNTRY_CALLING_CODES[country_code] = calling_code
             else:
-                calling_code: str = country_code_in_dict
+                calling_code = country_code_in_dict
 
             self.calling_code = calling_code
             self.save()
@@ -307,35 +311,13 @@ class Profile(models.Model):
             self.calling_code = calling_code
             self.save()
 
-        return True if calling_code else False
+        return bool(calling_code)
 
     def get_full_phone_number(self):
         return f"{self.calling_code}{self.phone_number}"
 
     def get_required_fields(self):
-        """
-        Checking if user has the required fields, which are:
-        - if the user roles is equals to 'student' check if the user has:
-            - school
-            - campus
-            - hostel
-            - hostel fields
-        - Phone Number
-        - Country
-        - State
-        - City
-        - Gender
-        - Primary Address
-        - Street Name
-        - Primary Address Lat
-        - Primary Address Lng
-
-        Returns a list of the required fields that are not filled
-        """
         required_fields = []
-
-        # if self.has_required_fields:
-        #     return required_fields
 
         if self.is_student:
             if not self.student.school:
@@ -344,14 +326,13 @@ class Profile(models.Model):
                 required_fields.append("campus")
             if not self.student.hostel:
                 required_fields.append("hostel")
-            if not self.student.hostel_fields or len(self.student.hostel_fields) == 0:
+            if not self.student.hostel_fields:
                 required_fields.append("hostelFields")
-        else:  # check if the user is not a student
+        else:
             if not self.state:
                 required_fields.append("state")
             if not self.city:
                 required_fields.append("city")
-
             if not self.primary_address:
                 required_fields.append("primaryAddress")
             if not self.primary_address_lat:
@@ -361,11 +342,9 @@ class Profile(models.Model):
 
         if not self.country:
             required_fields.append("country")
-
         if not self.phone_number:
             required_fields.append("phoneNumber")
 
-        # set has_required_fields to True if required_fields is empty
         if not required_fields:
             self.has_required_fields = True
             self.save()
@@ -378,13 +357,29 @@ class Profile(models.Model):
 
     @property
     def store(self):
-        return Store.objects.filter(vendor=self).first()
+        if not hasattr(self, "_store_cache"):
+            self._store_cache = Store.objects.filter(vendor=self).first()
+        return self._store_cache
 
     def get_wallet(self):
-        return Wallet.objects.filter(user=self).first()
+        if not hasattr(self, "_wallet_cache"):
+            self._wallet_cache = Wallet.objects.filter(user=self).first()
+        return self._wallet_cache
 
     def get_delivery_person(self):
-        return DeliveryPerson.objects.filter(profile=self).first()
+        if not hasattr(self, "_delivery_person_cache"):
+            self._delivery_person_cache = DeliveryPerson.objects.filter(
+                profile=self
+            ).first()
+        return self._delivery_person_cache
+
+    def clean_phone_number(self, phone_number: str):
+        phone_number = phone_number.strip().replace(" ", "")
+        user_with_phone = Profile.objects.filter(phone_number=phone_number).exclude(
+            user=self.user
+        )
+        if user_with_phone.exists():
+            raise Exception("Phone number already in use")
 
     @property
     def is_student(self):
@@ -552,17 +547,6 @@ class Profile(models.Model):
     @property
     def is_delivery_person(self):
         return hasattr(self, "delivery_person")
-
-    def clean_phone_number(self, phone_number: str):
-        phone_number = phone_number.strip()
-
-        # replace spaces with empty string
-        phone_number = phone_number.replace(" ", "")
-
-        # check if the phone number has been used by another user
-        user_with_phone = Profile.objects.filter(phone_number=phone_number)
-        if user_with_phone.exists() and user_with_phone.first().user != self.user:
-            raise Exception("Phone number already in use")
 
 
 class Transaction(models.Model):
