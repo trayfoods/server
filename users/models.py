@@ -448,7 +448,7 @@ class Profile(models.Model):
                 {
                     "phone_number": "+2348123456789",
                     "message": "SMS Message",
-                    "channel": "generic",
+                    "channel": "dnd",
                     "type": "plain",
                     "from": "TrayFoods"
                 }
@@ -456,9 +456,9 @@ class Profile(models.Model):
                 queue_data = {
                     "phone_number": phone_number,
                     "message": message,
-                    "channel": "generic",
+                    "channel": "dnd",
                     "type": "plain",
-                    "from": "TrayFoods",
+                    "from": "N-Alert",
                 }
                 return send_message_to_queue(
                     message=queue_data, queue_name="new-sms-notification"
