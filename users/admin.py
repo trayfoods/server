@@ -96,6 +96,7 @@ class ProfileAdmin(admin.ModelAdmin):
         "phone_number",
     )
     list_filter = (RolesFilter, "gender")
+    search_fields = ("phone_number", "primary_address", "street_name")
     readonly_fields = ("user",)
 
     def get_queryset(self, request):
