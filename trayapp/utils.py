@@ -407,34 +407,14 @@ def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
         sender.send_messages(message_obj)
 
 
-def termii_send_sms(to: str, message: str, channel="generic", media=None):
-    url = "https://v3.api.termii.com/api/sms/send"
-    payload = {
-        "to": to,
-        "from": "TrayFoods",
-        "sms": message,
-        "type": "plain",
-        "channel": channel,
-        "api_key": settings.TERMII_API_KEY,
-    }
-    if media:
-        payload += {"media": media}
-    headers = {
-        "Content-Type": "application/json",
-    }
-    response = requests.request("POST", url, headers=headers, json=payload)
-
-    return response.json()
-
-
-def termii_send_otp(to: str, channel="dnd"):
+def termii_send_otp(to: str):
     url = "https://v3.api.termii.com/api/sms/otp/send"
     payload = {
         "api_key": settings.TERMII_API_KEY,
         "message_type": "NUMERIC",
         "to": to,
         "from": "N-Alert",
-        "channel": channel,
+        "channel": "dnd",
         "pin_attempts": 10,
         "pin_time_to_live": 5,
         "pin_length": 6,

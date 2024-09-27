@@ -18,7 +18,7 @@ from django.utils.translation import gettext_lazy as _
 from django.template.defaultfilters import slugify
 from django.db.models.signals import post_save
 from users.signals import balance_updated
-from trayapp.utils import image_resized, image_exists, termii_send_sms, termii_send_otp
+from trayapp.utils import image_resized, image_exists, termii_send_otp
 
 from product.models import Item, Order
 
