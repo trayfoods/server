@@ -64,9 +64,11 @@ class UserAccountAdmin(admin.ModelAdmin):
     search_fields = ("username", "first_name", "last_name", "email")
     list_filter = (RolesFilter,)
 
-    # def get_queryset(self, request):
-    #     qs = super().get_queryset(request)
-    #     return qs.exclude(is_staff=True)
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.exclude(is_staff=True)
 
 
 class MenuInline(admin.TabularInline):
@@ -98,6 +100,9 @@ class ProfileAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
+        # only show all users when the user is a superuser
+        if request.user.is_superuser:
+            return qs
         return qs.exclude(user__is_staff=True)
 
 
