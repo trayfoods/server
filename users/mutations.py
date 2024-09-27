@@ -1312,11 +1312,12 @@ class RequestAccountDeletionMutation(Output, graphene.Mutation):
     class Arguments:
         reason = graphene.String(required=True)
         password = graphene.String(required=True)
+        device = graphene.String(required=False)
 
     @permission_checker([IsAuthenticated])
     # send admin email that user wants to delete account
-    def mutate(self, info, reason, password):
-        user = info.context.user
+    def mutate(self, info, reason, password, device=None):
+        user: User = info.context.user
         if not user.check_password(password):
             return RequestAccountDeletionMutation(error="Password is incorrect")
         # send email to admin users@trayfoods.com
@@ -1325,22 +1326,39 @@ class RequestAccountDeletionMutation(Output, graphene.Mutation):
 
             send_mail(
                 subject="User Account Deletion Request",
-                message=f"{user.email} has requested to delete their account. Reason: {reason}",
+                message=f"{user.email} has requested to delete their account. Reason: {reason}, Device: {device}",
                 from_email="Users Admin <users@trayfoods.com>",
-                recipient_list=["dev@trayfoods.com", "coo@trayfoods.com"],
+                recipient_list=[
+                    "dev@trayfoods.com",
+                    "coo@trayfoods.com",
+                    "divuzki@gmail.com",
+                    "divine@trayfoods.com",
+                ],
                 fail_silently=False,
             )
 
+            user_profile: Profile = user.profile
             # notify the user that the request has been sent
-            # send email to user
-            send_mail(
-                subject="Account Deletion Request",
-                message="Your account deletion request has been sent to the admin. Please wait for a response",
-                from_email="TrayFoods Accounts <accounts@trayfoods.com>",
-                recipient_list=[user.email],
-                fail_silently=False,
+            user_profile.send_sms(
+                message="Your account deletion request has been sent to the admin. Please wait for a response, if this was not you, please contact support before 24hrs"
             )
+            # send email to user
+            if device and device == "ios":
+                user_profile.send_email(
+                    subject="Account Deletion Process Has Started",
+                    from_email="Trayfoods Accounts <accounts@trayfoods.com>",
+                    text_content="Your account deletion has started, if this was not you, please contact support before 24hrs support@trayfoods.com",
+                )
+            else:
+                user_profile.send_email(
+                    subject="Account Deletion Requested",
+                    from_email="Trayfoods Accounts <accounts@trayfoods.com>",
+                    text_content="Your account deletion request has been sent to the admin. Please wait for a response",
+                )
 
+            # deactivate the user
+            user.is_active = False
+            user.save()
             return RequestAccountDeletionMutation(success=True)
 
         except Exception as e:
