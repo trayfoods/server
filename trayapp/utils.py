@@ -389,22 +389,25 @@ def send_message_to_queue(message, queue_name):
 
 
 def send_message_to_queue_bus(message_dict, queue_name, ttl=None):
-    credential = DefaultAzureCredential()
-    service_bus_client = ServiceBusClient(
-        credential=credential,
-        fully_qualified_namespace="trayfoods.servicebus.windows.net",
-        queue_name=queue_name,
-    )
-    # convert the dictionary to a json string
-    message_json = json.dumps(message_dict)
-    message_obj = ServiceBusMessage(message_json)
+    try:
+        credential = DefaultAzureCredential()
+        service_bus_client = ServiceBusClient(
+            credential=credential,
+            fully_qualified_namespace="trayfoods.servicebus.windows.net",
+            queue_name=queue_name,
+        )
+        # convert the dictionary to a json string
+        message_json = json.dumps(message_dict)
+        message_obj = ServiceBusMessage(message_json)
 
-    if ttl:
-        message_obj.time_to_live = timedelta(seconds=ttl)
+        if ttl:
+            message_obj.time_to_live = timedelta(seconds=ttl)
 
-    with service_bus_client:
-        sender = service_bus_client.get_queue_sender(queue_name)
-        sender.send_messages(message_obj)
+        with service_bus_client:
+            sender = service_bus_client.get_queue_sender(queue_name)
+            sender.send_messages(message_obj)
+    except Exception as e:
+        logging.exception(f"Error sending message to queue: {e}")
 
 
 def termii_send_otp(to: str):

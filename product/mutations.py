@@ -616,11 +616,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
     class Arguments:
         order_id = graphene.String(required=True)
         action = graphene.String(required=True)
+        order_pin = graphene.String()
 
     success_msg = graphene.String()
 
     @permission_checker([IsAuthenticated])
-    def mutate(self, info, order_id, action: str):
+    def mutate(self, info, order_id, action: str, order_pin: str=None):
         user = info.context.user
 
         order = Order.objects.filter(order_track_id=order_id)
@@ -1257,6 +1258,12 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 )
             
             if action == "delivered":
+                
+                # check if the order pin is correct
+                if order_pin is None or order_pin != order.order_confirm_pin:
+                    return MarkOrderAsMutation(
+                        error="The order pin is incorrect, please try again"
+                    )
             
                 # check if the store status is out for delivery
                 current_delivery_person_store_status = order.get_store_status(

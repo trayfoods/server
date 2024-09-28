@@ -2,6 +2,7 @@ from trayapp.base_filters import DateTypeFilter
 from django_filters import FilterSet, CharFilter, NumberFilter
 from product.models import Item, Order, Rating
 from users.models import DeliveryPerson
+from django.db.models import Q
 
 
 class ItemFilter(FilterSet):
@@ -133,44 +134,26 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
 
     def filter_by_order_status(self, queryset, name, value):
         value = value.lower()
+        delivery_person: DeliveryPerson = self.request.user.profile.get_delivery_person()
+
         if value == "new":
-            # get all order id of the delivery person notification
-            delivery_person: DeliveryPerson = (
-                self.request.user.profile.get_delivery_person()
-            )
+            # Get all order IDs from delivery person notifications
+            order_ids = delivery_person.get_notifications().values_list('order_id', flat=True)
 
-            orderIds = [x.order.id for x in delivery_person.get_notifications()]
+            return Order.objects.filter(id__in=order_ids)
 
-            return Order.objects.filter(id__in=orderIds)
-
-        delivery_person_id = self.request.user.profile.get_delivery_person().id
+        delivery_person_id = delivery_person.id
 
         if value == "ongoing":
-            # filter by ready for pickup or delivery
+            # Filter by ready for pickup or delivery
             return queryset.filter(
-                id__in=[
-                    order.id
-                    for order in queryset
-                    if order.get_delivery_person(delivery_person_id=delivery_person_id)[
-                        "status"
-                    ].upper().replace("_", "-")
-                    == "OUT-FOR-DELIVERY"
-                    or order.get_delivery_person(delivery_person_id=delivery_person_id)[
-                        "status"
-                    ].upper()
-                    == "PENDING"
-                ]
+                Q(delivery_people__contains=[{'id': delivery_person_id, 'status': 'out-for-delivery'}]) |
+                Q(delivery_people__contains=[{'id': delivery_person_id, 'status': 'pending'}])
             )
 
+        # General case for other statuses
         return queryset.filter(
-            id__in=[
-                order.id
-                for order in queryset
-                if order.get_delivery_person(delivery_person_id=delivery_person_id)[
-                    "status"
-                ].upper()
-                == value.upper()
-            ]
+            delivery_people__contains=[{'id': delivery_person_id, 'status': value.replace("-", "_")}]
         )
 
     def filter_by_search_query(self, queryset: list[Order], name, value):
