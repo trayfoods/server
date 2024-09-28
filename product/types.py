@@ -693,11 +693,7 @@ class OrderType(DjangoObjectType):
         current_user_profile = current_user.profile
         view_as = self.view_as(current_user_profile)
         if "DELIVERY_PERSON" in view_as:
-            delivery_person_info = self.get_delivery_person(
-                delivery_person_id=current_user_profile.deliveryperson.id
-            )
-            if delivery_person_info["status"] == "new":
-                return "****"
+            return "****"
         return self.get_confirm_pin()
 
     def resolve_order_status(self: Order, info):
