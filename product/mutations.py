@@ -1260,10 +1260,10 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
             if action == "delivered":
                 
                 # check if the order pin is correct
-                if order_pin is None or order_pin != order.order_confirm_pin:
-                    return MarkOrderAsMutation(
-                        error="The order pin is incorrect, please try again"
-                    )
+                # if order_pin is None or order_pin != order.order_confirm_pin:
+                #     return MarkOrderAsMutation(
+                #         error="The order pin is incorrect, please try again"
+                #     )
             
                 # check if the store status is out for delivery
                 current_delivery_person_store_status = order.get_store_status(
