@@ -146,7 +146,7 @@ class ProcessPayment:
                     order.notify_store(
                         store_id=store.id,
                         title="New Order",
-                        message="New Order of {} {} was made by {}, tap on this link to view your new orders {}/?tab=store-orders".format(
+                        message="New Order of {} {} was made by {}, tap on this link to view your new orders {}/account/?tab=store-orders".format(
                             order.order_currency,
                             overrall_store_price,
                             order_user.user.username,
