@@ -10,6 +10,8 @@ import logging
 from django.utils import timezone
 
 from django.db import models
+
+Q = models.Q
 from django_countries.fields import CountryField
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
@@ -1471,94 +1473,57 @@ class DeliveryPerson(models.Model):
         return DeliveryNotification.objects.filter(delivery_person=self, status="sent")
 
     def get_is_on_delivery(self):
-        active_orders_count = Order.get_active_orders_count_by_delivery_person(
-            delivery_person=self
-        )
-        if active_orders_count > 4:
-            return True
-        return False
+        return self.get_active_orders_count() > 4
 
     def get_active_orders_count(self):
         return Order.get_active_orders_count_by_delivery_person(delivery_person=self)
 
     # method to check if a order is able to be delivered by a delivery person
     def can_deliver(self, order: Order):
-        delivery_notifications = DeliveryNotification.objects.filter(
-            delivery_person=self
-        )
-
-        if delivery_notifications.filter(order=order).exists():
+        if not self.profile.user.is_active:
+            return False
+        
+        
+        if DeliveryNotification.objects.filter(
+            Q(delivery_person=self) & Q(order=order) | # check if the delivery person has already been sent a notification for the order
+            Q(delivery_person=self, status__in=["pending", "processing"]) # check if the delivery person has a pending or processing notification
+        ).exists():
             return False
 
-        # check if the delivery notification is either pending, processing or sent
-        if (
-            delivery_notifications.filter(status="pending").exists()
-            or delivery_notifications.filter(status="processing").exists()
-        ):
-            return False
-
-        order_user: Profile = order.user
-
-        delivery_person_profile = self.profile
-
-        # check if the order user is same as the delivery person
-        if order_user == delivery_person_profile:
+        if order.user == self.profile:
             return False
 
         if self.get_is_on_delivery():
             return False
 
-        # check if the delivery person is a vendor and is linked to the order
-        if (
-            delivery_person_profile.is_vendor
-            and order.linked_stores.filter(vendor=delivery_person_profile).exists()
-        ):
+        if self.profile.is_vendor and order.linked_stores.filter(vendor=self.profile).exists():
             return False
 
-        # check if delivery person is already delivering this order
         if order.get_delivery_person(delivery_person_id=self.id):
             return False
 
-        # handle if the delivery person is a student
-        if delivery_person_profile.is_student:
-            # has_passed_valid_vendor_check = False
-            # handle if the order user is a vendor
-            if order_user.is_vendor and (
-                # check if the order user store is in the delivery person's school and campus
-                (order_user.store.school != delivery_person_profile.student.school)
-                and (order_user.store.campus != delivery_person_profile.student.campus)
+        if self.profile.is_student:
+            if order.user.is_vendor and (
+                order.user.store.school != self.profile.student.school or
+                order.user.store.campus != self.profile.student.campus
             ):
                 return False
 
-            # handle if the order user is a student
-            if order_user.is_student:
-                order_user_gender = order_user.gender
-                delivery_person_gender = delivery_person_profile.gender
-
-                if order_user_gender != delivery_person_gender:
+            if order.user.is_student:
+                if order.user.gender != self.profile.gender:
                     return False
 
-                # check if the delivery person is not in the same school and campus as the order user
                 if (
-                    delivery_person_profile.student.school != order_user.student.school
-                    and delivery_person_profile.student.campus
-                    != order_user.student.campus
+                    self.profile.student.school != order.user.student.school or
+                    self.profile.student.campus != order.user.student.campus
                 ):
                     return False
         else:
-            # check if the delivery person is not in the same country as the order user
-            if delivery_person_profile.country != order_user.country:
-                print("check 9")
-                return False
-
-            # check if the delivery person is not in the same state as the order user
-            if delivery_person_profile.state != order_user.state:
-                print("check 10")
-                return False
-
-            # check if the delivery person is not in the same city as the order user
-            if delivery_person_profile.city != order_user.city:
-                print("check 11")
+            if (
+                self.profile.country != order.user.country or
+                self.profile.state != order.user.state or
+                self.profile.city != order.user.city
+            ):
                 return False
 
         return True
@@ -1566,69 +1531,48 @@ class DeliveryPerson(models.Model):
     # method to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
-        order_user: Profile = order.user
         delivery_people = DeliveryPerson.objects.filter(
             status="online",
             is_approved=True,
-            profile__country=order_user.country,
-        )
-        delivery_people_that_can_deliver = []
-        for delivery_person in delivery_people:
-            if delivery_person.can_deliver(order):
-                delivery_people_that_can_deliver.append(delivery_person)
-        return delivery_people_that_can_deliver
+            profile__country=order.user.country,
+        ).select_related("profile").iterator()
+
+        return [dp for dp in delivery_people if dp.can_deliver(order)]
 
     # send delivery request to delivery person
     @staticmethod
     def send_delivery(order: Order, store: Store):
-        order_user: Profile = order.user
         delivery_people = DeliveryPerson.objects.filter(
             status="online",
             is_approved=True,
-            profile__country=order_user.country,
+            profile__country=order.user.country,
+            profile__user__is_active=True,
+        ).select_related("profile").iterator()
+
+        for delivery_person in delivery_people:
+            if delivery_person.can_deliver(order):
+                DeliveryNotification.objects.create(
+                    order=order,
+                    store=store,
+                    delivery_person=delivery_person,
+                    status="pending",
+                )
+                queue_data = {
+                    "order_id": order.order_track_id,
+                    "delivery_person_id": delivery_person.id,
+                }
+                send_message_to_queue(
+                    message=queue_data, queue_name="new-delivery-request"
+                )
+                return True
+
+        order.update_store_status(store_id=store.id, status="no-delivery-person")
+        order.notify_store(
+            store_id=store.id,
+            title="No Delivery Person",
+            message=f"No delivery person was found available to deliver {order.user.user.username}'s order {order.get_order_display_id()}, please tell the customer about this",
         )
-        did_complete = False
-        did_find_delivery_person = False
-        try:
-            for delivery_person in delivery_people:
-                # check if the delivery person has rejected the order before
-                if delivery_person and delivery_person.can_deliver(order):
-                    # send new delivery request to queue
-                    queue_data = {
-                        "order_id": order.order_track_id,
-                        "delivery_person_id": delivery_person.id,
-                    }
-                    new_delivery_notification = DeliveryNotification.objects.create(
-                        order=order,
-                        store=store,
-                        delivery_person=delivery_person,
-                        status="pending",
-                    )
-                    new_delivery_notification.save()
-                    # send notification to queue
-                    did_complete = send_message_to_queue(
-                        message=queue_data, queue_name="new-delivery-request"
-                    )
-                    did_find_delivery_person = True
-                    break  # break the loop if a delivery person is found
-        except Exception as e:
-            did_complete = False
-            did_find_delivery_person = False
-
-        if not did_find_delivery_person:
-            # update the store status to no delivery person
-            order.update_store_status(store_id=store.id, status="no-delivery-person")
-            user: Profile = order.user
-            order.notify_store(
-                store_id=store.id,
-                title="No Delivery Person",
-                message="No delivery person was found available to deliver {}'s order {}, please tell the customer about this".format(
-                    user.user.username, order.get_order_display_id()
-                ),
-            )
-            did_complete = False
-
-        return did_complete
+        return False
 
 
 class DeliveryNotification(models.Model):
