@@ -1299,8 +1299,8 @@ class MarkOrderAsMutation(Output, graphene.Mutation):
                 # credit delivery person wallet
                 credit_kwargs = {
                     "amount": delivery_fee,
-                    "title": "Delivery Fee",
-                    "desc": f"Delivery Fee for Order {order.get_order_display_id()}",
+                    "title": "Wallet Credited",
+                    "desc": f"Delivery Fee for Order {order.get_order_display_id()} has been credited to your wallet",
                     "order": order,
                 }
                 current_delivery_person.wallet.add_balance(**credit_kwargs)
