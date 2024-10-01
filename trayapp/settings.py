@@ -350,14 +350,9 @@ if not DEBUG:
         "https://trayfoods.com",
         "http://127.0.0.1:8000",
         "http://localhost:8000",
-        # ionic capacitor ios and android
-        "capacitor://localhost",
+        "http://localhost:3000",
         "ionic://localhost",
-        "http://localhost",
-        "http://localhost:8080",
-        "http://localhost:8100",
-        "http://localhost:8101",
-        "file://",
+        "capacitor://localhost",
     ]
 
 
@@ -368,18 +363,9 @@ CORS_ORIGIN_WHITELIST = (
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "https://www.trayfoods.com",
-    # ionic capacitor ios and android
-    "capacitor://localhost",
     "ionic://localhost",
-    "http://localhost",
-    "http://localhost:8080",
-    "http://localhost:8100",
-    "http://localhost:8101",
-    "file://",
+    "capacitor://localhost",
 )
-
-# allow all origins
-CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_ALLOW_METHODS = (
     "GET",
