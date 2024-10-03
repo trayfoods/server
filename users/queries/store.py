@@ -39,16 +39,16 @@ class StoreQueries(graphene.ObjectType):
         )
 
         # Filtered stores for students
-        filtered_stores = []
-        if profile.is_student:
-            student: Student = profile.student
-            school, campus = student.school, student.campus
+        # filtered_stores = []
+        # if profile.is_student:
+        #     student: Student = profile.student
+        #     school, campus = student.school, student.campus
 
-            filtered_stores = (
-                Store.objects.filter(school=school, campus=campus)
-                .exclude(is_approved=False, vendor=profile)
-                .order_by("-store_rank")[:5]
-            )
+        #     filtered_stores = (
+        #         Store.objects.filter(school=school, campus=campus)
+        #         .exclude(is_approved=False, vendor=profile)
+        #         .order_by("-store_rank")[:5]
+        #     )
 
         # User orders in the last 14 days
         user_orders = Order.objects.filter(
@@ -65,9 +65,7 @@ class StoreQueries(graphene.ObjectType):
             )
 
         # Combine all stores
-        featured_stores = list(
-            set(regional_stores) | set(filtered_stores) | linked_stores
-        )
+        featured_stores = list(set(regional_stores) | linked_stores)
 
         # Filter out closed stores
         featured_stores = [
@@ -150,7 +148,7 @@ class StoreQueries(graphene.ObjectType):
                     if category_key not in unique_categories:
                         unique_categories.add(category_key)
                         store_items_categories.append(category_data)
-        
+
         return store_items_categories
 
     def resolve_top10_store_items(self, info, store_nickname):
