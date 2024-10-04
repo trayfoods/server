@@ -2,7 +2,7 @@ import logging
 
 from django.http import HttpResponse
 from product.models import Order
-from users.models import Store, Transaction, Profile
+from users.models import Store, Transaction, Profile, Wallet
 from trayapp.decorators import get_time_complexity
 from decimal import Decimal
 
@@ -198,20 +198,21 @@ class ProcessPayment:
         if "success" == transfer_status:
             account_name = self.event_data["recipient"]["name"]
             # deduct the amount_with_charges from the wallet
+            wallet: Wallet = transaction.wallet
             kwargs = {
                 "amount": amount,
                 "transaction_id": transaction_id,
                 "transfer_fee": transaction.transfer_fee,
-                "desc": "TRF to " + account_name,
+                "desc": f"We have successfully transferred {amount} {wallet.currency} to {account_name}",
                 "status": "success",
             }
-            transaction.wallet.deduct_balance(**kwargs)
+            wallet.deduct_balance(**kwargs)
 
             # update the transaction status
             transaction.status = "success"
             transaction.gateway_transfer_id = gateway_transfer_id
             transaction.desc = "We have successfully transferred {} {} to {}".format(
-                transaction.amount, transaction.wallet.currency, account_name
+                transaction.amount, wallet.currency, account_name
             )
             transaction.save()
             return HttpResponse("Transfer successful", status=200)
