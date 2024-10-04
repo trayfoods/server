@@ -41,7 +41,7 @@ class ItemFilter(FilterSet):
             id__in=[
                 item.id
                 for item in queryset
-                if item.product_creator.store_nickname == value
+                if item.product_creator.store_nickname.lower() == value.lower()
             ]
         )
 
