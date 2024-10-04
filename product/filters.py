@@ -16,7 +16,8 @@ class ItemFilter(FilterSet):
         field_name="product_creator__store_address", lookup_expr="icontains"
     )
     category = CharFilter(method="filter_by_category")
-    store_menu_name = CharFilter(field_name="product_menu__name", lookup_expr="exact")
+    store_menu_name = CharFilter(method="filter_by_store_menu_name")
+    # store_menu_name = CharFilter(field_name="product_menu__name", lookup_expr="exact")
 
     class Meta:
         model = Item
@@ -42,6 +43,15 @@ class ItemFilter(FilterSet):
                 item.id
                 for item in queryset
                 if item.product_creator.store_nickname.lower() == value.lower()
+            ]
+        )
+    
+    def filter_by_store_menu_name(self, queryset, name, value):
+        return queryset.filter(
+            id__in=[
+                item.id
+                for item in queryset
+                if item.product_menu.name.lower() == value.lower()
             ]
         )
 
