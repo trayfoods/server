@@ -1482,11 +1482,15 @@ class DeliveryPerson(models.Model):
     def can_deliver(self, order: Order):
         if not self.profile.user.is_active:
             return False
-        
-        
+
         if DeliveryNotification.objects.filter(
-            Q(delivery_person=self) & Q(order=order) | # check if the delivery person has already been sent a notification for the order
-            Q(delivery_person=self, status__in=["pending", "processing"]) # check if the delivery person has a pending or processing notification
+            Q(delivery_person=self)
+            & Q(
+                order=order
+            )  # check if the delivery person has already been sent a notification for the order
+            | Q(
+                delivery_person=self, status__in=["pending", "processing"]
+            )  # check if the delivery person has a pending or processing notification
         ).exists():
             return False
 
@@ -1496,7 +1500,10 @@ class DeliveryPerson(models.Model):
         if self.get_is_on_delivery():
             return False
 
-        if self.profile.is_vendor and order.linked_stores.filter(vendor=self.profile).exists():
+        if (
+            self.profile.is_vendor
+            and order.linked_stores.filter(vendor=self.profile).exists()
+        ):
             return False
 
         if order.get_delivery_person(delivery_person_id=self.id):
@@ -1504,8 +1511,8 @@ class DeliveryPerson(models.Model):
 
         if self.profile.is_student:
             if order.user.is_vendor and (
-                order.user.store.school != self.profile.student.school or
-                order.user.store.campus != self.profile.student.campus
+                order.user.store.school != self.profile.student.school
+                or order.user.store.campus != self.profile.student.campus
             ):
                 return False
 
@@ -1514,15 +1521,15 @@ class DeliveryPerson(models.Model):
                     return False
 
                 if (
-                    self.profile.student.school != order.user.student.school or
-                    self.profile.student.campus != order.user.student.campus
+                    self.profile.student.school != order.user.student.school
+                    or self.profile.student.campus != order.user.student.campus
                 ):
                     return False
         else:
             if (
-                self.profile.country != order.user.country or
-                self.profile.state != order.user.state or
-                self.profile.city != order.user.city
+                self.profile.country != order.user.country
+                or self.profile.state != order.user.state
+                or self.profile.city != order.user.city
             ):
                 return False
 
@@ -1531,23 +1538,31 @@ class DeliveryPerson(models.Model):
     # method to get delivery people that can deliver a order
     @staticmethod
     def get_delivery_people_that_can_deliver(order: Order):
-        delivery_people = DeliveryPerson.objects.filter(
-            status="online",
-            is_approved=True,
-            profile__country=order.user.country,
-        ).select_related("profile").iterator()
+        delivery_people = (
+            DeliveryPerson.objects.filter(
+                status="online",
+                is_approved=True,
+                profile__country=order.user.country,
+            )
+            .select_related("profile")
+            .iterator()
+        )
 
         return [dp for dp in delivery_people if dp.can_deliver(order)]
 
     # send delivery request to delivery person
     @staticmethod
     def send_delivery(order: Order, store: Store):
-        delivery_people = DeliveryPerson.objects.filter(
-            status="online",
-            is_approved=True,
-            profile__country=order.user.country,
-            profile__user__is_active=True,
-        ).select_related("profile").iterator()
+        delivery_people = (
+            DeliveryPerson.objects.filter(
+                status="online",
+                is_approved=True,
+                profile__country=order.user.country,
+                profile__user__is_active=True,
+            )
+            .select_related("profile")
+            .iterator()
+        )
 
         for delivery_person in delivery_people:
             if delivery_person.can_deliver(order):
