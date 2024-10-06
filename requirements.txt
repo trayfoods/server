@@ -33,7 +33,7 @@ dj-database-url==2.1.0
 Django==3.2.23
 django-anymail==10.2
 django-cleanup==8.0.0
-django-cors-headers==4.3.1
+django-cors-headers==4.4.0
 django-countries==7.5.1
 django-filter==23.5
 django-graphql-auth==0.3.7
