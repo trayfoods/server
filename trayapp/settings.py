@@ -344,7 +344,7 @@ STATICFILES_DIRS = [BASE_DIR / "workspace/static"]
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 CORS_LOG_SHOW_URLS = True
 
-if not DEBUG:
+if DEBUG:
     CSRF_TRUSTED_ORIGINS = [
         "https://www.trayfoods.com",
         "https://trayfoods.com",
@@ -352,18 +352,6 @@ if not DEBUG:
         "http://localhost:8000",
         "http://localhost:3000",
     ]
-
-
-CORS_ORIGIN_WHITELIST = (
-    "http://localhost:3000",
-    "https://trayfoods.com",
-    "https://localhost",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",
-    "https://www.trayfoods.com",
-    "ionic://localhost",
-    "capacitor://localhost",
-)
 
 CORS_ALLOW_ALL_ORIGINS = True
 
