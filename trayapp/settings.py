@@ -351,8 +351,6 @@ if not DEBUG:
         "http://127.0.0.1:8000",
         "http://localhost:8000",
         "http://localhost:3000",
-        "ionic://localhost",
-        "capacitor://localhost",
     ]
 
 
@@ -366,6 +364,8 @@ CORS_ORIGIN_WHITELIST = (
     "ionic://localhost",
     "capacitor://localhost",
 )
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOW_METHODS = (
     "GET",
