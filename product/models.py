@@ -749,7 +749,7 @@ class Order(models.Model):
             data = {"link": f"/checkout/{self.order_track_id}"}  # default link
 
         try:
-            profile.send_push_notification(title=title, message=message, data=data)
+            # profile.send_push_notification(title=title, message=message, data=data)
             profile.send_email(
                 subject=title,
                 from_email="Trayfoods Orders <orders@trayfoods.com>",

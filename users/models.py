@@ -505,25 +505,25 @@ class Profile(models.Model):
         )
 
     def notify_me(self, title, message, data=None, skip_email=False):
-        if not self.send_push_notification(title, message, data):
-            did_send_sms = self.send_sms(message=message)
-            from_email = settings.DEFAULT_FROM_EMAIL
-            template = None
-            if data:
-                from_email = data.get("from_email", None) or from_email
-                template = data.get("template", None)
+        # if not self.send_push_notification(title, message, data):
+        did_send_sms = self.send_sms(message=message)
+        from_email = settings.DEFAULT_FROM_EMAIL
+        template = None
+        if data:
+            from_email = data.get("from_email", None) or from_email
+            template = data.get("template", None)
 
-            # send email if sms fail
-            if not skip_email and not did_send_sms:
-                return self.send_email(
-                    subject=title,
-                    from_email=from_email,
-                    text_content=message,
-                    template=template,
-                    context=data,
-                )
+        # send email if sms fail
+        if not skip_email and not did_send_sms:
+            return self.send_email(
+                subject=title,
+                from_email=from_email,
+                text_content=message,
+                template=template,
+                context=data,
+            )
 
-            return did_send_sms
+        return did_send_sms
 
     def send_email(
         self, subject, from_email, text_content, template=None, context=None
@@ -938,13 +938,13 @@ class Wallet(models.Model):
             if amount > 0
             else f"{amount} {self.currency} has been deducted from your wallet"
         )
-        if self.user.user.has_token_device:
-            # send a push notification
-            title = "Credit Alert" if amount > 0 else "Debit Alert"
-            self.user.send_push_notification(title, message)
-        else:
+        # if self.user.user.has_token_device:
+        #     # send a push notification
+        #     title = "Credit Alert" if amount > 0 else "Debit Alert"
+        #     self.user.send_push_notification(title, message)
+        # else:
             # send an SMS
-            self.user.send_sms(message)
+        self.user.send_sms(message)
 
 
 class StoreOpenHours(models.Model):
@@ -1331,7 +1331,7 @@ class Menu(models.Model):
         ordering = ["position"]
 
     def __str__(self):
-        return self.store.store_nickname + self.name
+        return self.store.store_nickname + " - " + self.name
 
     def get_menu_items(self):
         return Item.objects.filter(product_menu=self)

@@ -35,7 +35,7 @@ class StoreQueries(graphene.ObjectType):
         regional_stores = (
             Store.filter_by_country(country)
             .exclude(is_approved=False, vendor=profile)
-            .filter(state=state, city=city)[:5]
+            .filter(state=state, city=city, is_approved=True)[:5]
         )
 
         # Filtered stores for students
@@ -61,7 +61,7 @@ class StoreQueries(graphene.ObjectType):
         linked_stores = set()
         for order in user_orders:
             linked_stores.update(
-                order.linked_stores.exclude(is_approved=False, vendor=profile)
+                order.linked_stores.exclude(is_approved=False, vendor=profile).filter(is_approved=True)
             )
 
         # Combine all stores
@@ -159,7 +159,8 @@ class StoreQueries(graphene.ObjectType):
             )
         store = store_qs.first()
         store_items = store.get_store_products().exclude(
-            product_menu__type__slug__icontains="package"
+            product_menu__type__slug__icontains="package",
+            product_menu__type__slug__icontains="water"
         )
 
         return store_items.order_by("-product_views")[:10]
