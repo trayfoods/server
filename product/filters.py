@@ -46,12 +46,12 @@ class ItemFilter(FilterSet):
             ]
         )
     
-    def filter_by_store_menu_name(self, queryset, name, value):
+    def filter_by_store_menu_name(self, queryset, name, value: str):
         return queryset.filter(
             id__in=[
                 item.id
                 for item in queryset
-                if item.product_menu.name.lower() == value.lower()
+                if item.product_menu and item.product_menu.name.lower() == value.lower()
             ]
         )
 
