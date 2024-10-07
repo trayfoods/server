@@ -16,7 +16,6 @@ class ItemQueries(graphene.ObjectType):
         item_slug=graphene.String(required=True),
     )
 
-
     hero_data = graphene.List(ItemType)
 
     item_reviews = DjangoFilterConnectionField(
