@@ -1331,7 +1331,7 @@ class Menu(models.Model):
         ordering = ["position"]
 
     def __str__(self):
-        return self.name
+        return self.store.store_nickname + self.name
 
     def get_menu_items(self):
         return Item.objects.filter(product_menu=self)

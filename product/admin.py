@@ -35,6 +35,7 @@ class ItemAdmin(admin.ModelAdmin):
         "product_clicks",
         "product_views",
     )
+    list_filter = ("product_creator__store_nickname","product_status")
 
 
 class ItemAttributeAdmin(admin.ModelAdmin):
