@@ -317,7 +317,7 @@ if USE_S3:
     # Static files (CSS, JavaScript, Images)
     AZURE_ACCOUNT_KEY = os.getenv("AZURE_ACCOUNT_KEY")
 
-    CUSTOM_DOMAIN = "cdn4trayfoods.blob.core.windows.net"
+    CUSTOM_DOMAIN = f"{AZURE_ACCOUNT_NAME}.blob.core.windows.net"
 
     # s3 static settings
     STATIC_LOCATION = "static"

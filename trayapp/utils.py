@@ -358,7 +358,7 @@ def send_message_to_queue(message, queue_name):
 
     try:
         # Create Queue Client (using DefaultAzureCredential for authentication)
-        account_url = f"https://{settings.AZURE_ACCOUNT_NAME}.queue.core.windows.net"
+        account_url = f"https://functionscdn.queue.core.windows.net"
         default_credential = DefaultAzureCredential()
 
         queue_client = QueueClient(
