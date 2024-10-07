@@ -61,7 +61,9 @@ class StoreQueries(graphene.ObjectType):
         linked_stores = set()
         for order in user_orders:
             linked_stores.update(
-                order.linked_stores.exclude(is_approved=False, vendor=profile).filter(is_approved=True)
+                order.linked_stores.exclude(is_approved=False, vendor=profile).filter(
+                    is_approved=True
+                )
             )
 
         # Combine all stores
@@ -158,9 +160,14 @@ class StoreQueries(graphene.ObjectType):
                 "Store was not found to get top 10 items, please contact support"
             )
         store = store_qs.first()
-        store_items = store.get_store_products().exclude(
-            product_menu__type__slug__icontains="package",
-            product_menu__type__slug__icontains="water"
+        store_items = (
+            store.get_store_products()
+            .exclude(
+                product_menu__type__slug__icontains="package",
+            )
+            .exclude(
+                product_menu__type__slug__icontains="water",
+            )
         )
 
         return store_items.order_by("-product_views")[:10]
