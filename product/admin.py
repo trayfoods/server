@@ -35,7 +35,12 @@ class ItemAdmin(admin.ModelAdmin):
         "product_clicks",
         "product_views",
     )
-    list_filter = ("product_creator__store_nickname","product_status")
+    list_filter = ("product_creator__store_nickname", "product_status")
+
+
+class ItemInline(admin.TabularInline):
+    model = Item
+    extra = 0
 
 
 class ItemAttributeAdmin(admin.ModelAdmin):

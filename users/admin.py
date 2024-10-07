@@ -134,7 +134,6 @@ class WalletAdmin(admin.ModelAdmin):
     )
 
 
-
 class HostelFieldInline(admin.TabularInline):
     model = HostelField
     extra = 0
@@ -227,7 +226,9 @@ class StoreOpenHoursInline(admin.TabularInline):
 
 
 class StoreAdmin(admin.ModelAdmin):
-    inlines = [MenuInline, StoreOpenHoursInline]
+    from product.admin import ItemInline
+
+    inlines = [MenuInline, StoreOpenHoursInline, ItemInline]
     list_display = (
         "store_name",
         "__str__",
