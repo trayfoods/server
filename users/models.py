@@ -1191,26 +1191,21 @@ class Store(models.Model):
             is_open_data["is_open"] = True
             is_open_data["message"] = None
 
-        # check if store will open soon in 30 minutes (remeber the types are datetime.time)
-        if open_time > current_datetime.time():
-            if (open_time.hour - current_datetime.hour) == 1 and (
-                open_time.minute - current_datetime.minute
-            ) <= 30:
-                is_open_data["open_soon"] = True
-                is_open_data["message"] = f"Opens today by {open_time.strftime('%I:%M %p')}"
-
-        # check if store will close soon in 30 minutes
-        if close_time > current_datetime.time():
-            if (close_time.hour - current_datetime.hour) == 1 and (
-                close_time.minute - current_datetime.minute
-            ) <= 30:
-                is_open_data["close_soon"] = True
-                is_open_data["message"] = f"Closes today by {close_time.strftime('%I:%M %p')}"
+        # check if store will close soon
+        if open_time < current_datetime.time() < close_time:
+            is_open_data["close_soon"] = True
+            is_open_data["message"] = f"Closes today by {close_time.strftime('%I:%M %p')}"
 
         # check if store will open next day
-        if open_time > current_datetime.time() and current_day_abbrev != "Sun":
+        if close_time < current_datetime.time():
             is_open_data["open_next_day"] = True
-            is_open_data["message"] = f"Opens tomorrow by {open_time.strftime('%I:%M %p')}"
+            is_open_data["message"] = "We are closed for today, please come back tomorrow."
+
+        # check if store will open soon
+        if open_time > current_datetime.time() < close_time:
+            is_open_data["open_soon"] = True
+            is_open_data["message"] = f"Opens today by {open_time.strftime('%I:%M %p')}"
+
 
         return is_open_data
 
