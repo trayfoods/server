@@ -1126,6 +1126,7 @@ class Store(models.Model):
             "open_soon": False,
             "close_soon": False,
             "open_next_day": False,
+            "message": "We are closed for today, please come back tomorrow."
         }
         # Get the current time in the store's time zone
         current_datetime = timezone.now()
@@ -1188,6 +1189,7 @@ class Store(models.Model):
         # Check if store is open
         if open_time <= current_datetime.time() < close_time:
             is_open_data["is_open"] = True
+            is_open_data["message"] = None
 
         # check if store will open soon in 30 minutes (remeber the types are datetime.time)
         if open_time > current_datetime.time():
@@ -1195,6 +1197,7 @@ class Store(models.Model):
                 open_time.minute - current_datetime.minute
             ) <= 30:
                 is_open_data["open_soon"] = True
+                is_open_data["message"] = f"Opens today by {open_time.strftime('%I:%M %p')}"
 
         # check if store will close soon in 30 minutes
         if close_time > current_datetime.time():
@@ -1206,6 +1209,7 @@ class Store(models.Model):
         # check if store will open next day
         if open_time > current_datetime.time() and current_day_abbrev != "Sun":
             is_open_data["open_next_day"] = True
+            is_open_data["message"] = f"Opens tomorrow by {open_time.strftime('%I:%M %p')}"
 
         return is_open_data
 

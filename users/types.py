@@ -230,6 +230,9 @@ class StoreOpenHoursInput(graphene.InputObjectType):
     open_time = graphene.String()
     close_time = graphene.String()
 
+class isStoreOpenData(graphene.ObjectType):
+    is_open = graphene.Boolean()
+    message = graphene.String()
 
 class StoreType(DjangoObjectType):
     store_id = graphene.String()
@@ -246,6 +249,7 @@ class StoreType(DjangoObjectType):
     country_code = graphene.String()
 
     can_accept_orders = graphene.Boolean()
+    is_open_data = graphene.Field(isStoreOpenData)
 
     class Meta:
         model = Store
@@ -303,6 +307,10 @@ class StoreType(DjangoObjectType):
     
     def resolve_can_accept_orders(self: Store, info):
         return self.can_accept_orders()
+    
+    def resolve_is_open_data(self:Store, info):
+        is_open_data = self.get_is_open_data()
+        return isStoreOpenData(is_open=is_open_data.get("is_open"), message=is_open_data.get("message"))
 
 
 class StoreNode(StoreType, graphene.ObjectType):
