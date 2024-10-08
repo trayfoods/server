@@ -1205,6 +1205,7 @@ class Store(models.Model):
                 close_time.minute - current_datetime.minute
             ) <= 30:
                 is_open_data["close_soon"] = True
+                is_open_data["message"] = f"Closes today by {close_time.strftime('%I:%M %p')}"
 
         # check if store will open next day
         if open_time > current_datetime.time() and current_day_abbrev != "Sun":
