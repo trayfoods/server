@@ -109,7 +109,13 @@ class UpdateOnlineStatusMutation(Output, graphene.Mutation):
                 delivery_person.status = "offline"
                 delivery_person.save()
                 return UpdateOnlineStatusMutation(
-                    error="Your Delivery Account has been suspended, please contact support"
+                    error="Your delivery account has been suspended, please contact support"
+                )
+            elif not delivery_person.is_approved:
+                delivery_person.status = "offline"
+                delivery_person.save()
+                return UpdateOnlineStatusMutation(
+                    error="Your delivery account has not been approved yet"
                 )
             delivery_person.status = "online" if is_online else "offline"
             delivery_person.save()
@@ -123,7 +129,13 @@ class UpdateOnlineStatusMutation(Output, graphene.Mutation):
                 store.status = "offline"
                 store.save()
                 return UpdateOnlineStatusMutation(
-                    error="Your Store has been suspended, please contact support"
+                    error="Your store has been suspended, please contact support"
+                )
+            if not store.is_approved:
+                store.status = "offline"
+                store.save()
+                return UpdateOnlineStatusMutation(
+                    error="Your store has not been approved yet, please contact support"
                 )
             store.status = "online" if is_online else "offline"
             store.save()
