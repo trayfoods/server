@@ -46,6 +46,21 @@ class RolesFilter(admin.SimpleListFilter):
             return queryset.filter(id__in=list_of_users)
 
 
+# profile.has_required_fields -> bool
+class HasCompleteProfileFilter(admin.SimpleListFilter):
+    title = "Has Complete Profile"
+    parameter_name = "has_complete_profile"
+
+    def lookups(self, request, model_admin):
+        return (("True", "True"), ("False", "False"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "True":
+            return queryset.filter(has_required_fields=True)
+        if self.value() == "False":
+            return queryset.filter(has_required_fields=False)
+
+
 class ProfileInline(admin.TabularInline):
     model = Profile
     extra = 0
@@ -95,7 +110,7 @@ class ProfileAdmin(admin.ModelAdmin):
         "__str__",
         "phone_number",
     )
-    list_filter = (RolesFilter, "gender")
+    list_filter = (HasCompleteProfileFilter, RolesFilter, "gender")
     search_fields = ("phone_number", "primary_address", "street_name")
     readonly_fields = ("user",)
 
