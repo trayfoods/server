@@ -943,7 +943,7 @@ class Wallet(models.Model):
         #     title = "Credit Alert" if amount > 0 else "Debit Alert"
         #     self.user.send_push_notification(title, message)
         # else:
-            # send an SMS
+        # send an SMS
         self.user.send_sms(message)
 
 
@@ -1116,18 +1116,16 @@ class Store(models.Model):
         return cls.objects.filter(campus=campus)
 
     # check if store is open
+    # e.g 10:00 AM - 8:00 PM is 10:00:00 - 20:00:00
     def get_is_open_data(self):
-
-        # if settings.DEBUG == True:
-        #     return True
-
         is_open_data = {
             "is_open": False,
             "open_soon": False,
             "close_soon": False,
             "open_next_day": False,
-            "message": "We are closed for today, please come back tomorrow."
+            "message": "We are closed for today, please come back tomorrow.",
         }
+
         # Get the current time in the store's time zone
         current_datetime = timezone.now()
 
@@ -1140,7 +1138,7 @@ class Store(models.Model):
                 logging.exception(
                     f"Error: Invalid timezone '{self.timezone}'. Check and update if necessary."
                 )
-                return False
+                return is_open_data
 
         # Get the abbreviated day of the week (e.g., "Mon", "Tue", etc.)
         current_day_abbrev = current_datetime.strftime("%a")
@@ -1167,48 +1165,49 @@ class Store(models.Model):
 
         if self.timezone:
             try:
-                open_datetime = datetime.combine(datetime.today(), open_time)
-                close_datetime = datetime.combine(datetime.today(), close_time)
-                open_datetime = open_datetime.astimezone(pytz.timezone(self.timezone))
-                close_datetime = close_datetime.astimezone(pytz.timezone(self.timezone))
+                open_datetime = datetime.combine(current_datetime.date(), open_time)
+                close_datetime = datetime.combine(current_datetime.date(), close_time)
+                open_datetime = pytz.timezone(self.timezone).localize(open_datetime)
+                close_datetime = pytz.timezone(self.timezone).localize(close_datetime)
             except (pytz.UnknownTimeZoneError, ValueError):
                 return is_open_data
-
         else:
-            open_datetime = datetime.combine(datetime.today(), open_time)
-            close_datetime = datetime.combine(datetime.today(), close_time)
-
-        # Extract the time from the datetime
-        open_time = open_datetime.time()
-        close_time = close_datetime.time()
+            open_datetime = datetime.combine(current_datetime.date(), open_time)
+            close_datetime = datetime.combine(current_datetime.date(), close_time)
 
         # Handle midnight closure edge case
         if open_time == close_time:
             return is_open_data
 
         # Check if store is open
-        if open_time <= current_datetime.time() < close_time:
+        if open_datetime <= current_datetime < close_datetime:
             is_open_data["is_open"] = True
             is_open_data["message"] = None
 
-        # check if store will close soon
-        if close_time > current_datetime.time():
-            if (close_time.hour - current_datetime.hour) == 1 and (
-                close_time.minute - current_datetime.minute
-            ) <= 30:
+        # Check if store will close soon
+        if open_datetime <= current_datetime < close_datetime:
+            time_to_close = (close_datetime - current_datetime).total_seconds()
+            if 0 < time_to_close <= 1800:  # 30 minutes
                 is_open_data["close_soon"] = True
-                is_open_data["message"] = f"Closes today by {close_time.strftime('%I:%M %p')}"
+                is_open_data["message"] = (
+                    f"Closes today by {close_datetime.strftime('%I:%M %p')}"
+                )
 
-        # check if store will open next day
-        if close_time < current_datetime.time():
+        # Check if store will open soon
+        if current_datetime < open_datetime:
+            time_to_open = (open_datetime - current_datetime).total_seconds()
+            if 0 < time_to_open <= 1800:  # 30 minutes
+                is_open_data["open_soon"] = True
+                is_open_data["message"] = (
+                    f"Opens today by {open_datetime.strftime('%I:%M %p')}"
+                )
+
+        # Check if store will open next day
+        if current_datetime >= close_datetime:
             is_open_data["open_next_day"] = True
-            is_open_data["message"] = "We are closed for today, please come back tomorrow."
-
-        # check if store will open soon
-        if close_time > current_datetime.time() < open_time:
-            is_open_data["open_soon"] = True
-            is_open_data["message"] = f"Opens today by {open_time.strftime('%I:%M %p')}"
-
+            is_open_data["message"] = (
+                "We are closed for today, please come back tomorrow."
+            )
 
         return is_open_data
 
