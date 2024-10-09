@@ -676,6 +676,9 @@ class CompleteProfileMutation(Output, graphene.Mutation):
             profile.country = country
 
         if phone_number:
+            # remove the first 0 from the phone number
+            if phone_number.startswith("0"):
+                phone_number = phone_number[1:]
             profile.phone_number = phone_number
 
         # check if the role includes "DELIVERY_PERSON", then create the delivery person instance or update it
