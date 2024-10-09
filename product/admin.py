@@ -47,7 +47,9 @@ class ItemAttributeAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "_type",
+        "parent",
     )
+    list_filter = ("_type",)
     prepopulated_fields = {"slug": ("_type", "name")}
 
 
