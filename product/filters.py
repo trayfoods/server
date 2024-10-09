@@ -42,16 +42,18 @@ class ItemFilter(FilterSet):
             id__in=[
                 item.id
                 for item in queryset
-                if item.product_creator.store_nickname.lower() == value.lower()
+                if item.product_creator.store_nickname.lower().strip()
+                == value.lower().strip()
             ]
         )
-    
+
     def filter_by_store_menu_name(self, queryset, name, value: str):
         return queryset.filter(
             id__in=[
                 item.id
                 for item in queryset
-                if item.product_menu and item.product_menu.name.lower() == value.lower()
+                if item.product_menu
+                and item.product_menu.name.lower().strip() == value.lower().strip()
             ]
         )
 
@@ -141,14 +143,17 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
     order_status = CharFilter(method="filter_by_order_status")
     search_query = CharFilter(method="filter_by_search_query")
 
-
     def filter_by_order_status(self, queryset, name, value):
         value = value.lower()
-        delivery_person: DeliveryPerson = self.request.user.profile.get_delivery_person()
+        delivery_person: DeliveryPerson = (
+            self.request.user.profile.get_delivery_person()
+        )
 
         if value == "new":
             # Get all order IDs from delivery person notifications
-            order_ids = delivery_person.get_notifications().values_list('order_id', flat=True)
+            order_ids = delivery_person.get_notifications().values_list(
+                "order_id", flat=True
+            )
 
             return Order.objects.filter(id__in=order_ids)
 
@@ -157,13 +162,23 @@ class DeliveryPersonFilter(DefaultOrderFilter, FilterSet):
         if value == "ongoing":
             # Filter by ready for pickup or delivery
             return queryset.filter(
-                Q(delivery_people__contains=[{'id': delivery_person_id, 'status': 'out-for-delivery'}]) |
-                Q(delivery_people__contains=[{'id': delivery_person_id, 'status': 'pending'}])
+                Q(
+                    delivery_people__contains=[
+                        {"id": delivery_person_id, "status": "out-for-delivery"}
+                    ]
+                )
+                | Q(
+                    delivery_people__contains=[
+                        {"id": delivery_person_id, "status": "pending"}
+                    ]
+                )
             )
 
         # General case for other statuses
         return queryset.filter(
-            delivery_people__contains=[{'id': delivery_person_id, 'status': value.replace("-", "_")}]
+            delivery_people__contains=[
+                {"id": delivery_person_id, "status": value.replace("-", "_")}
+            ]
         )
 
     def filter_by_search_query(self, queryset: list[Order], name, value):

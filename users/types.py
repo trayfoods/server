@@ -262,9 +262,15 @@ class StoreType(DjangoObjectType):
         return self.store_categories
 
     def resolve_store_menu(self, info):
-        store_menu = self.store_menu
+        store_menu: list[str] = self.store_menu
         if store_menu is None:
             return []
+        # make all the menu items to be in lower case
+        store_menu = [menu.lower().strip() for menu in store_menu]
+        # make 'others' to be always at the end
+        if "others" in store_menu:
+            store_menu.remove("others")
+            store_menu.append("others")
         return store_menu
 
     def resolve_store_items(self, info):
