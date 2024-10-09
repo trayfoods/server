@@ -1202,7 +1202,7 @@ class Store(models.Model):
             is_open_data["message"] = "We are closed for today, please come back tomorrow."
 
         # check if store will open soon
-        if open_time > current_datetime.time() < close_time:
+        if close_time > current_datetime.time() < open_time:
             is_open_data["open_soon"] = True
             is_open_data["message"] = f"Opens today by {open_time.strftime('%I:%M %p')}"
 
