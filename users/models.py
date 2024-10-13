@@ -1299,7 +1299,7 @@ class Store(models.Model):
 
     @property
     def store_menu(self):
-        return [menu.name for menu in self.menus()]
+        return [menu.name.strip() for menu in self.menus()]
 
     # check if store can accept orders
     def can_accept_orders(self):

@@ -28,33 +28,39 @@ class ItemFilter(FilterSet):
         }
 
     def filter_by_category(self, queryset, name, value):
-        # filter by product_categories
         return queryset.filter(
-            id__in=[
-                item.id
-                for item in queryset
-                if item.product_categories.filter(slug=value).exists()
-            ]
+            Q(
+                id__in=[
+                    item.id
+                    for item in queryset
+                    if item.product_categories.filter(slug=value).exists()
+                ]
+            )
         )
 
     def filter_by_store_nickname(self, queryset, name, value):
+        value = value.lower().strip()
         return queryset.filter(
-            id__in=[
-                item.id
-                for item in queryset
-                if item.product_creator.store_nickname.lower().strip()
-                == value.lower().strip()
-            ]
+            Q(
+                id__in=[
+                    item.id
+                    for item in queryset
+                    if item.product_creator.store_nickname.lower().strip() == value
+                ]
+            )
         )
 
     def filter_by_store_menu_name(self, queryset, name, value: str):
+        value = value.lower().strip()
         return queryset.filter(
-            id__in=[
-                item.id
-                for item in queryset
-                if item.product_menu
-                and item.product_menu.name.lower().strip() == value.lower().strip()
-            ]
+            Q(
+                id__in=[
+                    item.id
+                    for item in queryset
+                    if item.product_menu
+                    and item.product_menu.name.lower().strip() == value
+                ]
+            )
         )
 
 
@@ -91,7 +97,7 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
         if value == "READY":
             # filter by ready for pickup or delivery
             return queryset.filter(
-                id__in=[
+                Q(id__in=[
                     order.id
                     for order in queryset
                     if order.get_order_status(self.request.user.profile).upper()
@@ -100,19 +106,19 @@ class StoreOrderFilter(DefaultOrderFilter, FilterSet):
                     == "READY_FOR_DELIVERY"
                     or order.get_order_status(self.request.user.profile).upper()
                     == "NO_DELIVERY_PERSON"
-                ]
+                ])
             )
         elif value == "COMPLETED":
             # filter by completed
             return queryset.filter(
-                id__in=[
+                Q(id__in=[
                     order.id
                     for order in queryset
                     if order.get_order_status(self.request.user.profile).upper()
                     == "DELIVERED"
                     or order.get_order_status(self.request.user.profile).upper()
                     == "PICKED_UP"
-                ]
+                ])
             )
         return queryset.filter(
             id__in=[
