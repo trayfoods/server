@@ -1189,7 +1189,6 @@ class Store(models.Model):
         # Check if store will close soon
         if open_datetime <= current_datetime < close_datetime:
             time_to_close = (close_datetime - current_datetime).total_seconds()
-            print(time_to_close)
             if 0 < time_to_close <= 1800:  # 30 minutes
                 is_open_data["close_soon"] = True
                 is_open_data["message"] = (
@@ -1199,7 +1198,6 @@ class Store(models.Model):
         # Check if store will open next day
         if current_datetime >= close_datetime:
             is_open_data["open_next_day"] = True
-            print("Open next day")
             is_open_data["message"] = (
                 "We are closed for today, please come back tomorrow."
             )
