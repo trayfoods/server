@@ -691,9 +691,7 @@ class OrderType(DjangoObjectType):
         # hide confirm pin if the user is a delivery person that has not accepted the order
         current_user = info.context.user
         current_user_profile = current_user.profile
-        view_as = self.view_as(current_user_profile)
-        if "DELIVERY_PERSON" in view_as:
-            return "****"
+        # view_as = self.view_as(current_user_profile)
         return self.get_confirm_pin()
 
     def resolve_order_status(self: Order, info):
