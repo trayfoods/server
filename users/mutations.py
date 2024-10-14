@@ -1065,6 +1065,12 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
         phone = phone.strip()
         phone = phone.replace(" ", "")
 
+        phone = "".join(filter(str.isdigit, phone))  # remove all non digit characters
+
+        # remove the first 0 from the phone number
+        if phone.startswith("0"):
+            phone = phone[1:]
+
         profile.clean_phone_number(phone)
 
         calling_code = profile.calling_code
