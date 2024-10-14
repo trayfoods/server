@@ -1208,8 +1208,9 @@ class Store(models.Model):
             time_to_open = (open_datetime - current_datetime).total_seconds()
             if 0 < time_to_open <= 1800:  # 30 minutes or less
                 is_open_data["open_soon"] = True
+                # message should be like "Opening soon by 10:00 AM in about 30 minutes"
                 is_open_data["message"] = (
-                    f"Opening soon by {open_datetime.strftime('%I:%M %p')}"
+                    f"Opening soon by {open_datetime.strftime('%I:%M %p')} in about {time_to_open // 60} minutes"
                 )
             else:
                 is_open_data["message"] = (
