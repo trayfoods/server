@@ -676,6 +676,10 @@ class CompleteProfileMutation(Output, graphene.Mutation):
             profile.country = country
 
         if phone_number:
+            phone_number = "".join(
+                filter(str.isdigit, phone_number)
+            )  # remove all non digit characters
+
             # remove the first 0 from the phone number
             if phone_number.startswith("0"):
                 phone_number = phone_number[1:]
