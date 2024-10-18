@@ -599,6 +599,7 @@ class Transaction(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True, editable=False)
     updated_on = models.DateTimeField(auto_now=True, editable=False)
+    # settlement_date = models.DateTimeField(null=True, blank=True, editable=False)
     _type = models.CharField(max_length=20, choices=TYPE_OF_TRANSACTION)
 
     class Meta:
@@ -619,7 +620,9 @@ class Transaction(models.Model):
         if self.status == "unsettled":
             # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
-            if now > self.created_at + timezone.timedelta(hours=24):
+            if now > self.created_at:
+            # + timezone.timedelta(hours=24)
+            # :
                 # settle the transaction
                 self.status = "settled"
                 self.save()
@@ -627,6 +630,18 @@ class Transaction(models.Model):
                 # update wallet balance
                 self.wallet.balance += self.amount
                 self.wallet.save()
+
+# signal to set settlement_date to the next day of the creation of the transaction 
+# if the transaction was created with "unsettled" status else set settlement_date to created date
+@receiver(post_save, sender=Transaction)
+def set_settlement_date(sender, instance, created, **kwargs):
+    if created:
+        if instance.status == "unsettled":
+            instance.settlement_date = instance.created_at + timezone.timedelta(days=1)
+        else:
+            instance.settlement_date = instance.created_at
+        instance.save()
+
 
 
 class Wallet(models.Model):
