@@ -19,8 +19,6 @@ class Command(BaseCommand):
             # created_at__lte=time_threshold
         )
 
-        print(unsettled_transactions)
-
         # Update those transactions to 'settled'
         transactions_grouped_by_wallet = (
             []
@@ -47,6 +45,6 @@ class Command(BaseCommand):
         # notify the user of the transactions settled
         for transaction in transactions_grouped_by_wallet:
             wallet: Wallet = transaction["wallet"]
-            # wallet.send_wallet_alert(transaction["amount"])
+            wallet.send_wallet_alert(transaction["amount"])
 
         self.stdout.write(self.style.SUCCESS("Successfully settled transactions"))
