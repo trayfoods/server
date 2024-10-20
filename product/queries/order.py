@@ -11,6 +11,7 @@ from ..types import (
     OrderType,
     StatusOrdersCountType,
 )
+from django.db.models import Q
 
 
 class OrderQueries(graphene.ObjectType):
@@ -34,7 +35,9 @@ class OrderQueries(graphene.ObjectType):
         user = info.context.user
         allowed_view_as_roles = ["DELIVERY_PERSON", "VENDOR"]
 
-        order = user.orders.filter(order_track_id=order_id).first()
+        order = user.orders.filter(
+            Q(order_track_id=order_id) | Q(prev_order_track_id=order_id)
+        ).first()
 
         # check if allowed_view_as_roles is in user.roles
         is_allowed_view_as_roles = any(

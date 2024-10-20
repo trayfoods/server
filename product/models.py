@@ -360,6 +360,12 @@ class Order(models.Model):
         unique=True,
         editable=False,
     )
+    prev_order_track_id = models.CharField(
+        max_length=24,
+        unique=True,
+        editable=False,
+        null=True
+    )
     order_status = models.CharField(
         max_length=30,
         choices=(
@@ -948,6 +954,7 @@ class Order(models.Model):
 
     # re-generate a order_track_id for the order and update the order_track_id of the order
     def regenerate_order_track_id(self):
+        self.prev_order_track_id = self.order_track_id
         self.order_track_id = "order_" + str(uuid.uuid4().hex)[:10]
         self.save()
         return self.order_track_id

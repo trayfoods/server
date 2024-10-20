@@ -110,13 +110,14 @@ class OrderAdmin(admin.ModelAdmin):
         "service_fee",
         "delivery_fee",
         "order_payment_url",
-        # "stores_status",
+        "prev_order_track_id",
         "activities_log",
         "profiles_seen",
     )
     search_fields = [
         "user__username",
         "order_track_id",
+        "prev_order_track_id",
         "order_status",
         "stores_infos",
         "stores_status",

@@ -7,6 +7,7 @@ from trayapp.decorators import get_time_complexity
 from decimal import Decimal
 
 from django.conf import settings
+from django.db.models import Q
 
 
 class ProcessPayment:
@@ -67,7 +68,7 @@ class ProcessPayment:
         # get the order from the database
         order_qs = (
             Order.objects.select_related("user")
-            .filter(order_track_id=order_id)
+            .filter(Q(order_track_id=order_id) | Q(prev_order_track_id=order_id))
             .exclude(order_payment_status="success")
         )
 
@@ -326,7 +327,7 @@ class ProcessPayment:
         order_price = Decimal(order_price) / 100
 
         order_qs = Order.objects.filter(
-            order_track_id=order_id
+            Q(order_track_id=order_id) | Q(prev_order_track_id=order_id)
         )
 
         if not order_qs.exists():
@@ -447,7 +448,9 @@ class ProcessPayment:
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
-        order_qs = Order.objects.filter(order_track_id=order_id)
+        order_qs = Order.objects.filter(
+            Q(order_track_id=order_id) | Q(prev_order_track_id=order_id)
+        )
 
         if not order_qs.exists():
             return HttpResponse("Order does not exist", status=404)

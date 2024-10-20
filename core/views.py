@@ -1,4 +1,3 @@
-# In your Django app views.py
 import json
 import hmac
 import hashlib
@@ -7,7 +6,7 @@ from django.shortcuts import redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.encoding import force_bytes
 from django.conf import settings
-
+from django.db.models import Q
 from product.models import Order
 
 from .utils import ProcessPayment
@@ -70,7 +69,9 @@ def paystack_webhook_handler(request):
 
 
 def order_redirect_share_view(request, order_id):
-    order = Order.objects.filter(order_track_id=order_id).first()
+    order = Order.objects.filter(
+        Q(order_track_id=order_id) | Q(prev_order_track_id=order_id)
+    ).first()
     if order:
         if not order.order_payment_url:
             order.create_payment_link()
