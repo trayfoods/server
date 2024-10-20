@@ -132,6 +132,7 @@ class TransactionInline(admin.TabularInline):
         "transfer_fee",
         "_type",
         "created_at",
+        "settlement_date"
     )
 
 
