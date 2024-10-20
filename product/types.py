@@ -601,7 +601,8 @@ class OrderType(DjangoObjectType):
         delivery_people_infos = []
         for delivery_person in delivery_people:
             delivery_person_profile = (
-                DeliveryPerson.objects.filter(id=int(delivery_person["id"]))
+                DeliveryPerson.objects.select_related("profile")
+                .filter(id=int(delivery_person["id"]))
                 .first()
                 .profile
             )

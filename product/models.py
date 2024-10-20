@@ -1051,8 +1051,10 @@ class Order(models.Model):
         from users.models import DeliveryNotification
 
         if delivery_person_id:
-            delivery_person_notification_instance = DeliveryNotification.objects.filter(
-                delivery_person__id=delivery_person_id, order=self, status="sent"
+            delivery_person_notification_instance = (
+                DeliveryNotification.objects.select_related("store").filter(
+                    delivery_person__id=delivery_person_id, order=self, status="sent"
+                )
             )
             if delivery_person_notification_instance.exists():
                 return {

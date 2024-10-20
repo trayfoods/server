@@ -65,8 +65,10 @@ class ProcessPayment:
         order_gateway_fee = caluate_gateway_fee(order_price)
 
         # get the order from the database
-        order_qs = Order.objects.filter(order_track_id=order_id).exclude(
-            order_payment_status="success"
+        order_qs = (
+            Order.objects.select_related("user", "linked_stores")
+            .filter(order_track_id=order_id)
+            .exclude(order_payment_status="success")
         )
 
         # check if the order exists
@@ -174,7 +176,11 @@ class ProcessPayment:
         transfer_status = self.event_data["status"]
 
         # get transaction from the database
-        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+        transaction = (
+            Transaction.objects.select_related("wallet")
+            .filter(transaction_id=transaction_id)
+            .first()
+        )
 
         if not transaction:
             return HttpResponse("Transaction does not exist", status=404)
@@ -227,7 +233,11 @@ class ProcessPayment:
         transfer_status = self.event_data["status"]
 
         # get transaction from the database
-        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+        transaction = (
+            Transaction.objects.select_related("wallet")
+            .filter(transaction_id=transaction_id)
+            .first()
+        )
 
         if not transaction:
             return HttpResponse("Transaction does not exist", status=404)
@@ -267,7 +277,11 @@ class ProcessPayment:
         account_name = self.event_data["recipient"]["name"]
 
         # get transaction from the database
-        transaction = Transaction.objects.filter(transaction_id=transaction_id).first()
+        transaction = (
+            Transaction.objects.select_related("wallet")
+            .filter(transaction_id=transaction_id)
+            .first()
+        )
 
         if not transaction:
             return HttpResponse("Transaction does not exist", status=404)
@@ -311,7 +325,9 @@ class ProcessPayment:
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
-        order_qs = Order.objects.filter(order_track_id=order_id)
+        order_qs = Order.objects.select_related("linked_stores").filter(
+            order_track_id=order_id
+        )
 
         if not order_qs.exists():
             return HttpResponse("Order does not exist", status=404)
