@@ -99,6 +99,7 @@ ALLOWED_HOSTS = [
     "localhost",
     "trayfoods.azurewebsites.net",
     "169.254.129.3",
+    "127.0.0.1"
 ]
 SMS_ENABLED = "True" == os.environ.get("SMS_ENABLED", "False")
 
