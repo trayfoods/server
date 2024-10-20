@@ -446,7 +446,7 @@ class Order(models.Model):
     )
     order_payment_status = models.CharField(
         max_length=25,
-        editable=False,
+        # editable=False,
         blank=True,
         null=True,
         choices=(
