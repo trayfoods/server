@@ -66,7 +66,7 @@ class ProcessPayment:
 
         # get the order from the database
         order_qs = (
-            Order.objects.select_related("user", "linked_stores")
+            Order.objects.select_related("user")
             .filter(order_track_id=order_id)
             .exclude(order_payment_status="success")
         )
@@ -325,7 +325,7 @@ class ProcessPayment:
         # convert the order_price to a decimal and divide it by 100
         order_price = Decimal(order_price) / 100
 
-        order_qs = Order.objects.select_related("linked_stores").filter(
+        order_qs = Order.objects.filter(
             order_track_id=order_id
         )
 
