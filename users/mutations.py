@@ -1071,6 +1071,16 @@ class SendPhoneVerificationCodeMutation(Output, graphene.Mutation):
         if phone.startswith("0"):
             phone = phone[1:]
 
+        try:
+            # convert 2348137274139 to 8137274139
+            phone = (
+                phone.replace(country, "")
+                if len(phone) > 10 and phone.startswith(country)
+                else phone
+            ) # remove the country code from the phone number if it greater than 10
+        except Exception as e:
+            logging.exception("Error converting phone number: ", e)
+
         profile.clean_phone_number(phone)
 
         calling_code = profile.calling_code
