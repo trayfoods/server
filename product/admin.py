@@ -105,7 +105,6 @@ class OrderAdmin(admin.ModelAdmin):
         "overall_price",
         "order_gateway_fee",
         "order_confirm_pin",
-        "order_payment_status",
         "delivery_fee_percentage",
         "service_fee",
         "delivery_fee",
