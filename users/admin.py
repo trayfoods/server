@@ -205,6 +205,7 @@ class TransactionAdmin(admin.ModelAdmin):
         "gateway_transfer_id",
         "_type",
         "created_at",
+        "settlement_date"
     )
 
 
