@@ -126,6 +126,15 @@ class Item(models.Model):
 
     class Meta:
         ordering = ["-product_clicks"]
+        indexes = [
+            models.Index(fields=['product_slug']),
+            models.Index(fields=['product_creator']),
+            models.Index(fields=['product_status']),
+            models.Index(fields=['product_clicks']),
+            models.Index(fields=['product_created_on']),
+            models.Index(fields=['product_menu']),
+            models.Index(fields=['product_creator', 'product_status']),
+        ]
 
     def __str__(self):
         return self.product_name
@@ -156,8 +165,19 @@ class Item(models.Model):
         """
         eg: Item.get_items()
         """
+        from django.db.models import Prefetch
         return (
-            cls.objects.exclude(product_status="deleted")
+            cls.objects
+            .select_related('product_creator', 'product_menu')
+            .prefetch_related(
+                'itemimage_set',
+                'ratings',
+                Prefetch(
+                    'product_categories',
+                    queryset=ItemAttribute.objects.select_related('parent')
+                )
+            )
+            .exclude(product_status="deleted")
             .exclude(product_creator__is_approved=False)
             .exclude(product_menu__type__slug__icontains="package")
         )
@@ -168,8 +188,20 @@ class Item(models.Model):
         """
         eg: Item.get_items_by_store(store)
         """
-        return cls.objects.exclude(product_status="deleted").filter(
-            product_creator=store
+        from django.db.models import Prefetch
+        return (
+            cls.objects
+            .select_related('product_creator', 'product_menu')
+            .prefetch_related(
+                'itemimage_set',
+                'ratings',
+                Prefetch(
+                    'product_categories',
+                    queryset=ItemAttribute.objects.select_related('parent')
+                )
+            )
+            .filter(product_creator=store)
+            .exclude(product_status="deleted")
         )
 
     @classmethod
@@ -180,12 +212,24 @@ class Item(models.Model):
         return self.ratings.count()
 
     def get_average_rating(self):
+        from django.core.cache import cache
+        cache_key = f'item_avg_rating_{self.id}'
+        
+        # Try to get from cache first
+        cached_rating = cache.get(cache_key)
+        if cached_rating is not None:
+            return cached_rating
+            
+        # Calculate if not in cache
         ratings = self.ratings.all()
         count = ratings.count()
         if count > 0:
             sum_up = sum(rating.stars for rating in ratings)
             total = sum_up / count
             rounded_up = round(total * 10**1) / (10**1)
+            
+            # Cache for 1 hour
+            cache.set(cache_key, rounded_up, 3600)
             return rounded_up
         return 0.0
 

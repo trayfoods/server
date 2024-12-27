@@ -35,7 +35,14 @@ class ItemQueries(graphene.ObjectType):
                 store_instance = store_qs.first()
 
         # check if the user is authenticated and is a vendor and store_nickname is provided
-        items = Item.get_items().exclude(product_creator__is_approved=False)
+        items = (
+        Item.get_items()
+        .select_related('product_creator')
+        .prefetch_related(
+            'itemimage_set',
+            'ratings',
+        )
+    )
         if (
             user.is_authenticated
             and "VENDOR" in user.roles
@@ -54,27 +61,39 @@ class ItemQueries(graphene.ObjectType):
 
     def resolve_item(self, info, item_slug):
         from django.utils import timezone
+        from django.db.models import F
 
         user = info.context.user
-        item = Item.get_items().filter(product_slug=item_slug).first()
+        item = (
+            Item.get_items()
+            .select_related('product_creator')
+            .prefetch_related('itemimage_set', 'ratings')
+            .filter(product_slug=item_slug)
+            .first()
+        )
+        
         if user.is_authenticated and "VENDOR" in user.roles:
-            item_by_store = Item.objects.filter(
-                product_slug=item_slug, product_creator=user.profile.store
+            item_by_store = (
+                Item.objects
+                .select_related('product_creator')
+                .filter(product_slug=item_slug, product_creator=user.profile.store)
             )
             if item_by_store.exists():
                 item = item_by_store.first()
 
         if not item is None:
-            item.product_views += 1
-            item.save()
+            # Use F() to prevent race conditions
+            Item.objects.filter(id=item.id).update(product_views=F('product_views') + 1)
+            
+            # Batch create activity asynchronously if user is authenticated
             if info.context.user.is_authenticated:
-                new_activity = UserActivity.objects.create(
+                from django.db import transaction
+                transaction.on_commit(lambda: UserActivity.objects.create(
                     user_id=info.context.user.id,
                     activity_type="view",
                     item=item,
-                    timestamp=timezone.now(),
-                )
-                new_activity.save()
+                    timestamp=timezone.now()
+                ))
         else:
             raise GraphQLError("404: Item Not Found")
 

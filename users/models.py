@@ -620,9 +620,9 @@ class Transaction(models.Model):
         if self.status == "unsettled":
             # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
-            if not self.settlement_date:
-                self.settlement_date = self.created_at
-            if now > self.settlement_date:
+            # if not self.settlement_date:
+            #     self.settlement_date = self.created_at
+            if now > self.created_at:
                 # settle the transaction
                 self.status = "settled"
                 self.save()
