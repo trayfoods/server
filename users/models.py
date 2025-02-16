@@ -615,8 +615,38 @@ class Transaction(models.Model):
 
     def get_by_wallet(self, wallet):
         return Transaction.objects.filter(wallet=wallet).first()
-
+    
     def settle(self):
+        """
+        Settle the transaction. Avoid calling `self.save()` here to prevent loops.
+        """
+        try:
+            # Skip if already settled
+            if self.status == "settled":
+                return
+
+            # Update wallet balance (example logic)
+            wallet = self.user.wallet
+            wallet.balance += self.amount
+            wallet.save(update_fields=['balance'])  # Partial save to avoid side effects
+
+            # Send notification
+            self.user.notify_me(
+                title="Transaction Settled",
+                message=f"Transaction #{self.transaction_id} settled.",
+                data={"amount": self.amount}
+            )
+
+            # Update transaction fields without retriggering signals
+            Transaction.objects.filter(pk=self.pk).update(
+                status="settled",
+                settled_at=timezone.now()
+            )
+        except Exception as e:
+            # Log or re-raise a specific error
+            raise ValidationError(f"Settlement failed: {str(e)}")
+    
+    def settle_x(self):
         if self.status == "unsettled":
             # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
@@ -632,22 +662,28 @@ class Transaction(models.Model):
                 self.wallet.save()
 
 @receiver(post_save, sender=Transaction)
-def trigger_transaction_settlement(sender, instance, created, **kwargs):
+def handle_transaction_settlement(sender, instance, created, **kwargs):
     """
-    Automatically call `settle()` when a transaction's status changes to "settled".
+    Trigger settlement when status changes to "settled".
+    Uses atomic transactions and error handling.
     """
-    # Check if the status was updated to "settled" (not on initial creation)
-    if not created:  # Skip if it's a new transaction
-        try:
-            old_instance = Transaction.objects.get(pk=instance.pk)
-            if old_instance.status != "settled" and instance.status == "settled":
-                instance.settle()  # Call the settle method
-        except Transaction.DoesNotExist:
-            pass
+    try:
+        with transaction.atomic():
+            # Skip if this is a new instance created with "settled" status
+            if created and instance.status == "settled":
+                instance.settle()
+                return
 
-    # If the transaction is created with "settled" status initially
-    elif created and instance.status == "settled":
-        instance.settle()
+            # For updates, check if status changed to "settled"
+            if not created:
+                old_instance = Transaction.objects.get(pk=instance.pk)
+                if old_instance.status != "settled" and instance.status == "settled":
+                    instance.settle()  # Call the method
+
+    except Transaction.DoesNotExist:
+        logger.warning("Transaction no longer exists after save.")
+    except Exception as e:
+        logger.error(f"Failed to settle transaction {instance.transaction_id}: {str(e)}")
 
 # signal to set settlement_date to the next day of the creation of the transaction
 # if the transaction was created with "unsettled" status else set settlement_date to created date
