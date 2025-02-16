@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.db import models
 
 Q = models.Q
+
 from django_countries.fields import CountryField
 from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
