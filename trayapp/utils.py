@@ -296,14 +296,6 @@ def paginate_queryset(queryset, page_size, page):
     return paginated_queryset
 
 
-def get_twilio_client():
-    from twilio.rest import Client
-
-    # Your Account Sid and Auth Token from twilio.com/console
-    # and set the environment variables. See http://twil.io/secure
-    return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-
-
 def chunked_queryset(queryset, chunk_size=10000):
     """
     Slice a queryset into chunks. This is useful to avoid memory issues when

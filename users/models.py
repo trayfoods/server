@@ -28,12 +28,11 @@ from product.models import Item, Order
 from datetime import datetime
 from django.conf import settings
 
-from trayapp.utils import get_twilio_client, send_message_to_queue
+from trayapp.utils import send_message_to_queue
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
 logger = logging.getLogger(__name__)
 
-TWILIO_CLIENT = get_twilio_client()
 SMS_ENABLED = settings.SMS_ENABLED
 
 
@@ -665,11 +664,12 @@ class Transaction(models.Model):
                 self.wallet.save()
 
 @receiver(post_save, sender=Transaction)
-def handle_transaction_settlement(sender, instance, created, **kwargs):
+def handle_transaction_settlement(sender, instance: Transaction, created, **kwargs):
     """
     Trigger settlement when status changes to "settled".
     Uses atomic transactions and error handling.
     """
+    print("hello", instance)
     try:
         with transaction.atomic():
             # Skip if this is a new instance created with "settled" status
@@ -679,8 +679,8 @@ def handle_transaction_settlement(sender, instance, created, **kwargs):
 
             # For updates, check if status changed to "settled"
             if not created:
-                old_instance = Transaction.objects.get(pk=instance.pk)
-                if old_instance.status != "settled" and instance.status == "settled":
+                current_instance = Transaction.objects.get(transaction_id=instance.transaction_id)
+                if current_instance.status != "settled" and instance.status == "unsettled":
                     instance.settle()  # Call the method
 
     except Transaction.DoesNotExist:
@@ -799,7 +799,7 @@ class Wallet(models.Model):
 
     # add balance to user's wallet
     def add_balance(
-        self, amount: Decimal, title=None, desc=None, order: Order | None = None
+        self, amount: Decimal, title=None, desc=None, order = None
     ):
         amount = Decimal(amount)
         title = "Wallet Credited" if not title else title
