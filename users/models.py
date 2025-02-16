@@ -29,6 +29,8 @@ from django.conf import settings
 
 from trayapp.utils import get_twilio_client, send_message_to_queue
 from django.contrib.auth.hashers import check_password, make_password
+from django.core.exceptions import ValidationError
+logger = logging.getLogger(__name__)
 
 TWILIO_CLIENT = get_twilio_client()
 SMS_ENABLED = settings.SMS_ENABLED
