@@ -631,6 +631,23 @@ class Transaction(models.Model):
                 self.wallet.balance += self.amount
                 self.wallet.save()
 
+@receiver(post_save, sender=Transaction)
+def trigger_transaction_settlement(sender, instance, created, **kwargs):
+    """
+    Automatically call `settle()` when a transaction's status changes to "settled".
+    """
+    # Check if the status was updated to "settled" (not on initial creation)
+    if not created:  # Skip if it's a new transaction
+        try:
+            old_instance = Transaction.objects.get(pk=instance.pk)
+            if old_instance.status != "settled" and instance.status == "settled":
+                instance.settle()  # Call the settle method
+        except Transaction.DoesNotExist:
+            pass
+
+    # If the transaction is created with "settled" status initially
+    elif created and instance.status == "settled":
+        instance.settle()
 
 # signal to set settlement_date to the next day of the creation of the transaction
 # if the transaction was created with "unsettled" status else set settlement_date to created date
