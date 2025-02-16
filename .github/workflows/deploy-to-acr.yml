@@ -22,5 +22,5 @@ jobs:
 
       - name: Build and push Django image
         run: |
-          docker build -t trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }} .
-          docker push trayfoodsapi.azurecr.io/trayfoods-api:${{ github.sha }}
+          docker build -t trayfoodsapi.azurecr.io/trayfoods-api:latest .
+          docker push trayfoodsapi.azurecr.io/trayfoods-api:latest
