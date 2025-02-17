@@ -23,6 +23,12 @@ class ProcessPayment:
     @get_time_complexity
     def process_payment(self):
         logging.info("event_type", self.event_type)
+        if self.event_type == "charge.dispute.create":
+            return self.charge_dispute_create()
+        if self.event_type == "charge.dispute.remind":
+            return self.charge_dispute_remind()
+        if self.event_type == "charge.dispute.resolve":
+            return self.charge_dispute_resolve()
         if self.event_type == "charge.success":
             return self.charge_success()
         elif self.event_type == "transfer.success":
@@ -41,6 +47,46 @@ class ProcessPayment:
             return HttpResponse("Refund processing", status=200)
         else:
             return HttpResponse("Invalid event type", status=400)
+
+    def charge_dispute_create(self):
+        # send an email to dev@trayfoods.com about the dispute with it's data
+        from django.core.mail import EmailMessage
+
+        email = EmailMessage(
+            "Charge Dispute",
+            f"Charge Dispute\n\n{self.event_data}",
+            settings.EMAIL_HOST_USER,
+            ["dev@trayfoods.com"],
+        )
+        email.send()
+
+        return HttpResponse("Charge Dispute", status=200)
+
+    def charge_dispute_remind(self):
+        # send an email to dev@trayfoods.com about the dispute with it's data
+        from django.core.mail import EmailMessage
+
+        email = EmailMessage(
+            "Charge Dispute Remind",
+            f"Charge Dispute Remind\n\n{self.event_data}",
+            settings.EMAIL_HOST_USER,
+            ["dev@trayfoods.com"],
+        )
+        email.send()
+        return HttpResponse("Charge Dispute Remind", status=200)
+
+    def charge_dispute_resolve(self):
+        # send an email to dev@trayfoods.com about the dispute with it's data
+        from django.core.mail import EmailMessage
+
+        email = EmailMessage(
+            "Charge Dispute Resolve",
+            f"Charge Dispute Resolve\n\n{self.event_data}",
+            settings.EMAIL_HOST_USER,
+            ["dev@trayfoods.com"],
+        )
+        email.send()
+        return HttpResponse("Charge Dispute Resolve", status=200)
 
     def charge_success(self):
         # get the values from event_data
