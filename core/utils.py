@@ -49,41 +49,41 @@ class ProcessPayment:
             return HttpResponse("Invalid event type", status=400)
 
     def charge_dispute_create(self):
-        # send an email to dev@trayfoods.com about the dispute with it's data
+        # send an email to support@trayfoods.com about the dispute with it's data
         from django.core.mail import EmailMessage
 
         email = EmailMessage(
             "Charge Dispute",
             f"Charge Dispute\n\n{self.event_data}",
             settings.EMAIL_HOST_USER,
-            ["dev@trayfoods.com"],
+            ["support@trayfoods.com"],
         )
         email.send()
 
         return HttpResponse("Charge Dispute", status=200)
 
     def charge_dispute_remind(self):
-        # send an email to dev@trayfoods.com about the dispute with it's data
+        # send an email to support@trayfoods.com about the dispute with it's data
         from django.core.mail import EmailMessage
 
         email = EmailMessage(
             "Charge Dispute Remind",
             f"Charge Dispute Remind\n\n{self.event_data}",
             settings.EMAIL_HOST_USER,
-            ["dev@trayfoods.com"],
+            ["support@trayfoods.com"],
         )
         email.send()
         return HttpResponse("Charge Dispute Remind", status=200)
 
     def charge_dispute_resolve(self):
-        # send an email to dev@trayfoods.com about the dispute with it's data
+        # send an email to support@trayfoods.com about the dispute with it's data
         from django.core.mail import EmailMessage
 
         email = EmailMessage(
             "Charge Dispute Resolve",
             f"Charge Dispute Resolve\n\n{self.event_data}",
             settings.EMAIL_HOST_USER,
-            ["dev@trayfoods.com"],
+            ["support@trayfoods.com"],
         )
         email.send()
         return HttpResponse("Charge Dispute Resolve", status=200)
