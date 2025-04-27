@@ -146,7 +146,7 @@ class Item(models.Model):
             )
 
         if not self.product_creator:
-            self.product_creator = self.request.user.profile.store
+            raise Exception("Product Owner is missing :(")
 
         if self.product_qty > 0 or self.product_init_qty > 0:
             self.has_qty = True

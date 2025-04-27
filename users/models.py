@@ -2,6 +2,7 @@ from decimal import Decimal
 import os
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import get_template
+from django.db import transaction as djtransac
 
 import uuid
 import pytz
@@ -31,6 +32,7 @@ from django.conf import settings
 from trayapp.utils import send_message_to_queue
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
+
 logger = logging.getLogger(__name__)
 
 SMS_ENABLED = settings.SMS_ENABLED
@@ -390,6 +392,8 @@ class Profile(models.Model):
         return hasattr(self, "student")
 
     def send_phone_number_verification_code(self, new_phone_number, calling_code):
+        if settings.DEBUG or not settings.SMS_ENABLED:
+            return {"success": True, "pin_id": "1234"}
         new_phone_number = new_phone_number.strip()
 
         # check if the phone number has been used by another user
@@ -617,7 +621,7 @@ class Transaction(models.Model):
 
     def get_by_wallet(self, wallet):
         return Transaction.objects.filter(wallet=wallet).first()
-    
+
     def settle(self):
         """
         Settle the transaction. Avoid calling `self.save()` here to prevent loops.
@@ -627,41 +631,49 @@ class Transaction(models.Model):
             if self.status == "settled":
                 return
 
-            # Update wallet balance (example logic)
-            wallet = self.user.wallet
-            wallet.balance += self.amount
-            wallet.save(update_fields=['balance'])  # Partial save to avoid side effects
+            # Use select_related to avoid additional queries for wallet and user
+            transaction_with_related = Transaction.objects.select_related(
+                "wallet__user__user"
+            ).get(pk=self.pk)
 
-            # Send notification
-            self.user.notify_me(
-                title="Transaction Settled",
-                message=f"Transaction #{self.transaction_id} settled.",
-                data={"amount": self.amount}
-            )
+            # Update wallet balance and transaction status in a single atomic transaction
+            with djtransac.atomic():
+                # Update wallet balance
+                Wallet.objects.filter(pk=transaction_with_related.wallet.pk).update(
+                    balance=models.F("balance") + transaction_with_related.amount
+                )
 
-            # Update transaction fields without retriggering signals
-            Transaction.objects.filter(pk=self.pk).update(
-                status="settled",
-                settled_at=timezone.now()
-            )
+                # Update transaction status
+                Transaction.objects.filter(pk=self.pk).update(
+                    status="settled", settlement_date=timezone.now()
+                )
+
+                # Send notification after successful updates
+                transaction_with_related.wallet.user.notify_me(
+                    title="Transaction Settled",
+                    message=f"Transaction #{self.transaction_id} settled.",
+                    data={"amount": self.amount},
+                )
+
         except Exception as e:
             # Log or re-raise a specific error
             raise ValidationError(f"Settlement failed: {str(e)}")
-    
+
     def settle_x(self):
         if self.status == "unsettled":
-            # check if the transaction has been unsettled for more than 24 hours
             now = timezone.now()
-            # if not self.settlement_date:
-            #     self.settlement_date = self.created_at
             if now > self.created_at:
-                # settle the transaction
-                self.status = "settled"
-                self.save()
+                # Update both transaction and wallet in a single atomic transaction
+                with djtransac.atomic():
+                    # Update transaction status
+                    Transaction.objects.filter(pk=self.pk).update(
+                        status="settled", settlement_date=now
+                    )
+                    # Update wallet balance using F expression
+                    Wallet.objects.filter(pk=self.wallet.pk).update(
+                        balance=models.F("balance") + self.amount
+                    )
 
-                # update wallet balance
-                self.wallet.balance += self.amount
-                self.wallet.save()
 
 @receiver(post_save, sender=Transaction)
 def handle_transaction_settlement(sender, instance: Transaction, created, **kwargs):
@@ -669,9 +681,8 @@ def handle_transaction_settlement(sender, instance: Transaction, created, **kwar
     Trigger settlement when status changes to "settled".
     Uses atomic transactions and error handling.
     """
-    print("hello", instance)
     try:
-        with transaction.atomic():
+        with djtransac.atomic():
             # Skip if this is a new instance created with "settled" status
             if created and instance.status == "settled":
                 instance.settle()
@@ -679,25 +690,38 @@ def handle_transaction_settlement(sender, instance: Transaction, created, **kwar
 
             # For updates, check if status changed to "settled"
             if not created:
-                current_instance = Transaction.objects.get(transaction_id=instance.transaction_id)
-                if current_instance.status != "settled" and instance.status == "unsettled":
-                    instance.settle()  # Call the method
+                # Use select_for_update to prevent race conditions
+                current_instance = Transaction.objects.select_for_update().get(
+                    pk=instance.pk
+                )
+                if (
+                    current_instance.status != "settled"
+                    and instance.status == "unsettled"
+                ):
+                    instance.settle()
 
     except Transaction.DoesNotExist:
-        logger.warning("Transaction no longer exists after save.")
+        logger.warning(
+            f"Transaction {instance.transaction_id} no longer exists after save."
+        )
     except Exception as e:
-        logger.error(f"Failed to settle transaction {instance.transaction_id}: {str(e)}")
+        logger.error(
+            f"Failed to settle transaction {instance.transaction_id}: {str(e)}"
+        )
 
-# signal to set settlement_date to the next day of the creation of the transaction
-# if the transaction was created with "unsettled" status else set settlement_date to created date
+
 @receiver(post_save, sender=Transaction)
 def set_settlement_date(sender, instance, created, **kwargs):
     if created:
-        if instance.status == "unsettled":
-            instance.settlement_date = instance.created_at + timezone.timedelta(days=1)
-        else:
-            instance.settlement_date = instance.created_at
-        instance.save()
+        # Use update instead of save to prevent recursive signal calls
+        settlement_date = (
+            instance.created_at + timezone.timedelta(days=1)
+            if instance.status == "unsettled"
+            else instance.created_at
+        )
+        Transaction.objects.filter(pk=instance.pk).update(
+            settlement_date=settlement_date
+        )
 
 
 class Wallet(models.Model):
@@ -713,7 +737,7 @@ class Wallet(models.Model):
     )
     hide_balance = models.BooleanField(default=False)
     passcode = models.CharField(
-        _("passcode"), max_length=128, editable=False, null=True, blank=True
+        _("passcode"), max_length=128, editable=False, default=make_password("0000")
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -731,17 +755,10 @@ class Wallet(models.Model):
         super().save(*args, **kwargs)
 
     def get_unsettled_balance(self):
-        # e.g if the user has 2 unsettled transactions of 100 and 200 respectively
-        # the unsettled balance will be 300
-        current_unsettled_balance = Decimal(0.00)
-        all_unsettled_transactions = Transaction.objects.filter(
-            wallet=self, status="unsettled"
-        )
-        # loop through all unsettled transactions and add all amounts of each unsettled transaction
-        for unsettled_transaction in all_unsettled_transactions:
-            current_unsettled_balance += unsettled_transaction.amount
-
-        return current_unsettled_balance
+        # Use aggregation instead of looping through transactions
+        return Transaction.objects.filter(wallet=self, status="unsettled").aggregate(
+            total=models.Sum("amount")
+        )["total"] or Decimal("0.00")
 
     # set passcode for wallet
     def set_passcode(self, passcode):
@@ -772,7 +789,6 @@ class Wallet(models.Model):
         if self.passcode is None:
             # set passcode to 0000
             self.set_passcode("0000")
-            self.save()
 
         return check_password(passcode, self.passcode)
 
@@ -798,59 +814,55 @@ class Wallet(models.Model):
         return Transaction.objects.filter(wallet=self)
 
     # add balance to user's wallet
-    def add_balance(
-        self, amount: Decimal, title=None, desc=None, order = None
-    ):
+    def add_balance(self, amount: Decimal, title=None, desc=None, order=None):
         amount = Decimal(amount)
         title = "Wallet Credited" if not title else title
         desc = f"{amount} {self.currency} was added to wallet" if not desc else desc
 
-        if not order:
-            # convert the amount to decimal
-            self.balance += amount
-            self.save()
-        else:
-            # check if the wallet has a transaction for the order
-            order_transaction = self.get_transactions().filter(order=order).first()
-            if order_transaction:
-                raise Exception("Order already has a transaction")
+        with djtransac.atomic():
+            if order:
+                # Check for existing order transaction efficiently
+                if Transaction.objects.filter(wallet=self, order=order).exists():
+                    raise Exception("Order already has a transaction")
+            else:
+                # Update balance using F expression
+                Wallet.objects.filter(pk=self.pk).update(
+                    balance=models.F("balance") + amount
+                )
+                # Refresh from db to get updated balance
+                self.refresh_from_db()
 
-        # create a transaction
-        transaction = Transaction.objects.create(
-            wallet=self,
-            title=title,
-            status="success" if not order else "unsettled",
-            desc=desc,
-            amount=amount,
-            order=order,
-            _type="credit",
-        )
-        transaction.save()
+            # Create transaction in the same atomic block
+            new_transaction = Transaction.objects.create(
+                wallet=self,
+                title=title,
+                status="success" if not order else "unsettled",
+                desc=desc,
+                amount=amount,
+                order=order,
+                _type="credit",
+            )
 
-        # notify the user
-        self.user.notify_me(
-            title=title,
-            message=desc,
-            data={"order_id": order.get_order_display_id() if order else None},
-        )
+            # Notify user
+            self.user.notify_me(
+                title=title,
+                message=desc,
+                data={"order_id": order.get_order_display_id() if order else None},
+            )
+
+            return new_transaction
 
     def deduct_balance(self, **kwargs):
-        amount = kwargs.get("amount")
-        transfer_fee = kwargs.get("transfer_fee", 0.00)
-        transfer_fee = Decimal(transfer_fee)
+        amount = Decimal(kwargs.get("amount"))
+        transfer_fee = Decimal(kwargs.get("transfer_fee", 0.00))
         title = kwargs.get("title", "Wallet Debited")
         desc = kwargs.get(
             "desc", f"{self.currency} {amount} was deducted from your wallet"
         )
-        transaction_id = kwargs.get("transaction_id", None)
-        order = kwargs.get("order", None)
+        transaction_id = kwargs.get("transaction_id")
+        order = kwargs.get("order")
         status = kwargs.get("status", "pending")
         _type = kwargs.get("_type", "debit")
-        transaction = None
-        amount = Decimal(amount)
-        transfer_fee = Decimal(transfer_fee)
-
-        total_amount = amount + transfer_fee
 
         if not amount:
             raise Exception("Amount is required")
@@ -858,61 +870,76 @@ class Wallet(models.Model):
         if not transaction_id and not order:
             raise Exception("Transaction ID is required, or Order is required")
 
-        if order:
-            # handle order refund logic
-            order_transaction = self.get_transactions().filter(order=order).first()
-
-            if not order_transaction:
-                raise Exception("Order does not have a transaction")
-
-            if order_transaction.status in ["settled", "success"]:
-                # debit the wallet
-                self.balance -= total_amount
-                self.save()
-
-            # update the order transaction
-            order_transaction.amount = total_amount
-            order_transaction.status = "success"
-            order_transaction._type = _type
-            order_transaction.save()
-
-            return order_transaction
-
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
 
-        transaction_id = uuid.UUID(transaction_id)
+        total_amount = amount + transfer_fee
 
-        if self.balance < amount:
-            raise Exception("Insufficient funds")
+        with djtransac.atomic():
+            # Lock the wallet row for update
+            wallet = Wallet.objects.select_for_update().get(pk=self.pk)
 
-        # check if transaction exists
-        transaction = self.get_transactions().get(
-            transaction_id=transaction_id, _type="debit"
-        )
+            if order:
+                # Handle order refund logic
+                order_transaction = (
+                    Transaction.objects.select_for_update()
+                    .filter(wallet=self, order=order)
+                    .first()
+                )
 
-        # debit the wallet
-        self.balance -= total_amount
-        self.save()
+                if not order_transaction:
+                    raise Exception("Order does not have a transaction")
 
-        transaction.title = title
-        transaction.order = order
-        transaction.desc = desc
-        transaction.status = status
-        transaction.save()
+                if order_transaction.status in ["settled", "success"]:
+                    # Update balance using F expression
+                    Wallet.objects.filter(pk=self.pk).update(
+                        balance=models.F("balance") - total_amount
+                    )
+                    self.refresh_from_db()
 
-        # notify the user
-        self.user.notify_me(
-            title=title,
-            message=desc,
-            data={"order_id": order.get_order_display_id() if order else None},
-        )
+                    # Update the order transaction
+                    Transaction.objects.filter(pk=order_transaction.pk).update(
+                        amount=total_amount, status="success", _type=_type
+                    )
+                    order_transaction.refresh_from_db()
+                    transaction_result = order_transaction
 
-        return transaction
+            else:
+                # Handle transaction_id case
+                # transaction_id = uuid.UUID(transaction_id)
+
+                if wallet.balance < amount:
+                    raise Exception("Insufficient funds")
+
+                # Update balance and get transaction in one atomic operation
+                Wallet.objects.filter(pk=self.pk).update(
+                    balance=models.F("balance") - total_amount
+                )
+                self.refresh_from_db()
+
+                transaction_result = Transaction.objects.select_for_update().get(
+                    wallet=self, transaction_id=transaction_id, _type="debit"
+                )
+
+                Transaction.objects.filter(pk=transaction_result.pk).update(
+                    title=title, order=order, desc=desc, status=status
+                )
+                transaction_result.refresh_from_db()
+
+            # Notify user
+            self.user.notify_me(
+                title=title,
+                message=desc,
+                data={"order_id": order.get_order_display_id() if order else None},
+            )
+
+            return transaction_result
 
     def reverse_transaction(self, **kwargs):
-        amount = kwargs.get("amount")
+        amount = Decimal(kwargs.get("amount"))
         title = kwargs.get("title", "Transfer Reversed")
+        order = kwargs.get("order")
+        transaction_id = kwargs.get("transaction_id")
 
         currency_symbol = "₦" if self.currency == "NGN" else None
         currency = self.currency if currency_symbol is None else ""
@@ -920,79 +947,95 @@ class Wallet(models.Model):
             "desc", f"{currency_symbol}{amount} {currency} was reversed to your wallet"
         )
 
-        order = kwargs.get("order", None)
-        transaction_id = kwargs.get("transaction_id", None)
+        with djtransac.atomic():
+            # Lock the wallet for update
+            wallet = Wallet.objects.select_for_update().get(pk=self.pk)
 
-        transaction = (
-            self.get_transactions().filter(transaction_id=transaction_id).first()
-        )
+            if transaction_id:
+                # Get and lock the transaction
+                transaction_obj = (
+                    Transaction.objects.select_for_update()
+                    .filter(wallet=self, transaction_id=transaction_id)
+                    .first()
+                )
 
-        amount = Decimal(amount)
+                if (
+                    transaction_obj
+                    and transaction_obj.status in ["success", "settled"]
+                    and transaction_obj.amount == amount
+                ):
+                    # Update wallet balance atomically
+                    Wallet.objects.filter(pk=self.pk).update(
+                        balance=models.F("balance") + amount
+                    )
+                    wallet.refresh_from_db()
 
-        # check if the transaction was successful
-        if (
-            transaction.status in ["success", "settled"]
-            and transaction.amount == amount
-        ):
-            self.balance += amount
-            self.save()
+            # Create or update transaction
+            if transaction_id and not transaction_obj:
+                transaction_obj = Transaction.objects.create(
+                    wallet=self,
+                    title=title,
+                    desc=desc,
+                    status="reversed",
+                    amount=amount,
+                    order=order,
+                    _type="debit",
+                )
+            elif transaction_obj:
+                Transaction.objects.filter(pk=transaction_obj.pk).update(
+                    title=title, desc=desc, status="reversed"
+                )
+                transaction_obj.refresh_from_db()
 
-        if transaction is None:
-            # create a transaction
-            transaction = Transaction.objects.create(
-                wallet=self,
+            # Notify user
+            self.user.notify_me(
                 title=title,
-                desc=desc,
-                status="reversed",
-                amount=amount,
-                order=order,
-                _type="debit",
+                message=desc,
+                data={"order_id": order.get_order_display_id() if order else None},
             )
-        transaction.title = title
-        transaction.desc = desc
-        transaction.save()
 
-        # notify the user
-        self.user.notify_me(
-            title=title,
-            message=desc,
-            data={"order_id": order.get_order_display_id() if order else None},
-        )
+            return transaction_obj
 
-        return transaction
-
-    # put transaction on hold
     def put_transaction_on_hold(self, transaction_id: str = None, order: Order = None):
-        # transaction_id and order cannot be set at the same time
         if transaction_id and order:
             raise Exception("Transaction ID and Order cannot be set at the same time")
 
-        transaction: Transaction = None
-        desc = "Transaction is on hold, please contact support"
-        if transaction_id:
-            transaction = self.get_transactions().get(transaction_id=transaction_id)
-            desc = f"Transaction #{transaction_id} is on hold, please contact support"
-        elif order:
-            transaction = self.get_transactions().get(order=order)
-            desc = f"Transaction for Order {order.get_order_display_id()} is on hold, please contact support"
+        with djtransac.atomic():
+            # Lock the wallet for update
+            wallet = Wallet.objects.select_for_update().get(pk=self.pk)
 
-        # check if transaction is settled or successfull
-        if transaction.status in ["settled", "success"]:
-            # deduct the wallet
-            self.deduct_balance(
-                amount=transaction.amount,
-                title="Transaction on Hold",
-                desc=desc,
-                transaction_id=transaction.transaction_id,
-                status="on-hold",
+            # Prepare query for transaction lookup
+            transaction_query = {"wallet": self}
+            if transaction_id:
+                transaction_query["transaction_id"] = transaction_id
+                desc = (
+                    f"Transaction #{transaction_id} is on hold, please contact support"
+                )
+            elif order:
+                transaction_query["order"] = order
+                desc = f"Transaction for Order {order.get_order_display_id()} is on hold, please contact support"
+            else:
+                desc = "Transaction is on hold, please contact support"
+
+            # Get and lock the transaction
+            transaction_obj = Transaction.objects.select_for_update().get(
+                **transaction_query
             )
 
-        # update the transaction
-        transaction.status = "on-hold"
-        transaction.desc = desc
-        transaction.save()
+            if transaction_obj.status in ["settled", "success"]:
+                # Deduct balance atomically
+                Wallet.objects.filter(pk=self.pk).update(
+                    balance=models.F("balance") - transaction_obj.amount
+                )
+                wallet.refresh_from_db()
 
-        return transaction
+            # Update transaction status
+            Transaction.objects.filter(pk=transaction_obj.pk).update(
+                status="on-hold", desc=desc
+            )
+            transaction_obj.refresh_from_db()
+
+            return transaction_obj
 
     def send_wallet_alert(self, amount: Decimal):
         """
@@ -1431,7 +1474,15 @@ class Hostel(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = slugify(
+                self.name
+                + " "
+                + self.campus
+                + " "
+                + self.school.name
+                + " "
+                + self.gender.name
+            )
             self.save()
 
     @property

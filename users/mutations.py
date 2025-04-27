@@ -442,7 +442,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                                     Store Nickname: {}
                                     Store Type: {}
                                     Store Country: {}
-                                    Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                    Link to store: https://trayfoods.azurewebsites.net/admin/users/store/{}/
                                     """.format(
                                 store.store_name,
                                 store.store_nickname,
@@ -460,7 +460,7 @@ class CreateUpdateStoreMutation(Output, graphene.Mutation):
                                     Store Nickname: {}
                                     Store Type: {}
                                     Store Country: {}
-                                    Link to store: https://api.trayfoods.com/admin/users/store/{}/
+                                    Link to store: https://trayfoods.azurewebsites.net/admin/users/store/{}/
                                     """.format(
                                 store.store_name,
                                 store.store_nickname,
