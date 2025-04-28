@@ -1475,7 +1475,7 @@ class Hostel(models.Model):
         super().save(*args, **kwargs)
         if not self.slug:
             self.slug = slugify(
-                self.name + " " + self.gender.name
+                self.school.name + self.name + " " + self.gender.name
             )
             self.save()
 
