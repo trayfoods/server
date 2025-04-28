@@ -1475,10 +1475,9 @@ class Hostel(models.Model):
         super().save(*args, **kwargs)
         if not self.slug:
             self.slug = slugify(
-                self.name+ " " + str(uuid.uuid4())[:8]
+                self.name + " " + self.gender.name
             )
             self.save()
-          
 
     @property
     def hostel_fields(self):
