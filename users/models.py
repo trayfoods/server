@@ -1482,10 +1482,11 @@ class Hostel(models.Model):
                     + " "
                     + self.gender.name
                 )
+                self.save()
             except:
                 # use uuid
                 self.slug = str(uuid.uuid4())[:6]
-            self.save()
+                self.save()
 
     @property
     def hostel_fields(self):
