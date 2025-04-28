@@ -1474,19 +1474,11 @@ class Hostel(models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.slug:
-            try:
-                self.slug = slugify(
-                    self.name
-                    + " "
-                    + self.school.name
-                    + " "
-                    + self.gender.name
-                )
-                self.save()
-            except:
-                # use uuid
-                self.slug = str(uuid.uuid4())[:6]
-                self.save()
+            self.slug = slugify(
+                self.name+ " " + str(uuid.uuid4())[:8]
+            )
+            self.save()
+          
 
     @property
     def hostel_fields(self):
