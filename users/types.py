@@ -71,7 +71,10 @@ class ProfileType(DjangoObjectType):
         return self.get_required_fields()
 
     def resolve_has_required_fields(self, info, *args, **kwargs):
-        return self.get_required_fields() is not None and len(self.get_required_fields()) > 0
+        return (
+            self.get_required_fields() is not None
+            and len(self.get_required_fields()) > 0
+        )
 
 
 class UserSettingsType(graphene.ObjectType):
@@ -80,14 +83,14 @@ class UserSettingsType(graphene.ObjectType):
 
     def resolve_has_token_device(self, info, *args, **kwargs):
         return self.has_token_device
-    
+
     def resolve_hide_wallet_balance(self, info):
         user = info.context.user
         profile_wallet = user.profile.get_wallet()
 
         if user.is_authenticated and profile_wallet:
             return profile_wallet.hide_balance
-        
+
         return False
 
 
@@ -161,9 +164,11 @@ class StudentType(DjangoObjectType):
             hostel_fields_qs = HostelField.objects.filter(id=field["field_id"])
             if hostel_fields_qs.count() > 0:
                 value_prefix = hostel_fields_qs.first().value_prefix
-                hostel_address += f"{value_prefix if value_prefix else "" } {field["value"]} - "
+                hostel_address += (
+                    f"{value_prefix if value_prefix else ''} {field['value']} - "
+                )
             else:
-                hostel_address += f"{field["value"]} - "
+                hostel_address += "{} - ".format(field.get("value", ""))
             hostel_address = hostel_address.strip()
             # remove - if it is the last character
             if hostel_address[-1] == "-":
@@ -188,12 +193,12 @@ class TransactionType(DjangoObjectType):
             "created_at",
             "transaction_id",
             "display_date",
-            "order_url"
+            "order_url",
         ]
 
     def resolve_display_date(self, info):
         return convert_time_to_ago(self.updated_on)
-    
+
     def resolve_order_display_id(self: Transaction, info):
         is_order_transaction = self.order is not None
         if is_order_transaction:
@@ -213,12 +218,15 @@ class StoreOpenHours(graphene.ObjectType):
     open_time = graphene.String()
     close_time = graphene.String()
 
+
 class AveragePreparationTime:
     min = graphene.Int()
     max = graphene.Int()
 
+
 class AveragePreparationTimeType(AveragePreparationTime, graphene.ObjectType):
     pass
+
 
 class AveragePreparationTimeInput(AveragePreparationTime, graphene.InputObjectType):
     pass
@@ -230,9 +238,11 @@ class StoreOpenHoursInput(graphene.InputObjectType):
     open_time = graphene.String()
     close_time = graphene.String()
 
+
 class isStoreOpenData(graphene.ObjectType):
     is_open = graphene.Boolean()
     message = graphene.String()
+
 
 class StoreType(DjangoObjectType):
     store_id = graphene.String()
@@ -298,7 +308,7 @@ class StoreType(DjangoObjectType):
 
     def resolve_store_open_hours(self, info):
         return self.store_open_hours
-    
+
     def resolve_store_average_preparation_time(self, info):
         return self.store_average_preparation_time
 
@@ -307,16 +317,18 @@ class StoreType(DjangoObjectType):
 
     def resolve_country(self, info):
         return self.country.name
-    
+
     def resolve_country_code(self, info):
         return self.country.code
-    
+
     def resolve_can_accept_orders(self: Store, info):
         return self.can_accept_orders()
-    
-    def resolve_is_open_data(self:Store, info):
+
+    def resolve_is_open_data(self: Store, info):
         is_open_data = self.get_is_open_data()
-        return isStoreOpenData(is_open=is_open_data.get("is_open"), message=is_open_data.get("message"))
+        return isStoreOpenData(
+            is_open=is_open_data.get("is_open"), message=is_open_data.get("message")
+        )
 
 
 class StoreNode(StoreType, graphene.ObjectType):
@@ -324,6 +336,7 @@ class StoreNode(StoreType, graphene.ObjectType):
         model = Store
         interfaces = (graphene.relay.Node,)
         filterset_class = StoreFilter
+
 
 class MenuType(DjangoObjectType):
     type = graphene.String()
@@ -335,14 +348,17 @@ class MenuType(DjangoObjectType):
     def resolve_type(self, info):
         return self.type.slug if self.type else "UNKNOWN"
 
+
 class StoreItmMenuType(graphene.ObjectType):
     menu = graphene.Field(MenuType)
     items = graphene.List("product.types.ItemType")
+
 
 class DeliveryPersonType(DjangoObjectType):
     class Meta:
         model = DeliveryPerson
         fields = "__all__"
+
 
 class WalletNode(graphene.ObjectType):
     balance = graphene.String()

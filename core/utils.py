@@ -103,9 +103,9 @@ class ProcessPayment:
 
         def caluate_gateway_fee(order_price):
             gateway_fee = 0
-            if order_price <= 2500:
+            if order_price <= 3500:
                 gateway_fee = 100
-            elif order_price > 2500:
+            elif order_price > 3500:
                 gateway_fee = order_price * Decimal(0.025) + 100
             return gateway_fee
 
@@ -616,7 +616,7 @@ def calculate_delivery_fee(amount, fee, distance=None, price_per_km=None):
 
     delivery_fee = Decimal(fee)
 
-    if amount >= 2500 and not delivery_fee <= 100:
+    if amount >= 3500 and not delivery_fee <= 100:
         delivery_fee = amount * Decimal(0.05) + delivery_fee
 
     if distance and price_per_km:

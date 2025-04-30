@@ -114,6 +114,12 @@ class UserAccount(AbstractUser, models.Model):
         """
         VALID_DELIVERY_TYPES = settings.VALID_DELIVERY_TYPES
 
+        VALID_DELIVERY_TYPES = [
+            delivery_type
+            for delivery_type in VALID_DELIVERY_TYPES
+            if delivery_type.get("name") != "home"
+        ]
+
         # check if user is not a student
         if not "STUDENT" in self.roles:
             # remove hostels from delivery types
@@ -122,6 +128,19 @@ class UserAccount(AbstractUser, models.Model):
                 for delivery_type in VALID_DELIVERY_TYPES
                 if delivery_type.get("name") != "hostel"
             ]
+
+        if "STUDENT" in self.roles:
+            # check if student is hostel is off-campus, then remove hotel
+            student = self.profile.student
+            if student:
+                hostel = student.hostel.name.strip().lower().replace("-", "")
+                if hostel == "offcampus":
+                    VALID_DELIVERY_TYPES = [
+                        delivery_type
+                        for delivery_type in settings.VALID_DELIVERY_TYPES
+                        if delivery_type.get("name") != "hostel"
+                    ]
+
         return VALID_DELIVERY_TYPES
 
     # get user's orders
@@ -1475,7 +1494,9 @@ class Hostel(models.Model):
         super().save(*args, **kwargs)
         if not self.slug:
             self.slug = slugify(
-                self.school.name + self.name + " " + self.gender.name
+                f"{str(uuid.uuid4().hex)[:6]} {self.school.slug} {self.name}  {self.gender.name}"[
+                    :50
+                ]
             )
             self.save()
 

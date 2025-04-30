@@ -82,8 +82,12 @@ VALID_DELIVERY_TYPES = [
     },
     {
         "name": "hostel",
-        "fee": 400,
+        "fee": 500,
     },
+    {
+        "name": "home",
+        "fee": 800
+    }
 ]
 
 
