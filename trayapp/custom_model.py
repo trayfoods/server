@@ -135,7 +135,8 @@ class BankListQuery(graphene.ObjectType):
                         }
                 # return banksList
                 return bank_list
-            except:
+            except Exception as e:
+                print(e)
                 raise GraphQLError("Unable to Get List Banks")
         else:
             raise GraphQLError("Login Required")

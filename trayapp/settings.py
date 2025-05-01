@@ -78,7 +78,7 @@ X_CSCAPI_KEY = os.environ.get("X_CSCAPI_KEY", "1234")
 VALID_DELIVERY_TYPES = [
     {
         "name": "pickup",
-        "fee": 100,
+        "fee": 120,
     },
     {
         "name": "hostel",
@@ -86,7 +86,7 @@ VALID_DELIVERY_TYPES = [
     },
     {
         "name": "home",
-        "fee": 800
+        "fee": 900
     }
 ]
 

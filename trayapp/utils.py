@@ -185,7 +185,7 @@ def get_banks_list(data):
     else:
         reqUrl = "https://api.paystack.co/bank?currency={}".format(data["currency"])
     r = requests.get(
-        reqUrl, headers={"Authorization": "Bearer {}".format(PAYSTACK_SECRET_KEY)}
+        reqUrl, headers={"Authorization": "Bearer {}".format(settings.PAYSTACK_SECRET_KEY)}
     )
     # check status code for response received
     # success code - 200
@@ -217,7 +217,7 @@ def get_bank_account_details(data):
         )
     )
     r = requests.get(
-        reqUrl, headers={"Authorization": "Bearer {}".format(PAYSTACK_SECRET_KEY)}
+        reqUrl, headers={"Authorization": "Bearer {}".format(settings.PAYSTACK_SECRET_KEY)}
     )
     # check status code for response received
     # success code - 200

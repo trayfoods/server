@@ -1,0 +1,15 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "load-env": "conda deactivate && source env/bin/activate",
+    "acr-login": "az login --tenant fb83b261-4ca7-494b-a23c-d459f519e076 && az acr login --name trayfoodsapi",
+    "build": "COMMIT_SHA=$(git rev-parse HEAD) && docker build -t trayfoodsapi.azurecr.io/trayfoods-api:$COMMIT_SHA .",
+    "acr-push": "docker push trayfoodsapi.azurecr.io/trayfoods-api:$COMMIT_SHA"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

@@ -144,7 +144,7 @@ class ProcessPayment:
 
         if "success" == order_payment_status:
             # get 25% of the delivery fee
-            delivery_fee_percentage = delivery_fee * Decimal(0.25)
+            delivery_fee_percentage = delivery_fee * Decimal(0.30)
             new_delivery_fee = delivery_fee - delivery_fee_percentage
             # update the order payment status
             order.order_payment_status = order_payment_status
