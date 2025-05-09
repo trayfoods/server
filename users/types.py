@@ -261,6 +261,8 @@ class StoreType(DjangoObjectType):
     can_accept_orders = graphene.Boolean()
     is_open_data = graphene.Field(isStoreOpenData)
 
+    location = None
+
     class Meta:
         model = Store
         fields = "__all__"

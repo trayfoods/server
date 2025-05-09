@@ -11,6 +11,8 @@ import logging
 from django.utils import timezone
 
 from django.db import models
+from django.contrib.gis.db import models as gis_models
+from sympy import Point
 
 Q = models.Q
 
@@ -1194,6 +1196,7 @@ class Store(models.Model):
     street_name = models.CharField(max_length=50, null=True, blank=True)
     primary_address_lat = models.FloatField(null=True, blank=True)
     primary_address_lng = models.FloatField(null=True, blank=True)
+    # location = gis_models.PointField(null=True, blank=True, srid=4326)
     school = models.ForeignKey(School, on_delete=models.SET_NULL, null=True, blank=True)
     campus = models.CharField(max_length=50, null=True, blank=True)
     timezone = models.CharField(max_length=50, null=True, blank=True)
@@ -1354,25 +1357,19 @@ class Store(models.Model):
         ordering = ["-store_rank"]
 
     def save(self, *args, **kwargs):
+        # Update location field if lat/lng are provided
+        # if (
+        #     self.primary_address_lat is not None
+        #     and self.primary_address_lng is not None
+        # ):
+        #     self.location = Point(
+        #         self.primary_address_lng, self.primary_address_lat, srid=4326
+        #     )
+
         # Resize the image before saving
         if self.store_cover_image:
-            w, h = 1024, 300  # Set the desired width and height for the resized image
-            if image_exists(self.store_cover_image.name):
-                img_file, _, _, _ = image_resized(self.store_cover_image, w, h)
-                if img_file:
-                    img_name = self.store_cover_image.name
-                    self.store_cover_image.save(img_name, img_file, save=False)
-
-            if not self.store_nickname:
-                self.store_nickname = slugify(self.store_name)
-                self.save()
-
-        if self.store_average_preparation_time:
-            is_average_preparation_time_valid = (
-                self.validate_store_average_preparation_time()
-            )
-            if not is_average_preparation_time_valid:
-                raise Exception("Invalid Store Average Preparation Time")
+            if self.image_has_changed():
+                image_resized(self.store_cover_image, 800, 800)
 
         super().save(*args, **kwargs)
 

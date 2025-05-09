@@ -126,3 +126,6 @@ zope.interface==6.1
 azure-storage-queue==12.9.0
 azure-identity==1.15.0
 honcho==1.1.0
+
+# Geospatial dependencies
+geopy==2.4.1

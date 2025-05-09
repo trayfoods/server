@@ -18,9 +18,12 @@ from product.models import ItemAttribute
 from product.queries.item import ItemQueries
 from product.queries.order import OrderQueries
 from product.queries.reviews import ReviewsQueries
+from product.queries.store import StoreQueries
 
 
-class Query(ItemQueries, ReviewsQueries, OrderQueries, graphene.ObjectType):
+class Query(
+    ItemQueries, ReviewsQueries, OrderQueries, StoreQueries, graphene.ObjectType
+):
     all_item_attributes = graphene.List(ItemAttributeType)
     item_attributes = graphene.List(ItemAttributeType, _type=graphene.Int())
     item_attribute = graphene.Field(ItemAttributeType, slug=graphene.String())
