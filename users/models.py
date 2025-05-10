@@ -11,7 +11,7 @@ import logging
 from django.utils import timezone
 
 from django.db import models
-from django.contrib.gis.db import models as gis_models
+# from django.contrib.gis.db import models as gis_models
 from sympy import Point
 
 Q = models.Q
