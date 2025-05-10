@@ -32,7 +32,7 @@ from .types import (
     UserNodeType,
 )
 from graphql_auth.models import UserStatus
-
+from django.conf import settings
 from trayapp.custom_model import BankListQuery, EmailVerifiedNode
 
 User = get_user_model()
@@ -73,7 +73,7 @@ class Query(
             if user_status.verified == True:  # check if the user email is verified
                 data["success"] = True  # the user email is verified
             else:
-                data["success"] = False
+                data["success"] = False if settings.USE_MAILERSEND else True
         else:  # the user does not exist
             data["msg"] = "email do not exists"
         return data
