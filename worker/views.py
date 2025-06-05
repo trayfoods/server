@@ -83,7 +83,7 @@ def process_delivery_notification_sent(request):
                 "order_id": data.get("order_id"),
                 "delivery_person_id": data.get("delivery_person_id"),
             }
-            # send message to queue bus with 30 seconds ttl in milliseconds
+            # send message to queue bus with 30 seconds ttl in millisecond
             # send_message_to_queue_bus(
             #     message_dict=message, queue_name="sent-delivery-request", ttl=60
             # )
