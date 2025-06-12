@@ -1,6 +1,6 @@
 import graphene
 from django.db.models import Q
-from django.contrib.gis.geos import Point
+# from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from users.models import Store
 from product.models import Item
@@ -24,7 +24,7 @@ class StoreQueries(graphene.ObjectType):
         radius_meters = radius * 1000
 
         # Create a point from the given coordinates
-        user_location = Point(longitude, latitude, srid=4326)
+        # user_location = Point(longitude, latitude, srid=4326)
 
         # Base query for stores within radius
         stores_query = (
@@ -34,7 +34,7 @@ class StoreQueries(graphene.ObjectType):
                 & Q(is_approved=True)
                 & Q(status="online")
             )
-            .filter(location__distance_lte=(user_location, D(m=radius_meters)))
+            # .filter(location__distance_lte=(user_location, D(m=radius_meters)))
             .select_related(
                 "vendor", "vendor__user", "store_type", "gender_preference", "school"
             )
@@ -55,12 +55,12 @@ class StoreQueries(graphene.ObjectType):
 
         # Calculate distance and is_open status for each store
         for store in stores:
-            store_location = Point(
-                store.primary_address_lng, store.primary_address_lat, srid=4326
-            )
-            store.distance = (
-                user_location.distance(store_location) / 1000
-            )  # Convert to kilometers
+            # store_location = Point(
+            #     store.primary_address_lng, store.primary_address_lat, srid=4326
+            # )
+            # store.distance = (
+            #     user_location.distance(store_location) / 1000
+            # )  # Convert to kilometers
 
             # Add is_open_data to store
             is_open_data = store.get_is_open_data()
@@ -70,6 +70,6 @@ class StoreQueries(graphene.ObjectType):
             }
 
         # Sort by distance and store rank
-        stores.sort(key=lambda x: (x.distance, -x.store_rank))
+        # stores.sort(key=lambda x: (x.distance, -x.store_rank))
 
         return stores
