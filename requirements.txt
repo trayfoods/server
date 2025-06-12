@@ -128,4 +128,4 @@ azure-identity==1.15.0
 honcho==1.1.0
 
 # Geospatial dependencies
-geopy==2.4.1
+# geopy==2.4.1
