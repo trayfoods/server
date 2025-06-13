@@ -1,7 +1,7 @@
 import graphene
 from django.db.models import Q
 # from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import D
+# from django.contrib.gis.measure import D
 from users.models import Store
 from product.models import Item
 from product.types import StoreType
