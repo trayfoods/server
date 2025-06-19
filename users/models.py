@@ -1373,6 +1373,18 @@ class Store(models.Model):
 
         super().save(*args, **kwargs)
 
+    # check if image has changed
+    def image_has_changed(self):
+        try:
+            obj = Store.objects.get(pk=self.pk)
+        except Store.DoesNotExist:
+            return True
+
+        if obj.store_cover_image != self.store_cover_image:
+            return True
+
+        return False
+
     # store's wallet
     @property
     def wallet(self):
